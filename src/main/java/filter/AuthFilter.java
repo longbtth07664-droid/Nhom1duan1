@@ -1,7 +1,12 @@
+
 package filter;
 
 import entity.TaiKhoan;
-import jakarta.servlet.*;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,36 +18,64 @@ import java.io.IOException;
 public class AuthFilter implements Filter {
 
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
+    public void doFilter(ServletRequest request, ServletResponse response,
+                         FilterChain chain)
             throws IOException, ServletException {
-        HttpServletRequest request = (HttpServletRequest) servletRequest;
-        HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        String uri = request.getRequestURI();
-        String contextPath = request.getContextPath();
-        String path = uri.substring(contextPath.length());
+        HttpServletRequest req = (HttpServletRequest) request;
+        HttpServletResponse res = (HttpServletResponse) response;
 
-        // Cho phép truy cập tài nguyên tĩnh và trang login
-        if (path.startsWith("/assets/") || path.equals("/login") || path.equals("/login.jsp") || path.equals("/logout")) {
+        String path = req.getServletPath();
+        String contextPath = req.getContextPath();
+
+        // Cho phép truy cập tài nguyên tĩnh và các trang đăng nhập/đăng xuất
+        if (path.startsWith("/assets/")
+                || path.equals("/login")
+                || path.equals("/login.jsp")
+                || path.equals("/logout")
+                || path.equals("/index.jsp")
+                || path.equals("/favicon.ico")) {
+
             chain.doFilter(request, response);
             return;
         }
 
-        HttpSession session = request.getSession(false);
-        TaiKhoan currentUser = (session != null) ? (TaiKhoan) session.getAttribute("currentUser") : null;
+        // Kiểm tra người dùng đã đăng nhập chưa
+        HttpSession session = req.getSession(false);
 
-        // Nếu chưa đăng nhập mà truy cập trang bảo vệ
-        if (currentUser == null) {
-            response.sendRedirect(contextPath + "/login");
+        TaiKhoan user = null;
+
+        if (session != null) {
+            Object currentUser = session.getAttribute("currentUser");
+
+            if (currentUser instanceof TaiKhoan) {
+                user = (TaiKhoan) currentUser;
+            }
+        }
+
+        if (user == null) {
+            res.sendRedirect(contextPath + "/login");
             return;
         }
 
-        String role = currentUser.getVaiTro();
+        // Những đường dẫn chỉ dành cho Quản lý
+        boolean isAdminUrl =
+                path.startsWith("/the-loai/")
+                        || path.startsWith("/phong-chieu/")
+                        || path.equals("/menuadmin.jsp");
 
-        // Phân quyền: Nhân viên không được vào trang Quản lý (menuadmin.jsp)
-        if (path.contains("menuadmin.jsp")) {
-            if (!"QuanLy".equalsIgnoreCase(role)) {
-                response.sendRedirect(contextPath + "/menunv.jsp");
+        if (isAdminUrl) {
+
+            String role = user.getVaiTro() == null
+                    ? ""
+                    : user.getVaiTro().trim();
+
+            boolean isManager =
+                    role.equalsIgnoreCase("QuanLy")
+                            || role.equalsIgnoreCase("Quản lý");
+
+            if (!isManager) {
+                res.sendRedirect(contextPath + "/menunv.jsp");
                 return;
             }
         }
