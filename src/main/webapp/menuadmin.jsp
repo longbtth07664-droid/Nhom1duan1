@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Quản lý - Rạp Chiếu Phim</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=8">
 </head>
 <body>
 <div class="app-shell">
@@ -32,7 +32,7 @@
                     <span class="nav-arrow">▾</span>
                 </button>
                 <div class="nav-submenu">
-                    <a href="#" class="nav-subitem">Danh sách phim</a>
+                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
                     <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
                 </div>
             </div>
@@ -60,6 +60,6 @@
     </aside>
 </div>
 
-<script src="assets/js/cinema-mock.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=6"></script>
 </body>
 </html>

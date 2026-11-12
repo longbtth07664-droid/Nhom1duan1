@@ -36,6 +36,7 @@ public class HibernateConfig {
         */
         conf.addAnnotatedClass(entity.TaiKhoan.class);
         conf.addAnnotatedClass(entity.TheLoai.class);
+        conf.addAnnotatedClass(entity.Phim.class);
 
 
         conf.setProperties(properties);
