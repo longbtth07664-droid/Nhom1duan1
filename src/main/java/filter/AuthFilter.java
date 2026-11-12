@@ -80,6 +80,14 @@ public class AuthFilter implements Filter {
             }
         }
 
+        // Phân quyền: Chỉ QuanLy mới được truy cập chức năng Quản lý Combo
+        if (path.startsWith("/quan-ly-combo")) {
+            if (!"QuanLy".equalsIgnoreCase(role)) {
+                response.sendRedirect(contextPath + "/menunv.jsp");
+                return;
+            }
+        }
+
         chain.doFilter(request, response);
     }
 }

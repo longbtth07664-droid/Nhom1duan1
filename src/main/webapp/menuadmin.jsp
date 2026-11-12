@@ -47,7 +47,23 @@
             <a href="#" class="nav-item">
                 <span>Lịch chiếu bán vé</span>DanhSach
             </a>
+
+            <a href="#" class="nav-item">
+                <span>Lịch chiếu bán vé</span>
+            </a>
+
+            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
+            <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
+                <span>Quản lí sản phẩm</span>
+            </a>
+
+            <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
+                <span>Quản lí combo</span>
+            </a>
         </nav>
+
+        </nav>
+
 
         <div class="sidebar-footer">
             <div class="user-card">
