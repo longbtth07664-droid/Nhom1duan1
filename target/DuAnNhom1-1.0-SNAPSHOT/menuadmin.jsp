@@ -38,11 +38,14 @@
             </div>
 
             <a href="#" class="nav-item">
-                <span>Phòng ghế</span>
+                <a href="${pageContext.request.contextPath}/phong-chieu/view"
+                   class="nav-item active">
+                    <span>Phòng ghế</span>
+                </a>
             </a>
 
             <a href="#" class="nav-item">
-                <span>Lịch chiếu bán vé</span>
+                <span>Lịch chiếu bán vé</span>DanhSach
             </a>
 
             <a href="#" class="nav-item">
