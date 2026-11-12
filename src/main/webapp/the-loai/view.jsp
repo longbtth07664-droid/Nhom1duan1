@@ -54,7 +54,7 @@
                     <div class="role">Admin</div>
                 </div>
             </div>
-            <a href="${pageContext.request.contextPath}/menunv.jsp" class="role-switch-link">Chuyển sang Nhân viên</a>
+
             <a href="${pageContext.request.contextPath}/index.jsp" class="role-switch-link">Trang chủ chọn vai trò</a>
         </div>
     </aside>

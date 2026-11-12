@@ -54,7 +54,7 @@
                     <div class="role"><%= session.getAttribute("userRole") != null ? session.getAttribute("userRole") : "QuanLy" %></div>
                 </div>
             </div>
-            <a href="<%= request.getContextPath() %>/menunv.jsp" class="role-switch-link">Xem giao diện Nhân viên</a>
+
             <a href="<%= request.getContextPath() %>/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
         </div>
     </aside>
