@@ -48,14 +48,14 @@
 
         <div class="sidebar-footer">
             <div class="user-card">
-                <div class="user-avatar">QL</div>
+                <div class="user-avatar"><%= session.getAttribute("userName") != null ? session.getAttribute("userName").toString().substring(0, 1).toUpperCase() : "QL" %></div>
                 <div class="user-info">
-                    <div class="name">Quản lý rạp</div>
-                    <div class="role">Admin</div>
+                    <div class="name"><%= session.getAttribute("userName") != null ? session.getAttribute("userName") : "Quản lý rạp" %></div>
+                    <div class="role"><%= session.getAttribute("userRole") != null ? session.getAttribute("userRole") : "QuanLy" %></div>
                 </div>
             </div>
-            <a href="menunv.jsp" class="role-switch-link">Chuyển sang Nhân viên</a>
-            <a href="index.jsp" class="role-switch-link">Trang chủ chọn vai trò</a>
+            <a href="<%= request.getContextPath() %>/menunv.jsp" class="role-switch-link">Xem giao diện Nhân viên</a>
+            <a href="<%= request.getContextPath() %>/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
         </div>
     </aside>
 </div>

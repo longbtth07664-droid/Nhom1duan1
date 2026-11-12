@@ -1,7 +1,6 @@
 package util;
 
 
-import entity.TheLoai;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
@@ -32,10 +31,10 @@ public class HibernateConfig {
         properties.put(Environment.PASS, "123");
         properties.put(Environment.SHOW_SQL, "true");
         /*
-            - Khai báo cho Hibernate biết các Class nào trong Java sẽ được ánh xạ xuố123ng database
-            - Khi ứng dụng chạy, Hibernate sẽ quét các class xxx1 và xxx2 (thường có annotation @Entity) để quản lý chúng.
+            - Khai báo cho Hibernate biết các Class nào trong Java sẽ được ánh xạ xuống database
+            - Khi ứng dụng chạy, Hibernate sẽ quét các class (có annotation @Entity) để quản lý chúng.
         */
-        conf.addAnnotatedClass(TheLoai.class);
+        conf.addAnnotatedClass(entity.TaiKhoan.class);
 
 
         conf.setProperties(properties);

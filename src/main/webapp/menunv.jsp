@@ -33,14 +33,13 @@
 
         <div class="sidebar-footer">
             <div class="user-card">
-                <div class="user-avatar">NV</div>
+                <div class="user-avatar"><%= session.getAttribute("userName") != null ? session.getAttribute("userName").toString().substring(0, 1).toUpperCase() : "NV" %></div>
                 <div class="user-info">
-                    <div class="name">Nhân viên quầy</div>
-                    <div class="role">Thu ngân</div>
+                    <div class="name"><%= session.getAttribute("userName") != null ? session.getAttribute("userName") : "Nhân viên quầy" %></div>
+                    <div class="role"><%= session.getAttribute("userRole") != null ? session.getAttribute("userRole") : "NhanVien" %></div>
                 </div>
             </div>
-            <a href="menuadmin.jsp" class="role-switch-link">Chuyển sang Quản lý</a>
-            <a href="index.jsp" class="role-switch-link">Trang chủ chọn vai trò</a>
+            <a href="<%= request.getContextPath() %>/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
         </div>
     </aside>
 </div>
