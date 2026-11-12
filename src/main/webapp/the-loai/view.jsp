@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <a href="${pageContext.request.contextPath}/index.jsp" class="role-switch-link">Trang chủ chọn vai trò</a>
+            <a href="<%= request.getContextPath() %>/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
         </div>
     </aside>
 
