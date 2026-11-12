@@ -36,6 +36,10 @@ public class HibernateConfig {
         */
         conf.addAnnotatedClass(entity.TaiKhoan.class);
         conf.addAnnotatedClass(entity.TheLoai.class);
+        // Đăng ký 3 Entity mới để Hibernate nhận diện các bảng Combo, SanPham, ChiTietCombo
+        conf.addAnnotatedClass(entity.SanPham.class);
+        conf.addAnnotatedClass(entity.Combo.class);
+        conf.addAnnotatedClass(entity.ChiTietCombo.class);
 
 
         conf.setProperties(properties);
@@ -54,3 +58,5 @@ public class HibernateConfig {
         System.out.println(getFACTORY());
     }
 }
+
+

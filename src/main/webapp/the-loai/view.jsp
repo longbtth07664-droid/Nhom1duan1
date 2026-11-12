@@ -44,6 +44,16 @@
             <a href="#" class="nav-item">
                 <span>Lịch chiếu bán vé</span>
             </a>
+
+            <%-- ==================== [CODE MỚI THÊM - QUẢN LÍ SẢN PHẨM & COMBO] ==================== --%>
+            <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
+                <span>Quản lí sản phẩm</span>
+            </a>
+
+            <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
+                <span>Quản lí combo</span>
+            </a>
+            <%-- ==================== [HẾT CODE MỚI THÊM] ==================== --%>
         </nav>
 
         <div class="sidebar-footer">
