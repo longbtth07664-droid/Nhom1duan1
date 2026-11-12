@@ -96,7 +96,7 @@
                         <div class="form-group">
                             <label for="tenTheLoai">Tên thể loại</label>
                             <input type="text" id="tenTheLoai" name="tenTheLoai" class="form-control"
-                                   value="${tl.tenTheLoai}" required>
+                                   value="${tl.tenTheLoai}">
                         </div>
                     </div>
                     <div class="form-actions">

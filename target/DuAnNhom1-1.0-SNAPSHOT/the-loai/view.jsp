@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <a href="${pageContext.request.contextPath}/index.jsp" class="role-switch-link">Trang chủ chọn vai trò</a>
+            <a href="<%= request.getContextPath() %>/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
         </div>
     </aside>
 
@@ -144,13 +144,13 @@
                     <label for="addMaTheLoai">Mã thể loại<span class="required-star">*</span></label>
                     <input type="text" id="addMaTheLoai" name="maTheLoai" class="form-control"
                            value="${openModal == 'add' ? tl.maTheLoai : ''}"
-                           placeholder="VD: TL11" required>
+                           placeholder="VD: TL11">
                 </div>
                 <div class="form-group">
                     <label for="addTenTheLoai">Tên thể loại<span class="required-star">*</span></label>
                     <input type="text" id="addTenTheLoai" name="tenTheLoai" class="form-control"
                            value="${openModal == 'add' ? tl.tenTheLoai : ''}"
-                           placeholder="VD: Cổ Trang" required>
+                           placeholder="VD: Cổ Trang">
                 </div>
                 <div style="font-size:12px; color:var(--text-secondary);">
                     (<span class="required-star">*</span>) Trường bắt buộc nhập
@@ -181,12 +181,12 @@
                 <div class="form-group">
                     <label for="editMaTheLoai">Mã thể loại<span class="required-star">*</span></label>
                     <input type="text" id="editMaTheLoai" name="maTheLoai" class="form-control"
-                           value="${openModal == 'update' ? tl.maTheLoai : ''}" readonly required>
+                           value="${openModal == 'update' ? tl.maTheLoai : ''}" readonly>
                 </div>
                 <div class="form-group">
                     <label for="editTenTheLoai">Tên thể loại<span class="required-star">*</span></label>
                     <input type="text" id="editTenTheLoai" name="tenTheLoai" class="form-control"
-                           value="${openModal == 'update' ? tl.tenTheLoai : ''}" required>
+                           value="${openModal == 'update' ? tl.tenTheLoai : ''}">
                 </div>
                 <div style="font-size:12px; color:var(--text-secondary);">
                     (<span class="required-star">*</span>) Trường bắt buộc nhập
