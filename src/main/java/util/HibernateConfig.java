@@ -35,6 +35,7 @@ public class HibernateConfig {
             - Khi ứng dụng chạy, Hibernate sẽ quét các class (có annotation @Entity) để quản lý chúng.
         */
         conf.addAnnotatedClass(entity.TaiKhoan.class);
+        conf.addAnnotatedClass(entity.TheLoai.class);
 
 
         conf.setProperties(properties);
