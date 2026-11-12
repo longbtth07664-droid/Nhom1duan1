@@ -1,6 +1,7 @@
 package util;
 
 
+import entity.TheLoai;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
@@ -34,8 +35,7 @@ public class HibernateConfig {
             - Khai báo cho Hibernate biết các Class nào trong Java sẽ được ánh xạ xuố123ng database
             - Khi ứng dụng chạy, Hibernate sẽ quét các class xxx1 và xxx2 (thường có annotation @Entity) để quản lý chúng.
         */
-//        conf.addAnnotatedClass(SanPham.class);
-//        conf.addAnnotatedClass(SanPhamChiTiet.class);
+        conf.addAnnotatedClass(TheLoai.class);
 
 
         conf.setProperties(properties);

@@ -5,14 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Quản lý - Rạp Chiếu Phim</title>
-    <link rel="stylesheet" href="assets/css/cinema-theme.css?v=3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
 </head>
 <body>
 <div class="app-shell">
     <!-- MENU BÊN TRÁI -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            
+
             <div class="brand-text">
                 <h1>Rạp Chiếu Phim CINEMAX</h1>
                 <span>Quản lý</span>
@@ -33,7 +33,7 @@
                 </button>
                 <div class="nav-submenu">
                     <a href="#" class="nav-subitem">Danh sách phim</a>
-                    <a href="#" class="nav-subitem">Quản lí thể loại</a>
+                    <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
                 </div>
             </div>
 

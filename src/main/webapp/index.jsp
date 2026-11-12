@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Rạp Phim - Chọn vai trò</title>
-    <link rel="stylesheet" href="assets/css/cinema-theme.css?v=3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
 </head>
 <body>
 <div class="portal-page">

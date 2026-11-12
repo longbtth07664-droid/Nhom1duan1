@@ -1,3 +1,9 @@
+/* ============================================================================
+ * FILE: assets/css/cinema-theme.css
+ * PHẦN 1: BIẾN MÀU SẮC, RESET MẶC ĐỊNH & CÁC NÚT BẤM (.btn)
+ * Dùng chung cho TẤT CẢ file JSP:
+ *   index.jsp, menuadmin.jsp, menunv.jsp, the-loai/view.jsp, the-loai/view-update.jsp
+ * ============================================================================ */
 :root {
     --bg-main: #F8FAFC;
     --bg-sidebar: #FFFFFF;
@@ -49,14 +55,68 @@ button {
     color: inherit;
 }
 
-/* ==================== LAYOUT ==================== */
+/* Nút bấm dùng chung cho tất cả trang JSP */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 15px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all var(--transition);
+    white-space: nowrap;
+}
+
+.btn-pink {
+    background: var(--pink);
+    color: #fff;
+}
+
+.btn-pink:hover {
+    background: var(--pink-hover);
+}
+
+.btn-outline {
+    background: #FFFFFF;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.btn-outline:hover {
+    border-color: var(--pink);
+    color: var(--pink);
+    background: var(--pink-soft);
+}
+
+.btn-ghost {
+    background: var(--bg-input);
+    color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+    background: #E2E8F0;
+    color: var(--text-primary);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+/* ============================================================================
+ * PHẦN 2: KHUNG BỐ CỤC, MENU BÊN TRÁI, DROPDOWN MENU CON & THANH TOPBAR
+ * Dùng cho: menuadmin.jsp, menunv.jsp, the-loai/view.jsp, the-loai/view-update.jsp
+ * ============================================================================ */
 .app-shell {
     display: flex;
     min-height: 100vh;
     background-color: var(--bg-main);
 }
 
-/* Left Sidebar Menu */
+/* Thanh menu bên trái */
 .sidebar {
     width: var(--sidebar-width);
     flex-shrink: 0;
@@ -161,7 +221,7 @@ button {
     background: var(--pink);
 }
 
-/* Expandable Submenu */
+/* Menu con xổ xuống của mục "Quản lí phim" (menuadmin.jsp, the-loai/view.jsp) */
 .nav-group {
     display: flex;
     flex-direction: column;
@@ -225,7 +285,7 @@ button {
     font-weight: 700;
 }
 
-/* Sidebar Footer */
+/* Phần chân menu trái (Thông tin người dùng & nút chuyển vai trò) */
 .sidebar-footer {
     padding: 14px;
     border-top: 1px solid var(--border-subtle);
@@ -294,7 +354,7 @@ button {
     background: var(--pink-soft);
 }
 
-/* ==================== MAIN AREA ==================== */
+/* Khung nội dung bên phải & Thanh tiêu đề trên cùng (the-loai/view.jsp, the-loai/view-update.jsp) */
 .main-wrapper {
     flex: 1;
     display: flex;
@@ -346,56 +406,6 @@ button {
     gap: 10px;
 }
 
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 15px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all var(--transition);
-    white-space: nowrap;
-}
-
-.btn-pink {
-    background: var(--pink);
-    color: #fff;
-}
-
-.btn-pink:hover {
-    background: var(--pink-hover);
-}
-
-.btn-outline {
-    background: #FFFFFF;
-    border-color: var(--border-strong);
-    color: var(--text-primary);
-}
-
-.btn-outline:hover {
-    border-color: var(--pink);
-    color: var(--pink);
-    background: var(--pink-soft);
-}
-
-.btn-ghost {
-    background: var(--bg-input);
-    color: var(--text-secondary);
-}
-
-.btn-ghost:hover {
-    background: #E2E8F0;
-    color: var(--text-primary);
-}
-
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 12px;
-}
-
 .content-area {
     padding: 24px 28px;
     flex: 1;
@@ -409,7 +419,237 @@ button {
     display: block;
 }
 
-/* ==================== LANDING / ROLE PICKER ==================== */
+/* ============================================================================
+ * PHẦN 3: THẺ NỘI DUNG (.card), FORM, DẤU *, BẢNG DỮ LIỆU & POP-UP MODAL
+ * Dùng cho: the-loai/view.jsp, the-loai/view-update.jsp
+ * ============================================================================ */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.card-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+/* Dấu * đỏ/hồng đánh dấu trường bắt buộc nhập trong pop-up */
+.required-star {
+    color: var(--pink);
+    font-weight: 800;
+    margin-left: 3px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: #FFFFFF;
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.form-control:focus {
+    border-color: var(--pink);
+}
+
+.form-control[readonly] {
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-error {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #DC2626;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+thead th {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-secondary);
+    background: var(--bg-main);
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+tbody tr:hover {
+    background: #FFF9FA;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.badge-pink {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--pink-soft);
+    color: var(--pink);
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Cửa sổ pop-up (Modal Thêm / Sửa / Chi tiết) trong the-loai/view.jsp */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.modal-backdrop.open {
+    display: flex;
+}
+
+.modal-box {
+    width: 100%;
+    max-width: 460px;
+    background: #FFFFFF;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+    animation: modalFadeIn 0.18s ease;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-header h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+
+.modal-close:hover {
+    background: var(--pink-soft);
+    color: var(--pink);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 8px;
+}
+
+/* ============================================================================
+ * PHẦN 4: TRANG CHỌN VAI TRÒ (Cổng vào Quản lý / Nhân viên)
+ * Dùng riêng cho: index.jsp
+ * ============================================================================ */
 .portal-page {
     min-height: 100vh;
     background: #FFFFFF;
@@ -483,7 +723,10 @@ button {
     color: var(--text-secondary);
 }
 
-/* ==================== RESPONSIVE ==================== */
+/* ============================================================================
+ * PHẦN 5: TƯƠNG THÍCH MÀN HÌNH NHỎ / ĐIỆN THOẠI (Responsive <= 768px)
+ * Dùng cho: tất cả file JSP
+ * ============================================================================ */
 @media (max-width: 768px) {
     .sidebar {
         position: fixed;
@@ -497,6 +740,9 @@ button {
     }
     .mobile-menu-btn {
         display: inline-flex;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
     }
     .role-cards {
         grid-template-columns: 1fr;
