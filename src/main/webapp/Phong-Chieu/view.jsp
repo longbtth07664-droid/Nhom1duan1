@@ -60,8 +60,6 @@
             </a>
         </nav>
 
-        </nav>
-
 
         <div class="sidebar-footer">
             <div class="user-card">

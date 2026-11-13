@@ -1,4 +1,4 @@
-package contronler;
+package controller;
 
 import entity.TheLoai;
 import jakarta.servlet.ServletException;

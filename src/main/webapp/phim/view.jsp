@@ -33,14 +33,12 @@
                     <span class="nav-arrow">▾</span>
                 </button>
                 <div class="nav-submenu">
-                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
+                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem active">Danh sách phim</a>
                     <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
                 </div>
             </div>
 
-
-            <a href="${pageContext.request.contextPath}/phong-chieu/view"
-               class="nav-item active">
+            <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-item">
                 <span>Phòng ghế</span>
             </a>
 
@@ -59,8 +57,6 @@
             <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
                 <span>Quản lí combo</span>
             </a>
-        </nav>
-
         </nav>
 
 

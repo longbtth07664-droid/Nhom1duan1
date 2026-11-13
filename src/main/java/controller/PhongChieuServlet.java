@@ -1,4 +1,4 @@
-package contronler;
+package controller;
 
 import entity.PhongChieu;
 import jakarta.servlet.ServletException;
