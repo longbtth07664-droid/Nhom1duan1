@@ -62,6 +62,8 @@ public class AuthFilter implements Filter {
         boolean isAdminUrl =
                 path.startsWith("/the-loai/")
                         || path.startsWith("/phong-chieu/")
+                        || path.startsWith("/phim/")
+                        || path.startsWith("/quan-ly-combo")
                         || path.equals("/menuadmin.jsp");
 
         if (isAdminUrl) {
@@ -76,14 +78,6 @@ public class AuthFilter implements Filter {
 
             if (!isManager) {
                 res.sendRedirect(contextPath + "/menunv.jsp");
-                return;
-            }
-        }
-
-        // Phân quyền: Chỉ QuanLy mới được truy cập chức năng Quản lý Combo
-        if (path.startsWith("/quan-ly-combo")) {
-            if (!"QuanLy".equalsIgnoreCase(role)) {
-                response.sendRedirect(contextPath + "/menunv.jsp");
                 return;
             }
         }

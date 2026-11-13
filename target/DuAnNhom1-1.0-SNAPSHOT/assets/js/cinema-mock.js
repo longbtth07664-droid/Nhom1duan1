@@ -47,6 +47,19 @@ function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
         modal.classList.remove('open');
+        if (id === 'detailPhimModal') {
+            stopDetailMedia();
+        }
+    }
+}
+
+/**
+ * Dừng phát video/iframe trailer khi đóng pop-up Chi tiết phim để tránh phát ngầm.
+ */
+function stopDetailMedia() {
+    const trailerBox = document.getElementById('detailTrailer');
+    if (trailerBox) {
+        trailerBox.innerHTML = '';
     }
 }
 
@@ -97,6 +110,187 @@ function openDetailTheLoaiFromBtn(btn) {
 }
 
 /**
+ * Mở pop-up "Thêm phim" (#addPhimModal), xóa sạch giá trị cũ, bỏ tick thể loại và ẩn lỗi cũ.
+ * Liên kết với: nút "+ Thêm" trong phim/view.jsp
+ */
+function openAddPhim() {
+    const ids = ['addMaPhim', 'addTenPhim', 'addThoiLuong', 'addNgayKhoiChieu', 'addNgayKetThuc',
+        'addDaoDien', 'addDienVien', 'addPoster', 'addTrailer', 'addMoTa'];
+    ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const doTuoi = document.getElementById('addDoTuoi');
+    if (doTuoi) doTuoi.value = 'P';
+    document.querySelectorAll('#addPhimModal input[name="maTheLoais"]').forEach((cb) => {
+        cb.checked = false;
+    });
+    const errBox = document.getElementById('addPhimError');
+    if (errBox) errBox.style.display = 'none';
+    openModal('addPhimModal');
+    const maInput = document.getElementById('addMaPhim');
+    if (maInput) maInput.focus();
+}
+
+/**
+ * Mở pop-up "Sửa phim" (#editPhimModal) và điền sẵn toàn bộ thông tin từ dòng vừa bấm.
+ * Liên kết với: nút "Sửa" ở từng dòng bảng phim trong phim/view.jsp
+ */
+function openEditPhimFromBtn(btn) {
+    const map = {
+        editMaPhim: 'data-ma',
+        editTenPhim: 'data-ten',
+        editThoiLuong: 'data-thoiluong',
+        editNgayKhoiChieu: 'data-khoichieu',
+        editNgayKetThuc: 'data-ketthuc',
+        editDaoDien: 'data-daodien',
+        editDienVien: 'data-dienvien',
+        editDoTuoi: 'data-dotuoi',
+        editPoster: 'data-poster',
+        editTrailer: 'data-trailer',
+        editMoTa: 'data-mota'
+    };
+    Object.keys(map).forEach((elId) => {
+        const el = document.getElementById(elId);
+        if (el) {
+            const val = btn.getAttribute(map[elId]) || '';
+            el.value = elId === 'editDoTuoi' ? (val || 'P') : val;
+        }
+    });
+
+    const maTheLoais = (btn.getAttribute('data-matheloais') || '').split(',').map((s) => s.trim()).filter(Boolean);
+    document.querySelectorAll('#editPhimModal input[name="maTheLoais"]').forEach((cb) => {
+        cb.checked = maTheLoais.includes(cb.value);
+    });
+
+    const errBox = document.getElementById('editPhimError');
+    if (errBox) errBox.style.display = 'none';
+    openModal('editPhimModal');
+    const tenInput = document.getElementById('editTenPhim');
+    if (tenInput) tenInput.focus();
+}
+
+/**
+ * Chuẩn hóa đường dẫn media (nhận cả link http/https lẫn tên file đặt trong thư mục assets).
+ */
+function resolveMediaUrl(raw, localFolder, ctx) {
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) {
+        return raw;
+    }
+    return `${ctx}/assets/${localFolder}/${raw}`;
+}
+
+/**
+ * Tách link YouTube thành link nhúng iframe nếu người dùng nhập link YouTube.
+ */
+function toYoutubeEmbedUrl(url) {
+    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+}
+
+/**
+ * Hiển thị hình ảnh Poster trong pop-up Chi tiết phim (có xử lý khi chưa có hoặc lỗi ảnh).
+ */
+function renderDetailPoster(container, rawPoster, ctx) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (!rawPoster) {
+        container.innerHTML = '<div class="detail-media-fallback">Chưa cập nhật poster</div>';
+        return;
+    }
+    const img = document.createElement('img');
+    img.className = 'detail-media-img';
+    img.src = resolveMediaUrl(rawPoster, 'images', ctx);
+    img.alt = 'Poster phim';
+    img.onerror = () => {
+        container.innerHTML = '';
+        const fb = document.createElement('div');
+        fb.className = 'detail-media-fallback';
+        fb.textContent = `Không tìm thấy ảnh poster (${rawPoster})`;
+        container.appendChild(fb);
+    };
+    container.appendChild(img);
+}
+
+/**
+ * Hiển thị trình phát Video Trailer (hỗ trợ cả file .mp4/.webm lẫn link YouTube) trong pop-up Chi tiết phim.
+ */
+function renderDetailTrailer(container, rawTrailer, ctx) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (!rawTrailer) {
+        container.innerHTML = '<div class="detail-media-fallback">Chưa cập nhật trailer</div>';
+        return;
+    }
+
+    const ytUrl = toYoutubeEmbedUrl(rawTrailer);
+    if (ytUrl) {
+        const iframe = document.createElement('iframe');
+        iframe.className = 'detail-media-video';
+        iframe.src = ytUrl;
+        iframe.title = 'Trailer phim';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        container.appendChild(iframe);
+        return;
+    }
+
+    const video = document.createElement('video');
+    video.className = 'detail-media-video';
+    video.controls = true;
+    video.preload = 'metadata';
+
+    const showFallback = () => {
+        container.innerHTML = '';
+        const fb = document.createElement('div');
+        fb.className = 'detail-media-fallback';
+        fb.textContent = `Chưa có file video trailer (${rawTrailer})`;
+        container.appendChild(fb);
+    };
+
+    video.onerror = showFallback;
+    const source = document.createElement('source');
+    source.src = resolveMediaUrl(rawTrailer, 'videos', ctx);
+    source.onerror = showFallback;
+    video.appendChild(source);
+    container.appendChild(video);
+}
+
+/**
+ * Mở pop-up "Chi tiết phim" (#detailPhimModal) để xem đầy đủ thông tin phim vừa bấm.
+ * Liên kết với: nút "Chi tiết" ở từng dòng/card phim trong phim/view.jsp
+ */
+function openDetailPhimFromBtn(btn) {
+    const map = {
+        detailMaPhim: 'data-ma',
+        detailTenPhim: 'data-ten',
+        detailTheLoai: 'data-tentheloais',
+        detailThoiLuong: 'data-thoiluong-text',
+        detailNgayKhoiChieu: 'data-khoichieu',
+        detailNgayKetThuc: 'data-ketthuc',
+        detailDoTuoi: 'data-dotuoi',
+        detailDaoDien: 'data-daodien',
+        detailDienVien: 'data-dienvien',
+        detailMoTa: 'data-mota'
+    };
+    Object.keys(map).forEach((elId) => {
+        const el = document.getElementById(elId);
+        if (el) {
+            const val = btn.getAttribute(map[elId]) || '';
+            el.textContent = val !== '' ? val : 'Chưa cập nhật';
+        }
+    });
+
+    const modal = document.getElementById('detailPhimModal');
+    const ctx = modal ? (modal.getAttribute('data-ctx') || '') : '';
+    renderDetailPoster(document.getElementById('detailPoster'), (btn.getAttribute('data-poster') || '').trim(), ctx);
+    renderDetailTrailer(document.getElementById('detailTrailer'), (btn.getAttribute('data-trailer') || '').trim(), ctx);
+
+    openModal('detailPhimModal');
+}
+
+/**
  * Khởi tạo các sự kiện dùng chung sau khi trang HTML/JSP tải xong:
  * 1. Đổi trạng thái tô màu hồng (class "active") khi bấm vào link trên thanh menu trái.
  *    (Liên kết với: menuadmin.jsp, menunv.jsp, the-loai/view.jsp)
@@ -116,7 +310,7 @@ function initMenuActive() {
     document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
         backdrop.addEventListener('click', (e) => {
             if (e.target === backdrop) {
-                backdrop.classList.remove('open');
+                closeModal(backdrop.id);
             }
         });
     });
@@ -124,7 +318,7 @@ function initMenuActive() {
     // Đóng pop-up đang mở khi người dùng nhấn phím Escape (Esc)
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            document.querySelectorAll('.modal-backdrop.open').forEach((m) => m.classList.remove('open'));
+            document.querySelectorAll('.modal-backdrop.open').forEach((m) => closeModal(m.id));
         }
     });
 }

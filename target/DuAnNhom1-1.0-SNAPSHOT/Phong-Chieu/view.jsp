@@ -32,7 +32,7 @@
                     <span class="nav-arrow">▾</span>
                 </button>
                 <div class="nav-submenu">
-                    <a href="#" class="nav-subitem">Danh sách phim</a>
+                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
                     <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
                 </div>
             </div>

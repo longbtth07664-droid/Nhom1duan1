@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Quản lý - Rạp Chiếu Phim</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=8">
 </head>
 <body>
 <div class="app-shell">
@@ -32,25 +32,23 @@
                     <span class="nav-arrow">▾</span>
                 </button>
                 <div class="nav-submenu">
-                    <a href="#" class="nav-subitem">Danh sách phim</a>
+                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
                     <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
                 </div>
             </div>
 
-            <a href="#" class="nav-item">
+
                 <a href="${pageContext.request.contextPath}/phong-chieu/view"
                    class="nav-item active">
                     <span>Phòng ghế</span>
                 </a>
-            </a>
 
-            <a href="#" class="nav-item">
-                <span>Lịch chiếu bán vé</span>DanhSach
-            </a>
 
             <a href="#" class="nav-item">
                 <span>Lịch chiếu bán vé</span>
             </a>
+
+
 
             <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
             <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
@@ -79,6 +77,6 @@
     </aside>
 </div>
 
-<script src="assets/js/cinema-mock.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=6"></script>
 </body>
 </html>
