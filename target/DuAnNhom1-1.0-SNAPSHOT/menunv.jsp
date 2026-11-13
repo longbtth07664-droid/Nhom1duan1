@@ -22,12 +22,8 @@
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu quầy vé</div>
 
-            <a href="#" class="nav-item active">
-                <span>Lịch chiếu bán vé</span>
-            </a>
-
             <a href="#" class="nav-item">
-                <span>Phòng ghế</span>
+                <span>Bán Hàng </span>
             </a>
         </nav>
 
