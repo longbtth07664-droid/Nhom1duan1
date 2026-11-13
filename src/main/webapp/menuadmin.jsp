@@ -37,20 +37,18 @@
                 </div>
             </div>
 
-            <a href="#" class="nav-item">
+
                 <a href="${pageContext.request.contextPath}/phong-chieu/view"
                    class="nav-item active">
                     <span>Phòng ghế</span>
                 </a>
-            </a>
 
-            <a href="#" class="nav-item">
-                <span>Lịch chiếu bán vé</span>DanhSach
-            </a>
 
             <a href="#" class="nav-item">
                 <span>Lịch chiếu bán vé</span>
             </a>
+
+
 
             <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
             <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">

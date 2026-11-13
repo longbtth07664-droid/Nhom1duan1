@@ -22,30 +22,35 @@
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu chức năng</div>
 
-            <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="nav-item">
+            <a href="#" class="nav-item active">
                 <span>Tổng quan</span>
             </a>
 
-            <div class="nav-group open">
+            <div class="nav-group">
                 <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
                     <span>Quản lí phim</span>
                     <span class="nav-arrow">▾</span>
                 </button>
                 <div class="nav-submenu">
                     <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
-                    <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem active">Quản lí thể loại</a>
+                    <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
                 </div>
             </div>
 
-            <a href="#" class="nav-item">
+
+            <a href="${pageContext.request.contextPath}/phong-chieu/view"
+               class="nav-item active">
                 <span>Phòng ghế</span>
             </a>
+
 
             <a href="#" class="nav-item">
                 <span>Lịch chiếu bán vé</span>
             </a>
 
-            <%-- ==================== [CODE MỚI THÊM - QUẢN LÍ SẢN PHẨM & COMBO] ==================== --%>
+
+
+            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
             <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
                 <span>Quản lí sản phẩm</span>
             </a>
@@ -53,7 +58,10 @@
             <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
                 <span>Quản lí combo</span>
             </a>
-            <%-- ==================== [HẾT CODE MỚI THÊM] ==================== --%>
+        </nav>
+
+        </nav>
+
         </nav>
 
         <div class="sidebar-footer">

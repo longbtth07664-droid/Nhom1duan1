@@ -37,7 +37,7 @@
                 </div>
             </div>
 
-            <a href="#" class="nav-item">
+            <a href=""${pageContext.request.contextPath}/phong-chieu/view"" class="nav-item">
                 <span>Phòng ghế</span>
             </a>
 
