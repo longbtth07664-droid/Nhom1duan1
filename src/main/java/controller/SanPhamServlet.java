@@ -89,11 +89,6 @@ public class SanPhamServlet extends HttpServlet {
             maSP = maSP.trim();
         }
 
-        if (sanPhamRepo.getOne(maSP) != null) {
-            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=duplicate_id");
-            return;
-        }
-
         SanPham sp = docThongTinSanPham(req, maSP);
         if (sp == null) {
             resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=invalid_data");
@@ -145,7 +140,8 @@ public class SanPhamServlet extends HttpServlet {
             String donViTinh = req.getParameter("donViTinh");
             String giaStr = req.getParameter("giaBan");
             String tonStr = req.getParameter("soLuongTon");
-            String trangThai = req.getParameter("trangThai");
+            // SẢN PHẨM: thêm mới luôn đang kinh doanh, kể cả request sửa tay.
+            String trangThai = "add".equals(req.getParameter("action")) ? "Đang kinh doanh" : req.getParameter("trangThai");
 
             if (maSP == null || maSP.trim().isEmpty()
                     || tenSP == null || tenSP.trim().isEmpty()
@@ -165,6 +161,12 @@ public class SanPhamServlet extends HttpServlet {
                 trangThai = "Đang kinh doanh";
             }
 
+            // Giới hạn nhập theo cột và danh mục đã có trong giao diện.
+            if (maSP.length() > 20 || tenSP.trim().length() > 100
+                    || !java.util.Arrays.asList("Bắp", "Nước có gas", "Nước suối", "Snack", "Đồ ăn nóng").contains(loaiSP)
+                    || !java.util.Arrays.asList("Hộp", "Ly", "Chai", "Gói", "Cây").contains(donViTinh)
+                    || !java.util.Arrays.asList("Đang kinh doanh", "Ngừng kinh doanh").contains(trangThai)
+                    || giaBan.stripTrailingZeros().scale() > 0 || giaBan.precision() > 18) return null;
             return new SanPham(
                     maSP.trim(),
                     tenSP.trim(),

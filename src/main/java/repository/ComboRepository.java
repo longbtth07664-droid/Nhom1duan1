@@ -9,165 +9,206 @@ import util.HibernateConfig;
 import java.util.ArrayList;
 import java.util.List;
 
+// Repository xử lý mọi thao tác CSDL cho module Combo (Hibernate ORM)
 public class ComboRepository {
 
-    // 1. Lấy toàn bộ danh sách Combo
+    // Lấy toàn bộ combo, sắp xếp theo mã tăng dần
     public List<Combo> getAll() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery("SELECT c FROM Combo c ORDER BY c.maCombo", Combo.class).list();
         } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<>();
+            throw new IllegalStateException("Không tải được dữ liệu combo.", e);
         }
     }
 
-    // 2. Lấy 1 Combo theo MaCombo
+    // Lấy 1 combo theo mã khóa chính
     public Combo getOne(String maCombo) {
-        try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            return session.find(Combo.class, maCombo);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (maCombo == null || maCombo.trim().isEmpty()) {
             return null;
         }
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            return session.find(Combo.class, maCombo.trim());
+        } catch (Exception e) {
+            throw new IllegalStateException("Không tải được dữ liệu combo.", e);
+        }
     }
 
-    // 3. Tìm kiếm Combo theo mã hoặc tên (và lọc theo trạng thái nếu có chọn)
+    // Tìm kiếm combo theo từ khóa (mã hoặc tên) + lọc trạng thái ("Đang bán" / "Ngừng bán")
     public List<Combo> search(String keyword, String trangThai) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             StringBuilder hql = new StringBuilder("SELECT c FROM Combo c WHERE 1=1");
-            if (keyword != null && !keyword.trim().isEmpty()) {
+
+            // Xác định có cần lọc theo từ khóa và trạng thái hay không
+            boolean coKeyword = (keyword != null && !keyword.trim().isEmpty());
+            boolean coTrangThai = (trangThai != null && !trangThai.trim().isEmpty()
+                    && !"Tất cả".equalsIgnoreCase(trangThai.trim()));
+
+            // Ghép thêm điều kiện tìm kiếm vào câu HQL
+            if (coKeyword) {
                 hql.append(" AND (c.maCombo LIKE :kw OR c.tenCombo LIKE :kw)");
             }
-            if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equals(trangThai)) {
+            if (coTrangThai) {
                 hql.append(" AND c.trangThai = :tt");
             }
             hql.append(" ORDER BY c.maCombo");
 
+            // Gán giá trị tham số
             var query = session.createQuery(hql.toString(), Combo.class);
-            if (keyword != null && !keyword.trim().isEmpty()) {
+            if (coKeyword) {
                 query.setParameter("kw", "%" + keyword.trim() + "%");
             }
-            if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equals(trangThai)) {
+            if (coTrangThai) {
                 query.setParameter("tt", trangThai.trim());
             }
+
             return query.list();
         } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<>();
+            throw new IllegalStateException("Không tải được dữ liệu combo.", e);
         }
     }
 
-    // 4. Tự động sinh mã Combo tiếp theo (VD: đã có CB01..CB10 -> trả về CB11)
+    // Tự sinh mã combo tiếp theo: CB01, CB02,..., CB10, CB11
+    // Dùng Native SQL với TRY_CAST để trích số lớn nhất hiện có rồi +1
     public String generateId() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String sql = "SELECT MAX(TRY_CAST(SUBSTRING(MaCombo, 3, LEN(MaCombo)) AS INT)) "
                     + "FROM Combo WHERE MaCombo LIKE 'CB%'";
             Object result = session.createNativeQuery(sql).uniqueResult();
             int next = (result != null) ? ((Number) result).intValue() + 1 : 1;
-            return String.format("CB%02d", next);
+            return String.format("CB%02d", next); // Đệm 0 cho đủ 2 chữ số
         } catch (Exception e) {
             e.printStackTrace();
-            return "CB01";
+            throw new IllegalStateException("Không sinh được mã combo.", e);
         }
     }
 
-    // 5. Lấy danh sách sản phẩm bên trong 1 Combo (JOIN FETCH để tải sẵn SanPham trước khi đóng Session)
+    // Lấy danh sách sản phẩm lẻ bên trong 1 combo
+    // JOIN FETCH ct.sanPham → tải sẵn thông tin sản phẩm trước khi đóng Session,
+    //                         tránh lỗi LazyInitializationException
     public List<ChiTietCombo> getChiTiet(String maCombo) {
+        if (maCombo == null || maCombo.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String hql = "SELECT ct FROM ChiTietCombo ct "
                     + "JOIN FETCH ct.sanPham "
-                    + "WHERE ct.maCombo = :ma ORDER BY ct.maSP";
+                    + "WHERE ct.maCombo = :ma "
+                    + "ORDER BY ct.maSP";
             return session.createQuery(hql, ChiTietCombo.class)
-                    .setParameter("ma", maCombo)
+                    .setParameter("ma", maCombo.trim())
                     .list();
         } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<>();
+            throw new IllegalStateException("Không tải được dữ liệu combo.", e);
         }
     }
 
-    // 6. Thêm mới Combo cùng danh sách sản phẩm chi tiết (chung 1 Transaction)
-    public boolean addComboVaChiTiet(Combo combo, List<ChiTietCombo> dsChiTiet) {
-        Transaction tx = null;
+
+    // Lưu combo và chi tiết trong cùng giao dịch; tạo combo không trừ kho.
+    public boolean save(Combo combo, List<ChiTietCombo> details, int discount, boolean adding, String expected) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            tx = session.beginTransaction();
-            session.save(combo); // Hibernate 5.6 dùng save() giống TheLoaiRepository
-            for (ChiTietCombo ct : dsChiTiet) {
-                ct.setMaCombo(combo.getMaCombo());
-                session.save(ct);
+            Transaction tx = session.beginTransaction();
+            try {
+                Combo old = null;
+                if (adding) {
+                    // Khóa lúc cấp mã để các yêu cầu đồng thời không dùng chung mã.
+                    Number max = (Number) session.createNativeQuery(
+                        "SELECT COALESCE(MAX(TRY_CAST(SUBSTRING(MaCombo,3,20) AS BIGINT)),0) "
+                        + "FROM Combo WITH (TABLOCKX,HOLDLOCK)").uniqueResult();
+                    String suggested = combo.getMaCombo();
+                    combo.setMaCombo(String.format("CB%02d", max.longValue() + 1));
+                    // Nếu mã gợi ý vừa được người khác dùng, đồng bộ lại tên ảnh mặc định.
+                    if ((suggested.toLowerCase(java.util.Locale.ROOT) + ".jpg").equals(combo.getHinhAnh()))
+                        combo.setHinhAnh(combo.getMaCombo().toLowerCase(java.util.Locale.ROOT) + ".jpg");
+                    combo.setTrangThai("Đang bán");
+                } else {
+                    old = session.find(Combo.class, combo.getMaCombo(), jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+                    if (old == null) throw new IllegalArgumentException("Combo đã bị xóa.");
+                    List<ChiTietCombo> previous = session.createQuery(
+                        "FROM ChiTietCombo WHERE maCombo = :ma ORDER BY maSP", ChiTietCombo.class)
+                        .setParameter("ma", combo.getMaCombo()).list();
+                    if (!fingerprint(old, previous).equals(expected))
+                        throw new IllegalArgumentException("Combo đã được người khác sửa. Hãy tải lại trang.");
+                }
+                // Kiểm tra tồn kho, trạng thái và lấy giá mới nhất ngay trước khi lưu.
+                if (details.isEmpty()) throw new IllegalArgumentException("Hãy chọn ít nhất một sản phẩm.");
+                java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+                details.sort(java.util.Comparator.comparing(ChiTietCombo::getMaSP));
+                for (ChiTietCombo detail : details) {
+                    entity.SanPham product = session.find(entity.SanPham.class, detail.getMaSP(),
+                        jakarta.persistence.LockModeType.PESSIMISTIC_READ);
+                    if (product == null) throw new IllegalArgumentException("Sản phẩm không còn tồn tại.");
+                    if (!"Đang kinh doanh".equals(product.getTrangThai()))
+                        throw new IllegalArgumentException(product.getTenSP() + " đã ngừng kinh doanh.");
+                    if (detail.getSoLuong() < 1 || detail.getSoLuong() > product.getSoLuongTon())
+                        throw new IllegalArgumentException(product.getTenSP() + " chỉ còn "
+                            + product.getSoLuongTon() + ". Vui lòng giảm số lượng.");
+                    total = total.add(product.getGiaBan().multiply(java.math.BigDecimal.valueOf(detail.getSoLuong())));
+                    detail.setMaCombo(combo.getMaCombo());
+                }
+                // Giữ giá cũ khi sửa nếu quản lý chưa chọn tính lại; không cần đổi bảng dữ liệu.
+                if (discount == -1 && !adding) combo.setGiaCombo(old.getGiaCombo());
+                else {
+                    if (discount != 0 && discount != 10 && discount != 20 && discount != 50)
+                        throw new IllegalArgumentException("Mức giảm giá không hợp lệ.");
+                    combo.setGiaCombo(total.multiply(java.math.BigDecimal.valueOf(100 - discount))
+                        .divide(java.math.BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP));
+                }
+                if (combo.getGiaCombo().signum() <= 0 || combo.getGiaCombo().precision() > 18)
+                    throw new IllegalArgumentException("Giá combo vượt giới hạn cho phép.");
+                if (adding) session.persist(combo);
+                else {
+                    session.merge(combo);
+                    session.createQuery("DELETE FROM ChiTietCombo WHERE maCombo = :ma")
+                        .setParameter("ma", combo.getMaCombo()).executeUpdate();
+                    session.flush();
+                    session.clear(); // Bỏ chi tiết cũ trong cache trước khi thêm lại cùng khóa.
+                }
+                for (ChiTietCombo detail : details) session.persist(detail);
+                tx.commit();
+                return true;
+            } catch (RuntimeException e) {
+                if (tx.isActive()) tx.rollback(); // Hoàn tác khi session vẫn đang mở.
+                throw e;
             }
-            tx.commit();
-            return true;
-        } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                tx.rollback(); // Lỗi thì hoàn tác toàn bộ
-            }
-            e.printStackTrace();
-            return false;
         }
     }
 
-    // 7. Cập nhật Combo và ghi lại danh sách chi tiết mới (chung 1 Transaction)
-    public boolean updateComboVaChiTiet(Combo combo, List<ChiTietCombo> dsChiTiet) {
-        Transaction tx = null;
-        try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            tx = session.beginTransaction();
-            session.merge(combo); // Cập nhật thông tin Combo
-
-            // Xóa hết chi tiết cũ rồi thêm lại chi tiết mới (Hibernate 5.6 dùng createQuery)
-            session.createQuery("DELETE FROM ChiTietCombo ct WHERE ct.maCombo = :ma")
-                    .setParameter("ma", combo.getMaCombo())
-                    .executeUpdate();
-
-            for (ChiTietCombo ct : dsChiTiet) {
-                ct.setMaCombo(combo.getMaCombo());
-                session.save(ct);
-            }
-            tx.commit();
-            return true;
-        } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                tx.rollback();
-            }
-            e.printStackTrace();
-            return false;
+    // Phát hiện thay đổi đồng thời bằng nội dung, giữ nguyên cấu trúc bảng hiện có.
+    public String fingerprint(Combo combo, List<ChiTietCombo> details) {
+        StringBuilder data = new StringBuilder(combo.toString());
+        data.append('|').append(combo.getMoTa()).append('|').append(combo.getHinhAnh());
+        details.stream().sorted(java.util.Comparator.comparing(ChiTietCombo::getMaSP))
+            .forEach(d -> data.append('|').append(d.toString()));
+        try {
+            return java.util.Base64.getEncoder().encodeToString(
+                java.security.MessageDigest.getInstance("SHA-256").digest(
+                    data.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
         }
     }
 
-    // 8. Kiểm tra Combo đã từng xuất hiện trong ChiTietHoaDon chưa (tránh lỗi khóa ngoại khi xóa)
-    public boolean isComboInHoaDon(String maCombo) {
+    // Chỉ xóa khi combo tồn tại và chưa được sử dụng trong hóa đơn.
+    public boolean delete(String id) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            String sql = "SELECT COUNT(*) FROM ChiTietHoaDon WHERE MaCombo = :ma";
-            Object result = session.createNativeQuery(sql)
-                    .setParameter("ma", maCombo)
-                    .uniqueResult();
-            return result != null && ((Number) result).intValue() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // 9. Xóa Combo (xóa ChiTietCombo trước rồi xóa Combo)
-    public boolean delete(String maCombo) {
-        Transaction tx = null;
-        try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            tx = session.beginTransaction();
-            Combo combo = session.find(Combo.class, maCombo);
-            if (combo != null) {
-                session.createQuery("DELETE FROM ChiTietCombo ct WHERE ct.maCombo = :ma")
-                        .setParameter("ma", maCombo)
-                        .executeUpdate();
-                session.delete(combo); // Hibernate 5.6 dùng delete()
+            Transaction tx = session.beginTransaction();
+            try {
+                Combo combo = session.find(Combo.class, id, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+                if (combo == null) throw new IllegalArgumentException("Combo không tồn tại hoặc đã bị xóa.");
+                Number count = (Number) session.createNativeQuery(
+                    "SELECT COUNT(*) FROM ChiTietHoaDon WHERE MaCombo = :ma")
+                    .setParameter("ma", id).uniqueResult();
+                if (count.longValue() > 0)
+                    throw new IllegalArgumentException("Combo đã có trong hóa đơn. Hãy chuyển sang Ngừng bán.");
+                session.createQuery("DELETE FROM ChiTietCombo WHERE maCombo = :ma")
+                    .setParameter("ma", id).executeUpdate();
+                session.remove(combo);
+                tx.commit();
+                return true;
+            } catch (RuntimeException e) {
+                if (tx.isActive()) tx.rollback();
+                throw e;
             }
-            tx.commit();
-            return true;
-        } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                tx.rollback();
-            }
-            e.printStackTrace();
-            return false;
         }
     }
 }

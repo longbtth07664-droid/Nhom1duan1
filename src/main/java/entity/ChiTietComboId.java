@@ -3,11 +3,15 @@ package entity;
 import java.io.Serializable;
 import java.util.Objects;
 
-// Lớp khóa chính ghép bắt buộc implements Serializable
+// Lớp khóa chính ghép cho bảng ChiTietCombo — gồm (maCombo, maSP)
+// JPA yêu cầu: implements Serializable, tên thuộc tính trùng với @Id trong ChiTietCombo,
+// và bắt buộc ghi đè equals() + hashCode() để Hibernate phân biệt từng dòng
 public class ChiTietComboId implements Serializable {
 
-    private String maCombo; // Phải trùng tên biến @Id trong ChiTietCombo
-    private String maSP;    // Phải trùng tên biến @Id trong ChiTietCombo
+    private static final long serialVersionUID = 1L;
+
+    private String maCombo; // Trùng tên với @Id maCombo trong ChiTietCombo
+    private String maSP;    // Trùng tên với @Id maSP trong ChiTietCombo
 
     public ChiTietComboId() {
     }
@@ -17,23 +21,41 @@ public class ChiTietComboId implements Serializable {
         this.maSP = maSP;
     }
 
-    public String getMaCombo() { return maCombo; }
-    public void setMaCombo(String maCombo) { this.maCombo = maCombo; }
+    // --- Getter & Setter ---
 
-    public String getMaSP() { return maSP; }
-    public void setMaSP(String maSP) { this.maSP = maSP; }
+    public String getMaCombo() {
+        return maCombo;
+    }
 
-    // Bắt buộc override equals và hashCode để Hibernate phân biệt từng dòng chi tiết
+    public void setMaCombo(String maCombo) {
+        this.maCombo = maCombo;
+    }
+
+    public String getMaSP() {
+        return maSP;
+    }
+
+    public void setMaSP(String maSP) {
+        this.maSP = maSP;
+    }
+
+    // So sánh 2 khóa chính — Hibernate dùng để nhận biết dòng nào đã tồn tại trong Session cache
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ChiTietComboId that = (ChiTietComboId) o;
-        return Objects.equals(maCombo, that.maCombo) && Objects.equals(maSP, that.maSP);
+        return Objects.equals(maCombo, that.maCombo) &&
+               Objects.equals(maSP, that.maSP);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(maCombo, maSP);
+    }
+
+    @Override
+    public String toString() {
+        return "ChiTietComboId{maCombo='" + maCombo + "', maSP='" + maSP + "'}";
     }
 }

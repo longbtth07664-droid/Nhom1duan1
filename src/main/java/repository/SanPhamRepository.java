@@ -88,13 +88,20 @@ public class SanPhamRepository {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             tx = session.beginTransaction();
+            try {
+            // Cấp mã ngay khi lưu, khóa ngắn để tránh trùng giữa nhiều người thêm.
+            Number max = (Number) session.createNativeQuery(
+                "SELECT COALESCE(MAX(TRY_CAST(SUBSTRING(MaSP,3,20) AS BIGINT)),0) "
+                + "FROM SanPham WITH (TABLOCKX,HOLDLOCK)").uniqueResult();
+            sp.setMaSP(String.format("SP%02d", max.longValue() + 1));
             session.save(sp);
             tx.commit();
             return true;
-        } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            e.printStackTrace();
-            return false;
+            } catch (RuntimeException e) {
+                if (tx.isActive()) tx.rollback();
+                e.printStackTrace();
+                return false;
+            }
         }
     }
 
@@ -103,13 +110,15 @@ public class SanPhamRepository {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             tx = session.beginTransaction();
+            try {
             session.merge(sp);
             tx.commit();
             return true;
-        } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            e.printStackTrace();
-            return false;
+            } catch (RuntimeException e) {
+                if (tx.isActive()) tx.rollback();
+                e.printStackTrace();
+                return false;
+            }
         }
     }
 
@@ -134,16 +143,18 @@ public class SanPhamRepository {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             tx = session.beginTransaction();
+            try {
             SanPham sp = session.find(SanPham.class, maSP);
             if (sp != null) {
                 session.delete(sp);
             }
             tx.commit();
             return true;
-        } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            e.printStackTrace();
-            return false;
+            } catch (RuntimeException e) {
+                if (tx.isActive()) tx.rollback();
+                e.printStackTrace();
+                return false;
+            }
         }
     }
 }

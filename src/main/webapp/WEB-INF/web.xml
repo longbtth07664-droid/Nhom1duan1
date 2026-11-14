@@ -38,4 +38,28 @@
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 
+    <!-- Khai báo thư viện thẻ JSTL để IntelliJ IDEA và Tomcat nhận diện taglib -->
+    <jsp-config>
+        <taglib>
+            <taglib-uri>jakarta.tags.core</taglib-uri>
+            <taglib-location>/WEB-INF/tld/c.tld</taglib-location>
+        </taglib>
+        <taglib>
+            <taglib-uri>jakarta.tags.fmt</taglib-uri>
+            <taglib-location>/WEB-INF/tld/fmt.tld</taglib-location>
+        </taglib>
+        <taglib>
+            <taglib-uri>jakarta.tags.functions</taglib-uri>
+            <taglib-location>/WEB-INF/tld/fn.tld</taglib-location>
+        </taglib>
+        <taglib>
+            <taglib-uri>http://java.sun.com/jsp/jstl/core</taglib-uri>
+            <taglib-location>/WEB-INF/tld/c.tld</taglib-location>
+        </taglib>
+        <taglib>
+            <taglib-uri>http://java.sun.com/jsp/jstl/fmt</taglib-uri>
+            <taglib-location>/WEB-INF/tld/fmt.tld</taglib-location>
+        </taglib>
+    </jsp-config>
+
 </web-app>
