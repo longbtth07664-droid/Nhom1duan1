@@ -11,6 +11,7 @@ import java.util.List;
 
 public class PhongChieuRepository {
 
+    // Lấy toàn bộ danh sách phòng chiếu sắp xếp tăng dần theo mã phòng
     public List<PhongChieu> getAll() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
 
@@ -23,6 +24,7 @@ public class PhongChieuRepository {
         }
     }
 
+    // Tìm kiếm thông tin phòng chiếu theo mã phòng
     public PhongChieu getById(String maPhong) {
         if (maPhong == null || maPhong.trim().isEmpty()) {
             return null;
@@ -33,6 +35,7 @@ public class PhongChieuRepository {
         }
     }
 
+    // Kiểm tra tên phòng đã tồn tại chưa (loại trừ mã phòng đang cập nhật)
     public boolean existsByTenPhong(String tenPhong, String excludeMaPhong) {
 
         if (tenPhong == null || tenPhong.trim().isEmpty()) {
@@ -62,6 +65,7 @@ public class PhongChieuRepository {
         }
     }
 
+    // Thêm mới một phòng chiếu vào cơ sở dữ liệu
     public boolean add(PhongChieu pc) {
 
         Transaction transaction = null;
@@ -87,6 +91,7 @@ public class PhongChieuRepository {
         }
     }
 
+    // Cập nhật thông tin phòng chiếu đã có
     public boolean update(PhongChieu pc) {
 
         Transaction transaction = null;

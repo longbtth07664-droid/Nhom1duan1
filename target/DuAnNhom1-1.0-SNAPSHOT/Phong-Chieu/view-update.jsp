@@ -98,9 +98,16 @@
                                    value="${pc.tenPhong}">
                         </div>
                         <div class="form-group">
-                            <label for="loaiPhong">Loại phòng</label>
-                            <input type="text" id="loaiPhong" name="loaiPhong" class="form-control"
-                                   value="${pc.loaiPhong}">
+                            <label for="loaiPhong">Loại phòng chiếu</label>
+                            <select id="loaiPhong" name="loaiPhong" class="form-control">
+                                <option value="">-- Chọn loại phòng chiếu --</option>
+                                <option value="2D" ${pc.loaiPhong == '2D' ? 'selected' : ''}>2D (Tiêu chuẩn)</option>
+                                <option value="3D" ${pc.loaiPhong == '3D' ? 'selected' : ''}>3D (Kính 3D)</option>
+                                <option value="IMAX" ${pc.loaiPhong == 'IMAX' ? 'selected' : ''}>IMAX (Màn hình siêu lớn)</option>
+                                <option value="4DX" ${pc.loaiPhong == '4DX' ? 'selected' : ''}>4DX (Ghế chuyển động & hiệu ứng)</option>
+                                <option value="VIP" ${pc.loaiPhong == 'VIP' ? 'selected' : ''}>VIP (Ghế sofa cao cấp)</option>
+                                <option value="ScreenX" ${pc.loaiPhong == 'ScreenX' ? 'selected' : ''}>ScreenX (Chiếu 3 màn hình)</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="sucChua">Sức chứa</label>
@@ -136,7 +143,7 @@
                         <tbody>
                         <c:forEach items="${listPhongChieu}" var="item" varStatus="st">
                             <tr>
-                                <td>${st.index + 1}</td>
+                                <td>${(currentPage - 1) * 5 + st.index + 1}</td>
                                 <td><strong>${item.maPhong}</strong></td>
                                 <td>${item.tenPhong}</td>
                                 <td>${item.loaiPhong}</td>

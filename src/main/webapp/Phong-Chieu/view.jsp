@@ -22,7 +22,7 @@
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu chức năng</div>
 
-            <a href="#" class="nav-item active">
+            <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="nav-item">
                 <span>Tổng quan</span>
             </a>
 
@@ -37,20 +37,21 @@
                 </div>
             </div>
 
-
-            <a href="${pageContext.request.contextPath}/phong-chieu/view"
-               class="nav-item active">
-                <span>Phòng ghế</span>
-            </a>
-
+            <div class="nav-group open">
+                <button type="button" class="nav-item nav-parent active" onclick="toggleSubmenu(this)">
+                    <span>Phòng ghế</span>
+                    <span class="nav-arrow">▾</span>
+                </button>
+                <div class="nav-submenu">
+                    <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-subitem active">Danh sách phòng chiếu</a>
+                    <a href="${pageContext.request.contextPath}/ghe" class="nav-subitem">Sơ đồ & Quản lý ghế</a>
+                </div>
+            </div>
 
             <a href="#" class="nav-item">
                 <span>Lịch chiếu bán vé</span>
             </a>
 
-
-
-            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
             <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
                 <span>Quản lí sản phẩm</span>
             </a>
@@ -58,10 +59,11 @@
             <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
                 <span>Quản lí combo</span>
             </a>
-        </nav>
 
+            <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
+                <span>Quản lí khách hàng</span>
+            </a>
         </nav>
-
 
         <div class="sidebar-footer">
             <div class="user-card">
@@ -95,11 +97,12 @@
                 <div class="card-header">
                     <div>
                         <div class="card-title">Danh sách phòng chiếu</div>
-                        <div class="card-subtitle">Quản lý các phòng chiếu và sức chứa tại rạp</div>
+                        <div class="card-subtitle">Hiển thị 5 phòng chiếu trên mỗi trang</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
+                        <button type="button" class="btn btn-outline" onclick="openModal('loaiPhongModal')">Quản lý loại phòng</button>
                         <button type="button" class="btn btn-pink" onclick="openAddPhongChieu()">+ Thêm</button>
-                        <span class="badge-pink">${listPhongChieu.size()} phòng chiếu</span>
+                        <span class="badge-pink">${totalItems} phòng chiếu</span>
                     </div>
                 </div>
 
@@ -118,13 +121,17 @@
                         <tbody>
                         <c:forEach items="${listPhongChieu}" var="item" varStatus="st">
                             <tr>
-                                <td>${st.index + 1}</td>
+                                <td>${(currentPage - 1) * 5 + st.index + 1}</td>
                                 <td><strong><c:out value="${item.maPhong}"/></strong></td>
                                 <td><c:out value="${item.tenPhong}"/></td>
                                 <td><c:out value="${item.loaiPhong}"/></td>
                                 <td><c:out value="${item.sucChua}"/> ghế</td>
                                 <td>
                                     <div class="action-group">
+                                        <a href="${pageContext.request.contextPath}/ghe?maPhong=<c:out value='${item.maPhong}'/>"
+                                           class="btn btn-pink btn-sm"
+                                           style="text-decoration:none;"
+                                           title="Xem và quản lý sơ đồ ghế phòng này">Ghế</a>
                                         <button type="button"
                                                 class="btn btn-ghost btn-sm"
                                                 data-ma="<c:out value='${item.maPhong}'/>"
@@ -143,9 +150,47 @@
                                 </td>
                             </tr>
                         </c:forEach>
+                        <c:if test="${empty listPhongChieu}">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                    Chưa có phòng chiếu nào!
+                                </td>
+                            </tr>
+                        </c:if>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- THANH PHÂN TRANG (5 PHÒNG / 1 TRANG) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 10px;">
+                    <div style="color: var(--text-secondary); font-size: 13px;">
+                        Trang <strong>${currentPage}</strong> / <strong>${totalPages}</strong> (Tổng cộng: <strong>${totalItems}</strong> phòng chiếu)
+                    </div>
+
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <%-- Nút về trang đầu và trang trước --%>
+                        <c:if test="${currentPage > 1}">
+                            <a href="${pageContext.request.contextPath}/phong-chieu/view?page=1" class="btn btn-ghost btn-sm">&laquo; Đầu</a>
+                            <a href="${pageContext.request.contextPath}/phong-chieu/view?page=${currentPage - 1}" class="btn btn-ghost btn-sm">&lsaquo; Trước</a>
+                        </c:if>
+
+                        <%-- Các số trang 1, 2, 3... --%>
+                        <c:forEach begin="1" end="${totalPages}" var="p">
+                            <a href="${pageContext.request.contextPath}/phong-chieu/view?page=${p}"
+                               class="btn btn-sm ${currentPage == p ? 'btn-pink' : 'btn-ghost'}"
+                               style="min-width: 32px; justify-content: center; font-weight: ${currentPage == p ? '700' : '400'};">
+                                ${p}
+                            </a>
+                        </c:forEach>
+
+                        <%-- Nút sang trang sau và trang cuối --%>
+                        <c:if test="${currentPage < totalPages}">
+                            <a href="${pageContext.request.contextPath}/phong-chieu/view?page=${currentPage + 1}" class="btn btn-ghost btn-sm">Sau &rsaquo;</a>
+                            <a href="${pageContext.request.contextPath}/phong-chieu/view?page=${totalPages}" class="btn btn-ghost btn-sm">Cuối &raquo;</a>
+                        </c:if>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
@@ -178,10 +223,23 @@
                            placeholder="VD: Phòng 11 - Tiêu Chuẩn">
                 </div>
                 <div class="form-group">
-                    <label for="addLoaiPhong">Loại phòng<span class="required-star">*</span></label>
-                    <input type="text" id="addLoaiPhong" name="loaiPhong" class="form-control"
-                           value="${openModal == 'add' ? pc.loaiPhong : ''}"
-                           placeholder="VD: 2D, 3D, IMAX, 2D VIP, VIP">
+                    <label for="addLoaiPhong">Loại phòng chiếu<span class="required-star">*</span></label>
+                    <select id="addLoaiPhong" name="loaiPhong" class="form-control">
+                        <option value="">-- Chọn loại phòng chiếu --</option>
+                        <c:forEach items="${listLoaiPhong}" var="lp">
+                            <option value="${lp.maLoaiPhong}" ${openModal == 'add' && pc.loaiPhong == lp.maLoaiPhong ? 'selected' : ''}>
+                                <c:out value="${lp.maLoaiPhong}"/> - <c:out value="${lp.tenLoaiPhong}"/>
+                            </option>
+                        </c:forEach>
+                        <c:if test="${empty listLoaiPhong}">
+                            <option value="2D" ${openModal == 'add' && pc.loaiPhong == '2D' ? 'selected' : ''}>2D (Tiêu chuẩn)</option>
+                            <option value="3D" ${openModal == 'add' && pc.loaiPhong == '3D' ? 'selected' : ''}>3D (Kính 3D)</option>
+                            <option value="IMAX" ${openModal == 'add' && pc.loaiPhong == 'IMAX' ? 'selected' : ''}>IMAX (Màn hình siêu lớn)</option>
+                            <option value="4DX" ${openModal == 'add' && pc.loaiPhong == '4DX' ? 'selected' : ''}>4DX (Ghế chuyển động & hiệu ứng)</option>
+                            <option value="VIP" ${openModal == 'add' && pc.loaiPhong == 'VIP' ? 'selected' : ''}>VIP (Ghế sofa cao cấp)</option>
+                            <option value="ScreenX" ${openModal == 'add' && pc.loaiPhong == 'ScreenX' ? 'selected' : ''}>ScreenX (Chiếu 3 màn hình)</option>
+                        </c:if>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="addSucChua">Sức chứa<span class="required-star">*</span></label>
@@ -226,9 +284,23 @@
                            value="${openModal == 'update' ? pc.tenPhong : ''}">
                 </div>
                 <div class="form-group">
-                    <label for="editLoaiPhong">Loại phòng<span class="required-star">*</span></label>
-                    <input type="text" id="editLoaiPhong" name="loaiPhong" class="form-control"
-                           value="${openModal == 'update' ? pc.loaiPhong : ''}">
+                    <label for="editLoaiPhong">Loại phòng chiếu<span class="required-star">*</span></label>
+                    <select id="editLoaiPhong" name="loaiPhong" class="form-control">
+                        <option value="">-- Chọn loại phòng chiếu --</option>
+                        <c:forEach items="${listLoaiPhong}" var="lp">
+                            <option value="${lp.maLoaiPhong}">
+                                <c:out value="${lp.maLoaiPhong}"/> - <c:out value="${lp.tenLoaiPhong}"/>
+                            </option>
+                        </c:forEach>
+                        <c:if test="${empty listLoaiPhong}">
+                            <option value="2D">2D (Tiêu chuẩn)</option>
+                            <option value="3D">3D (Kính 3D)</option>
+                            <option value="IMAX">IMAX (Màn hình siêu lớn)</option>
+                            <option value="4DX">4DX (Ghế chuyển động & hiệu ứng)</option>
+                            <option value="VIP">VIP (Ghế sofa cao cấp)</option>
+                            <option value="ScreenX">ScreenX (Chiếu 3 màn hình)</option>
+                        </c:if>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="editSucChua">Sức chứa<span class="required-star">*</span></label>
@@ -264,7 +336,7 @@
                 <div class="form-control" style="background:var(--bg-input);" id="detailTenPhong"><c:out value="${pc.tenPhong}"/></div>
             </div>
             <div class="form-group">
-                <label>Loại phòng</label>
+                <label>Loại phòng chiếu</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailLoaiPhong"><c:out value="${pc.loaiPhong}"/></div>
             </div>
             <div class="form-group">
@@ -278,8 +350,124 @@
     </div>
 </div>
 
+<!-- POP-UP QUẢN LÝ LOẠI PHÒNG (DANH SÁCH, THÊM, SỬA, XÓA) -->
+<div class="modal-backdrop ${param.openModal == 'loaiPhong' ? 'open' : ''}" id="loaiPhongModal">
+    <div class="modal-box" style="max-width: 680px; width: 95%;">
+        <div class="modal-header">
+            <h3>Quản lý loại phòng chiếu</h3>
+            <button type="button" class="modal-close" onclick="closeModal('loaiPhongModal')">&times;</button>
+        </div>
+
+        <!-- THÔNG BÁO KẾT QUẢ THAO TÁC TRONG MODAL -->
+        <c:if test="${param.lpMsg == 'add_ok'}">
+            <div class="alert-success" style="padding: 10px 14px; margin-bottom: 12px; font-size: 13px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: var(--radius-sm); font-weight: 500;">
+                ✓ Thêm loại phòng thành công!
+            </div>
+        </c:if>
+        <c:if test="${param.lpMsg == 'update_ok'}">
+            <div class="alert-success" style="padding: 10px 14px; margin-bottom: 12px; font-size: 13px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: var(--radius-sm); font-weight: 500;">
+                ✓ Cập nhật loại phòng thành công!
+            </div>
+        </c:if>
+        <c:if test="${param.lpMsg == 'delete_ok'}">
+            <div class="alert-success" style="padding: 10px 14px; margin-bottom: 12px; font-size: 13px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: var(--radius-sm); font-weight: 500;">
+                ✓ Xóa loại phòng thành công!
+            </div>
+        </c:if>
+        <c:if test="${param.lpMsg == 'in_use'}">
+            <div class="alert-error" style="padding: 10px 14px; margin-bottom: 12px; font-size: 13px;">
+                ✕ Không thể xóa vì loại phòng này đang được sử dụng bởi phòng chiếu!
+            </div>
+        </c:if>
+        <c:if test="${param.lpMsg == 'duplicate'}">
+            <div class="alert-error" style="padding: 10px 14px; margin-bottom: 12px; font-size: 13px;">
+                ✕ Mã loại phòng đã tồn tại!
+            </div>
+        </c:if>
+        <c:if test="${param.lpMsg == 'empty'}">
+            <div class="alert-error" style="padding: 10px 14px; margin-bottom: 12px; font-size: 13px;">
+                ✕ Vui lòng nhập đầy đủ Mã loại phòng và Tên loại phòng!
+            </div>
+        </c:if>
+        <c:if test="${param.lpMsg == 'error'}">
+            <div class="alert-error" style="padding: 10px 14px; margin-bottom: 12px; font-size: 13px;">
+                ✕ Có lỗi xảy ra trong quá trình xử lý! Vui lòng thử lại.
+            </div>
+        </c:if>
+
+        <!-- FORM THÊM / CẬP NHẬT LOẠI PHÒNG -->
+        <div style="background: var(--bg-input); padding: 14px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; border: 1px solid var(--border-subtle);">
+            <div id="lpFormTitle" style="font-weight: 600; font-size: 13px; margin-bottom: 10px; color: var(--text-primary);">
+                + Thêm loại phòng mới
+            </div>
+            <form id="loaiPhongForm" action="${pageContext.request.contextPath}/phong-chieu/loai-phong-add" method="post" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 130px;">
+                    <label for="lpMaLoai" style="display:block; font-size: 12px; margin-bottom: 4px; font-weight: 500;">Mã loại phòng<span class="required-star">*</span></label>
+                    <input type="text" id="lpMaLoai" name="maLoaiPhong" class="form-control" placeholder="VD: 2D, IMAX..." required style="height: 38px;">
+                </div>
+                <div style="flex: 2; min-width: 200px;">
+                    <label for="lpTenLoai" style="display:block; font-size: 12px; margin-bottom: 4px; font-weight: 500;">Tên loại phòng<span class="required-star">*</span></label>
+                    <input type="text" id="lpTenLoai" name="tenLoaiPhong" class="form-control" placeholder="VD: Phòng chiếu IMAX Laser" required style="height: 38px;">
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <button type="submit" id="lpBtnSubmit" class="btn btn-pink" style="height: 38px;">Thêm</button>
+                    <button type="button" id="lpBtnCancel" class="btn btn-ghost" style="height: 38px; display: none;" onclick="cancelEditLoaiPhong()">Hủy</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- DANH SÁCH BẢNG LOẠI PHÒNG -->
+        <div class="table-wrap" style="max-height: 260px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+            <table>
+                <thead>
+                <tr>
+                    <th style="width: 50px;">STT</th>
+                    <th style="width: 140px;">Mã loại phòng</th>
+                    <th>Tên loại phòng</th>
+                    <th style="width: 140px; text-align: center;">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach items="${listLoaiPhong}" var="item" varStatus="st">
+                    <tr>
+                        <td>${st.index + 1}</td>
+                        <td><strong><c:out value="${item.maLoaiPhong}"/></strong></td>
+                        <td><c:out value="${item.tenLoaiPhong}"/></td>
+                        <td style="text-align: center;">
+                            <div class="action-group" style="justify-content: center; gap: 4px;">
+                                <button type="button"
+                                        class="btn btn-outline btn-sm"
+                                        data-ma="<c:out value='${item.maLoaiPhong}'/>"
+                                        data-ten="<c:out value='${item.tenLoaiPhong}'/>"
+                                        onclick="startEditLoaiPhong(this)">Sửa</button>
+                                <a href="${pageContext.request.contextPath}/phong-chieu/loai-phong-delete?id=${item.maLoaiPhong}"
+                                   class="btn btn-sm"
+                                   style="background: #fff1f2; color: #e11d48; border: 1px solid #fda4af;"
+                                   onclick="return confirm('Bạn có chắc chắn muốn xóa loại phòng [${item.maLoaiPhong} - ${item.tenLoaiPhong}] không?');">Xóa</a>
+                            </div>
+                        </td>
+                    </tr>
+                </c:forEach>
+                <c:if test="${empty listLoaiPhong}">
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 25px;">
+                            Chưa có loại phòng nào!
+                        </td>
+                    </tr>
+                </c:if>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer" style="margin-top: 16px;">
+            <button type="button" class="btn btn-pink" onclick="closeModal('loaiPhongModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
 <script>
+    // Mở popup thêm mới phòng chiếu và reset trắng form nhập liệu
     function openAddPhongChieu() {
         const err = document.getElementById('addPhongChieuError');
         if (err) err.style.display = 'none';
@@ -290,22 +478,74 @@
         document.getElementById('addPhongChieuModal').classList.add('open');
     }
 
+    // Mở popup cập nhật phòng chiếu và nạp dữ liệu từ nút bấm
     function openEditPhongChieuFromBtn(btn) {
         const err = document.getElementById('editPhongChieuError');
         if (err) err.style.display = 'none';
         document.getElementById('editMaPhong').value = btn.getAttribute('data-ma') || '';
         document.getElementById('editTenPhong').value = btn.getAttribute('data-ten') || '';
-        document.getElementById('editLoaiPhong').value = btn.getAttribute('data-loai') || '';
+
+        const loaiVal = btn.getAttribute('data-loai') || '';
+        const selectLoai = document.getElementById('editLoaiPhong');
+        selectLoai.value = loaiVal;
+
+        // Nếu giá trị trong database chưa có trong các option mặc định, tự động thêm vào
+        if (loaiVal && selectLoai.value !== loaiVal) {
+            const opt = document.createElement('option');
+            opt.value = loaiVal;
+            opt.textContent = loaiVal;
+            opt.selected = true;
+            selectLoai.appendChild(opt);
+        }
+
         document.getElementById('editSucChua').value = btn.getAttribute('data-succhua') || '';
         document.getElementById('editPhongChieuModal').classList.add('open');
     }
 
+    // Mở popup xem chi tiết thông tin phòng chiếu
     function openDetailPhongChieuFromBtn(btn) {
         document.getElementById('detailMaPhong').textContent = btn.getAttribute('data-ma') || '';
         document.getElementById('detailTenPhong').textContent = btn.getAttribute('data-ten') || '';
         document.getElementById('detailLoaiPhong').textContent = btn.getAttribute('data-loai') || '';
         document.getElementById('detailSucChua').textContent = (btn.getAttribute('data-succhua') || '') + ' ghế';
         document.getElementById('detailPhongChieuModal').classList.add('open');
+    }
+
+    // Đổ dữ liệu loại phòng lên form để chuẩn bị cập nhật
+    function startEditLoaiPhong(btn) {
+        const ma = btn.getAttribute('data-ma') || '';
+        const ten = btn.getAttribute('data-ten') || '';
+
+        const form = document.getElementById('loaiPhongForm');
+        form.action = '${pageContext.request.contextPath}/phong-chieu/loai-phong-update';
+
+        const maInput = document.getElementById('lpMaLoai');
+        maInput.value = ma;
+        maInput.readOnly = true;
+
+        const tenInput = document.getElementById('lpTenLoai');
+        tenInput.value = ten;
+        tenInput.focus();
+
+        document.getElementById('lpFormTitle').textContent = 'Chỉnh sửa loại phòng: ' + ma;
+        document.getElementById('lpBtnSubmit').textContent = 'Lưu';
+        document.getElementById('lpBtnCancel').style.display = 'inline-flex';
+    }
+
+    // Hủy chế độ chỉnh sửa loại phòng và quay lại trạng thái thêm mới
+    function cancelEditLoaiPhong() {
+        const form = document.getElementById('loaiPhongForm');
+        form.action = '${pageContext.request.contextPath}/phong-chieu/loai-phong-add';
+
+        const maInput = document.getElementById('lpMaLoai');
+        maInput.value = '';
+        maInput.readOnly = false;
+
+        document.getElementById('lpTenLoai').value = '';
+
+        document.getElementById('lpFormTitle').textContent = '+ Thêm loại phòng mới';
+        document.getElementById('lpBtnSubmit').textContent = 'Thêm';
+        document.getElementById('lpBtnCancel').style.display = 'none';
     }
 </script>
 </body>

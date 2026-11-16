@@ -29,6 +29,47 @@ function toggleSubmenu(btn) {
 }
 
 /**
+ * Tự động làm sáng mục đang chọn trên sidebar menu và mở menu con theo URL trang hiện tại.
+ */
+function initSidebarHighlight() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    const currentPath = window.location.pathname.toLowerCase();
+    const navGroup = sidebar.querySelector('.nav-group');
+
+    sidebar.querySelectorAll('.nav-item, .nav-subitem').forEach(el => el.classList.remove('active'));
+    if (navGroup) navGroup.classList.remove('open');
+
+    if (currentPath.includes('/the-loai')) {
+        if (navGroup) navGroup.classList.add('open');
+        const item = sidebar.querySelector('a[href*="/the-loai"]');
+        if (item) item.classList.add('active');
+    } else if (currentPath.includes('/phim')) {
+        if (navGroup) navGroup.classList.add('open');
+        const item = sidebar.querySelector('a[href*="/phim"]');
+        if (item) item.classList.add('active');
+    } else if (currentPath.includes('/phong-chieu')) {
+        const item = sidebar.querySelector('a[href*="/phong-chieu"]');
+        if (item) item.classList.add('active');
+    } else if (currentPath.includes('/quan-ly-san-pham')) {
+        const item = sidebar.querySelector('a[href*="/quan-ly-san-pham"]');
+        if (item) item.classList.add('active');
+    } else if (currentPath.includes('/quan-ly-combo')) {
+        const item = sidebar.querySelector('a[href*="/quan-ly-combo"]');
+        if (item) item.classList.add('active');
+    } else if (currentPath.includes('/ban-ve')) {
+        const item = sidebar.querySelector('a[href*="/ban-ve"]');
+        if (item) item.classList.add('active');
+    } else {
+        const tongQuan = sidebar.querySelector('a[href*="menuadmin.jsp"]');
+        if (tongQuan) tongQuan.classList.add('active');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initSidebarHighlight);
+
+/**
  * Hiển thị một cửa sổ pop-up (modal) theo id bằng cách thêm class "open".
  * Liên kết với: các pop-up (#addTheLoaiModal, #editTheLoaiModal, #detailTheLoaiModal) trong the-loai/view.jsp
  */
@@ -68,14 +109,12 @@ function stopDetailMedia() {
  * Liên kết với: nút "+ Thêm" trong the-loai/view.jsp
  */
 function openAddTheLoai() {
-    const maInput = document.getElementById('addMaTheLoai');
     const tenInput = document.getElementById('addTenTheLoai');
     const errBox = document.getElementById('addTheLoaiError');
-    if (maInput) maInput.value = '';
     if (tenInput) tenInput.value = '';
     if (errBox) errBox.style.display = 'none';
     openModal('addTheLoaiModal');
-    if (maInput) maInput.focus();
+    if (tenInput) tenInput.focus();
 }
 
 /**
@@ -114,22 +153,24 @@ function openDetailTheLoaiFromBtn(btn) {
  * Liên kết với: nút "+ Thêm" trong phim/view.jsp
  */
 function openAddPhim() {
-    const ids = ['addMaPhim', 'addTenPhim', 'addThoiLuong', 'addNgayKhoiChieu', 'addNgayKetThuc',
-        'addDaoDien', 'addDienVien', 'addPoster', 'addTrailer', 'addMoTa'];
+    const ids = ['addTenPhim', 'addThoiLuong', 'addNgayKhoiChieu', 'addNgayKetThuc',
+        'addDaoDien', 'addDienVien', 'addQuocGia', 'addPoster', 'addTrailer', 'addMoTa'];
     ids.forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
     const doTuoi = document.getElementById('addDoTuoi');
     if (doTuoi) doTuoi.value = 'P';
+    const trangThai = document.getElementById('addTrangThai');
+    if (trangThai) trangThai.value = 'Đang chiếu';
     document.querySelectorAll('#addPhimModal input[name="maTheLoais"]').forEach((cb) => {
         cb.checked = false;
     });
     const errBox = document.getElementById('addPhimError');
     if (errBox) errBox.style.display = 'none';
     openModal('addPhimModal');
-    const maInput = document.getElementById('addMaPhim');
-    if (maInput) maInput.focus();
+    const tenInput = document.getElementById('addTenPhim');
+    if (tenInput) tenInput.focus();
 }
 
 /**
@@ -146,6 +187,8 @@ function openEditPhimFromBtn(btn) {
         editDaoDien: 'data-daodien',
         editDienVien: 'data-dienvien',
         editDoTuoi: 'data-dotuoi',
+        editQuocGia: 'data-quocgia',
+        editTrangThai: 'data-trangthai',
         editPoster: 'data-poster',
         editTrailer: 'data-trailer',
         editMoTa: 'data-mota'
@@ -154,7 +197,13 @@ function openEditPhimFromBtn(btn) {
         const el = document.getElementById(elId);
         if (el) {
             const val = btn.getAttribute(map[elId]) || '';
-            el.value = elId === 'editDoTuoi' ? (val || 'P') : val;
+            if (elId === 'editDoTuoi') {
+                el.value = val || 'P';
+            } else if (elId === 'editTrangThai') {
+                el.value = val || 'Đang chiếu';
+            } else {
+                el.value = val;
+            }
         }
     });
 
@@ -270,6 +319,8 @@ function openDetailPhimFromBtn(btn) {
         detailNgayKhoiChieu: 'data-khoichieu',
         detailNgayKetThuc: 'data-ketthuc',
         detailDoTuoi: 'data-dotuoi',
+        detailQuocGia: 'data-quocgia',
+        detailTrangThai: 'data-trangthai',
         detailDaoDien: 'data-daodien',
         detailDienVien: 'data-dienvien',
         detailMoTa: 'data-mota'

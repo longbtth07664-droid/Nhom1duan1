@@ -1,8 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
-<%-- Dữ liệu và mã gợi ý luôn được tải qua servlet. --%>
-<c:if test="${requestScope.dsSanPham == null}"><c:redirect url="/quan-ly-san-pham"/></c:if>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -44,7 +42,7 @@
             <div class="menu-group-label">Menu chức năng</div>
 
 
-            <a href="#" class="nav-item active">
+            <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="nav-item">
                 <span>Tổng quan</span>
             </a>
 
@@ -59,31 +57,25 @@
                 </div>
             </div>
 
-
-            <a href="${pageContext.request.contextPath}/phong-chieu/view"
-               class="nav-item active">
+            <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-item">
                 <span>Phòng ghế</span>
             </a>
-
 
             <a href="#" class="nav-item">
                 <span>Lịch chiếu bán vé</span>
             </a>
 
-
-
-            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
-            <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
+            <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item active">
                 <span>Quản lí sản phẩm</span>
             </a>
 
             <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
                 <span>Quản lí combo</span>
             </a>
-        </nav>
 
-        </nav>
-
+            <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
+                <span>Quản lí khách hàng</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -242,8 +234,7 @@
                 </div>
                 <div class="form-group">
                     <label>Loại sản phẩm<span class="required-star">*</span></label>
-                    <select name="loaiSP" class="form-control" required onchange="goiYDonVi(this)">
-<option value="" selected disabled>Chọn loại sản phẩm</option>
+                    <select name="loaiSP" class="form-control" required>
                         <option value="Bắp">Bắp</option>
                         <option value="Nước có gas">Nước có gas</option>
                         <option value="Nước suối">Nước suối</option>
@@ -254,7 +245,6 @@
                 <div class="form-group">
                     <label>Đơn vị tính<span class="required-star">*</span></label>
                     <select name="donViTinh" class="form-control" required>
-<option value="" selected disabled>Chọn đơn vị tính</option>
                         <option value="Hộp">Hộp</option>
                         <option value="Ly">Ly</option>
                         <option value="Chai">Chai</option>
@@ -268,13 +258,15 @@
                 </div>
                 <div class="form-group">
                     <label>Số lượng tồn<span class="required-star">*</span></label>
-                    <input type="number" name="soLuongTon" class="form-control" min="0" value="0" required>
+                    <input type="number" name="soLuongTon" class="form-control" min="0" value="100" required>
                 </div>
             </div>
             <div class="form-group" style="margin-bottom:14px;">
                 <label>Trạng thái</label>
-                <%-- SẢN PHẨM: trạng thái thêm mới cố định, sửa mới được ngừng bán. --%>
-<input class="form-control" value="Đang kinh doanh" readonly>
+                <select name="trangThai" class="form-control">
+                    <option value="Đang kinh doanh" selected>Đang kinh doanh</option>
+                    <option value="Ngừng kinh doanh">Ngừng kinh doanh</option>
+                </select>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="closeModal('addSPModal')">Hủy</button>
@@ -351,11 +343,6 @@
 
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
 <script>
-    // SẢN PHẨM: gợi ý đơn vị theo loại, không đổi các giá trị dữ liệu hiện có.
-    function goiYDonVi(select) {
-        var units = {"Bắp":"Hộp", "Nước có gas":"Ly", "Nước suối":"Chai", "Snack":"Gói", "Đồ ăn nóng":"Hộp"};
-        select.form.elements.donViTinh.value = units[select.value] || "";
-    }
     function xoaSP(btn) {
         var ma = btn.getAttribute('data-ma');
         var ten = btn.getAttribute('data-ten');

@@ -38,14 +38,20 @@
             </div>
 
 
-                <a href="${pageContext.request.contextPath}/phong-chieu/view"
-                   class="nav-item active">
+            <div class="nav-group">
+                <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
                     <span>Phòng ghế</span>
-                </a>
+                    <span class="nav-arrow">▾</span>
+                </button>
+                <div class="nav-submenu">
+                    <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-subitem">Danh sách phòng chiếu</a>
+                    <a href="${pageContext.request.contextPath}/ghe" class="nav-subitem">Sơ đồ & Quản lý ghế</a>
+                </div>
+            </div>
 
 
-            <a href="#" class="nav-item">
-                <span>Lịch chiếu bán vé</span>
+            <a href="${pageContext.request.contextPath}/suat-chieu/view" class="nav-item">
+                <span>Quản lý lịch chiếu</span>
             </a>
 
 
@@ -57,6 +63,10 @@
 
             <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
                 <span>Quản lí combo</span>
+            </a>
+
+            <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
+                <span>Quản lí khách hàng</span>
             </a>
         </nav>
 
