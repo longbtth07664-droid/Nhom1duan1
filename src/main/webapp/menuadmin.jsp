@@ -38,10 +38,15 @@
             </div>
 
 
-                <a href="${pageContext.request.contextPath}/phong-chieu/view"
-                   class="nav-item active">
+            <div class="nav-group">
+                <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
                     <span>Phòng ghế</span>
-                </a>
+                    <span class="nav-arrow">▾</span>
+                </button>
+                <div class="nav-submenu">
+                    <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-subitem">Danh sách phòng chiếu</a>
+                </div>
+            </div>
 
 
             <a href="#" class="nav-item">
