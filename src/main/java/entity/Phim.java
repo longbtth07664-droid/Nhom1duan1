@@ -3,6 +3,8 @@ package entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -27,8 +29,9 @@ import java.util.stream.Collectors;
 public class Phim {
 
     @Id
-    @Column(name = "MaPhim", length = 20, nullable = false)
-    private String maPhim;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "MaPhim", nullable = false)
+    private Integer maPhim;
 
     @Column(name = "TenPhim", length = 200, nullable = false)
     private String tenPhim;
@@ -51,14 +54,20 @@ public class Phim {
     @Column(name = "DienVien", length = 255)
     private String dienVien;
 
-    @Column(name = "Poster", length = 255)
+    @Column(name = "QuocGia", length = 100)
+    private String quocGia;
+
+    @Column(name = "Poster")
     private String poster;
 
-    @Column(name = "Trailer", length = 255)
+    @Column(name = "Trailer")
     private String trailer;
 
     @Column(name = "DoTuoi", length = 20)
     private String doTuoi;
+
+    @Column(name = "TrangThai", length = 50)
+    private String trangThai;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -88,7 +97,9 @@ public class Phim {
             return "";
         }
         return theLoais.stream()
-                .map(TheLoai::getMaTheLoai)
+                .map(tl -> String.valueOf(tl.getMaTheLoai()))
                 .collect(Collectors.joining(","));
     }
+
+
 }

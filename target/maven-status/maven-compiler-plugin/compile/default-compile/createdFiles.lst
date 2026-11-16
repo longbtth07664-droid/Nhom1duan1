@@ -1,7 +1,6 @@
 util\HibernateConfig.class
 repository\TaiKhoanRepository.class
 entity\TaiKhoan.class
-contronler\TheLoaiServlet.class
 filter\AuthFilter.class
 repository\TheLoaiRepository.class
 entity\ChiTietComboId.class
@@ -12,4 +11,6 @@ com\example\DuAnNhom1\HelloServlet.class
 controller\PhimServlet.class
 controller\LogoutServlet.class
 entity\TheLoai.class
+controller\BanVeServlet$DateItem.class
 entity\Phim.class
+controller\BanVeServlet.class

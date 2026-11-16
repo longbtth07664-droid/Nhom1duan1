@@ -1,11 +1,12 @@
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\com\example\DuAnNhom1\HelloServlet.java
+C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\controller\BanVeServlet.java
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\controller\ComboServlet.java
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\controller\LoginServlet.java
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\controller\LogoutServlet.java
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\controller\PhimServlet.java
+C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\controller\PhongChieuServlet.java
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\controller\SanPhamServlet.java
-C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\contronler\PhongChieuServlet.java
-C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\contronler\TheLoaiServlet.java
+C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\controller\TheLoaiServlet.java
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\entity\ChiTietCombo.java
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\entity\ChiTietComboId.java
 C:\Users\ThanhLong\IdeaProjects\DuAnNhom1\src\main\java\entity\Combo.java

@@ -2,7 +2,6 @@ package repository;
 
 import entity.TheLoai;
 import org.hibernate.Session;
-import org.hibernate.Transaction;
 import util.HibernateConfig;
 
 import java.util.List;
@@ -15,39 +14,41 @@ public class TheLoaiRepository {
         }
     }
 
-    public TheLoai getOne(String maTheLoai) {
+    public TheLoai getOne(Integer maTheLoai) {
+        if (maTheLoai == null) return null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.find(TheLoai.class, maTheLoai);
         }
     }
 
+    public TheLoai getOne(String maTheLoai) {
+        if (maTheLoai == null || maTheLoai.trim().isEmpty()) return null;
+        try {
+            return getOne(Integer.parseInt(maTheLoai.trim()));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     public boolean add(TheLoai tl) {
-        Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            tx = session.beginTransaction();
+            session.getTransaction().begin();
             session.save(tl);
-            tx.commit();
+            session.getTransaction().commit();
             return true;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                tx.rollback();
-            }
             e.printStackTrace();
             return false;
         }
     }
 
     public boolean update(TheLoai tl) {
-        Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            tx = session.beginTransaction();
+            session.getTransaction().begin();
             session.merge(tl);
-            tx.commit();
+            session.getTransaction().commit();
             return true;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                tx.rollback();
-            }
             e.printStackTrace();
             return false;
         }
