@@ -70,7 +70,7 @@
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu chức năng</div>
 
-            <a href="#" class="nav-item active">
+            <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="nav-item">
                 <span>Tổng quan</span>
             </a>
 
@@ -85,35 +85,25 @@
                 </div>
             </div>
 
-
-            <a href="${pageContext.request.contextPath}/phong-chieu/view"
-               class="nav-item active">
+            <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-item">
                 <span>Phòng ghế</span>
             </a>
-
 
             <a href="#" class="nav-item">
                 <span>Lịch chiếu bán vé</span>
             </a>
 
-
-
-            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
             <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
                 <span>Quản lí sản phẩm</span>
             </a>
 
-            <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
+            <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item active">
                 <span>Quản lí combo</span>
             </a>
 
             <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
                 <span>Quản lí khách hàng</span>
             </a>
-        </nav>
-
-        </nav>
-
         </nav>
 
         <div class="sidebar-footer">

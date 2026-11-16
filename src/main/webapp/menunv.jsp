@@ -22,8 +22,8 @@
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu quầy vé</div>
 
-            <a href="#" class="nav-item">
-                <span>Bán Hàng </span>
+            <a href="${pageContext.request.contextPath}/ban-ve" class="nav-item">
+                <span>Bán Hàng</span>
             </a>
         </nav>
 
@@ -40,6 +40,6 @@
     </aside>
 </div>
 
-<script src="assets/js/cinema-mock.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=11"></script>
 </body>
 </html>

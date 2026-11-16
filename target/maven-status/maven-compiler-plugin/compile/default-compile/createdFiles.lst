@@ -11,4 +11,6 @@ com\example\DuAnNhom1\HelloServlet.class
 controller\PhimServlet.class
 controller\LogoutServlet.class
 entity\TheLoai.class
+controller\BanVeServlet$DateItem.class
 entity\Phim.class
+controller\BanVeServlet.class

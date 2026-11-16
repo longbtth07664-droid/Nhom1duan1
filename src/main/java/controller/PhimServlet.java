@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 @WebServlet(name = "PhimServlet", value = {
@@ -28,7 +29,12 @@ public class PhimServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        renderView(req, resp);
+        String action = req.getParameter("action");
+        if ("search".equals(action)) {
+            timKiemPhim(req, resp);
+        } else {
+            hienThiDanhSach(req, resp);
+        }
     }
 
     @Override
@@ -36,20 +42,48 @@ public class PhimServlet extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
         String uri = req.getRequestURI();
         if (uri.contains("add")) {
-            savePhim(req, resp, false);
+            themPhim(req, resp);
         } else if (uri.contains("update")) {
-            savePhim(req, resp, true);
+            capNhatPhim(req, resp);
         }
     }
 
-    private void renderView(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    // 1. Hiển thị danh sách phim mặc định
+    private void hienThiDanhSach(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setAttribute("listPhim", phimRepo.getAll());
         req.setAttribute("listTheLoai", theLoaiRepo.getAll());
+        req.setAttribute("keyword", "");
+        req.setAttribute("selectedTheLoai", "");
         req.getRequestDispatcher("/phim/view.jsp").forward(req, resp);
     }
 
+    // 2. Tìm kiếm và lọc phim tách riêng biệt
+    private void timKiemPhim(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String keyword = req.getParameter("keyword");
+        String maTheLoai = req.getParameter("maTheLoai");
+
+        List<Phim> list = phimRepo.search(keyword, maTheLoai);
+
+        req.setAttribute("listPhim", list);
+        req.setAttribute("listTheLoai", theLoaiRepo.getAll());
+        req.setAttribute("keyword", keyword != null ? keyword.trim() : "");
+        req.setAttribute("selectedTheLoai", (maTheLoai != null && !"Tất cả".equalsIgnoreCase(maTheLoai.trim())) ? maTheLoai.trim() : "");
+
+        req.getRequestDispatcher("/phim/view.jsp").forward(req, resp);
+    }
+
+    // 3. Xử lý thêm mới phim
+    private void themPhim(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        savePhim(req, resp, false);
+    }
+
+    // 4. Xử lý cập nhật phim
+    private void capNhatPhim(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        savePhim(req, resp, true);
+    }
+
     /**
-     * Xử lý chung cho cả Thêm mới (isUpdate = false) và Cập nhật (isUpdate = true) phim.
+     * Hàm dùng chung để validate và lưu dữ liệu phim (cho cả Thêm mới và Cập nhật)
      */
     private void savePhim(HttpServletRequest req, HttpServletResponse resp, boolean isUpdate)
             throws ServletException, IOException {
@@ -62,18 +96,26 @@ public class PhimServlet extends HttpServlet {
         String ngayKetThucStr = trimParam(req, "ngayKetThuc");
         String daoDien = trimParam(req, "daoDien");
         String dienVien = trimParam(req, "dienVien");
+        String quocGia = trimParam(req, "quocGia");
         String doTuoi = trimParam(req, "doTuoi");
+        String trangThai = trimParam(req, "trangThai");
         String poster = trimParam(req, "poster");
         String trailer = trimParam(req, "trailer");
         String moTa = trimParam(req, "moTa");
         String[] maTheLoais = req.getParameterValues("maTheLoais");
 
         Phim formPhim = new Phim();
-        formPhim.setMaPhim(ma);
+        if (isUpdate && !ma.isEmpty()) {
+            try {
+                formPhim.setMaPhim(Integer.parseInt(ma));
+            } catch (NumberFormatException ignored) {}
+        }
         formPhim.setTenPhim(ten);
         formPhim.setDaoDien(daoDien);
         formPhim.setDienVien(dienVien);
+        formPhim.setQuocGia(quocGia);
         formPhim.setDoTuoi(doTuoi);
+        formPhim.setTrangThai(trangThai.isEmpty() ? "Đang chiếu" : trangThai);
         formPhim.setPoster(poster);
         formPhim.setTrailer(trailer);
         formPhim.setMoTa(moTa);
@@ -93,7 +135,7 @@ public class PhimServlet extends HttpServlet {
 
         String error = null;
 
-        if (ma.isEmpty() || ten.isEmpty() || thoiLuongStr.isEmpty()
+        if ((isUpdate && ma.isEmpty()) || ten.isEmpty() || thoiLuongStr.isEmpty()
                 || ngayKhoiChieuStr.isEmpty() || ngayKetThucStr.isEmpty()) {
             error = "Vui lòng nhập đầy đủ các trường bắt buộc (*)!";
         }
@@ -123,14 +165,24 @@ public class PhimServlet extends HttpServlet {
             } catch (DateTimeParseException e) {
                 error = "Định dạng ngày khởi chiếu / kết thúc không hợp lệ!";
             }
+
         }
+
         formPhim.setNgayKhoiChieu(ngayKhoiChieu);
         formPhim.setNgayKetThuc(ngayKetThuc);
+        // Tự động tính trạng thái theo ngày khởi chiếu và kết thúc
+        LocalDate homNay = LocalDate.now();
+        String trangThaiTuDong;
 
-        if (error == null && !isUpdate && phimRepo.getOne(ma) != null) {
-            error = "Mã phim '" + ma + "' đã tồn tại!";
+        if (ngayKhoiChieu != null && homNay.isBefore(ngayKhoiChieu)) {
+            trangThaiTuDong = "Sắp chiếu";
+        } else if (ngayKetThuc != null && homNay.isAfter(ngayKetThuc)) {
+            trangThaiTuDong = "Ngừng chiếu";
+        } else {
+            trangThaiTuDong = "Đang chiếu";
         }
 
+        formPhim.setTrangThai(trangThaiTuDong);
         if (error != null) {
             req.setAttribute("error", error);
             req.setAttribute("openModal", modalMode);
@@ -138,7 +190,7 @@ public class PhimServlet extends HttpServlet {
             req.setAttribute("formThoiLuong", thoiLuongStr);
             req.setAttribute("formNgayKhoiChieu", ngayKhoiChieuStr);
             req.setAttribute("formNgayKetThuc", ngayKetThucStr);
-            renderView(req, resp);
+            hienThiDanhSach(req, resp);
             return;
         }
 
@@ -150,7 +202,7 @@ public class PhimServlet extends HttpServlet {
             req.setAttribute("formThoiLuong", thoiLuongStr);
             req.setAttribute("formNgayKhoiChieu", ngayKhoiChieuStr);
             req.setAttribute("formNgayKetThuc", ngayKetThucStr);
-            renderView(req, resp);
+            hienThiDanhSach(req, resp);
             return;
         }
 

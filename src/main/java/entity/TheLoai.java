@@ -2,6 +2,8 @@ package entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -18,8 +20,9 @@ import lombok.Setter;
 public class TheLoai {
 
     @Id
-    @Column(name = "MaTheLoai", length = 20, nullable = false)
-    private String maTheLoai;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "MaTheLoai", nullable = false)
+    private Integer maTheLoai;
 
     @Column(name = "TenTheLoai", length = 100, nullable = false)
     private String tenTheLoai;
