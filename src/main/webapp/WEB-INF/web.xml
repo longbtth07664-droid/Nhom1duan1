@@ -28,6 +28,25 @@
         <url-pattern>/logout</url-pattern>
     </servlet-mapping>
 
+
+    <!-- Servlet Suất Chiếu -->
+    <servlet>
+        <servlet-name>SuatChieuServlet</servlet-name>
+        <servlet-class>controller.SuatChieuServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SuatChieuServlet</servlet-name>
+        <url-pattern>/suat-chieu</url-pattern>
+        <url-pattern>/suat-chieu/</url-pattern>
+        <url-pattern>/suat-chieu/view</url-pattern>
+        <url-pattern>/suat-chieu/detail</url-pattern>
+        <url-pattern>/suat-chieu/view-update</url-pattern>
+        <url-pattern>/suat-chieu/add</url-pattern>
+        <url-pattern>/suat-chieu/update</url-pattern>
+        <url-pattern>/suat-chieu/cancel</url-pattern>
+        <url-pattern>/suat-chieu/delete</url-pattern>
+    </servlet-mapping>
+
     <!-- Filter Phân quyền -->
     <filter>
         <filter-name>AuthFilter</filter-name>
