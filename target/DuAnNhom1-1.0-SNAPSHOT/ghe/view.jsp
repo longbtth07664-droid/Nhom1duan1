@@ -29,7 +29,8 @@
             <div class="menu-group-label">Menu chức năng</div>
 
             <!-- Bảng tổng quan -->
-            <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="nav-item">
+            <%-- [Ghi chú - Khánh]: Điều hướng Tổng quan về /thong-ke --%>
+            <a href="${pageContext.request.contextPath}/thong-ke" class="nav-item">
                 <span>Tổng quan</span>
             </a>
 

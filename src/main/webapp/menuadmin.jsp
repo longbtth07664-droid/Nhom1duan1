@@ -1,4 +1,11 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%
+    // [Ghi chú - Khánh]: Nếu truy cập menuadmin.jsp trực tiếp, tự động chuyển về Tổng quan (/thong-ke)
+    if (request.getAttribute("jakarta.servlet.include.request_uri") == null) {
+        response.sendRedirect(request.getContextPath() + "/thong-ke");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -22,7 +29,8 @@
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu chức năng</div>
 
-            <a href="#" class="nav-item active">
+            <%-- [Ghi chú - Khánh]: Bấm vào Tổng quan hiển thị Thống kê kinh doanh (/thong-ke) --%>
+            <a href="${pageContext.request.contextPath}/thong-ke" class="nav-item">
                 <span>Tổng quan</span>
             </a>
 
@@ -54,9 +62,7 @@
                 <span>Quản lý lịch chiếu</span>
             </a>
 
-
-
-            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
+            <%-- [Ghi chú - Khánh]: Đã chuyển chức năng Thống kê kinh doanh lên mục Tổng quan ở trên --%>
             <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
                 <span>Quản lí sản phẩm</span>
             </a>
@@ -68,8 +74,6 @@
             <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
                 <span>Quản lí khách hàng</span>
             </a>
-        </nav>
-
         </nav>
 
 

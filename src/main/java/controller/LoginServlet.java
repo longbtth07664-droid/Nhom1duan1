@@ -23,7 +23,8 @@ public class LoginServlet extends HttpServlet {
         if (session != null && session.getAttribute("currentUser") != null) {
             TaiKhoan tk = (TaiKhoan) session.getAttribute("currentUser");
             if ("QuanLy".equalsIgnoreCase(tk.getVaiTro())) {
-                response.sendRedirect(request.getContextPath() + "/menuadmin.jsp");
+                // [Ghi chú - Khánh]: Quản lý đăng nhập sẽ chuyển hướng trực tiếp vào Tổng quan (/thong-ke)
+                response.sendRedirect(request.getContextPath() + "/thong-ke");
             } else {
                 response.sendRedirect(request.getContextPath() + "/menunv.jsp");
             }
@@ -63,7 +64,8 @@ public class LoginServlet extends HttpServlet {
             session.setAttribute("userName", tk.getHoTen());
 
             if ("QuanLy".equalsIgnoreCase(tk.getVaiTro())) {
-                response.sendRedirect(request.getContextPath() + "/menuadmin.jsp");
+                // [Ghi chú - Khánh]: Quản lý đăng nhập sẽ chuyển hướng trực tiếp vào Tổng quan (/thong-ke)
+                response.sendRedirect(request.getContextPath() + "/thong-ke");
             } else {
                 response.sendRedirect(request.getContextPath() + "/menunv.jsp");
             }
