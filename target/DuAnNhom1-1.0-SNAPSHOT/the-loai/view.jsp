@@ -11,7 +11,71 @@
 <body>
 <div class="app-shell">
     <!-- MENU BÊN TRÁI -->
-    <jsp:include page="/menuadmin.jsp" />
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-text">
+                <h1>Rạp Chiếu Phim CINEMAX</h1>
+                <span>Quản lý</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-menu">
+            <div class="menu-group-label">Menu chức năng</div>
+
+            <a href="#" class="nav-item active">
+                <span>Tổng quan</span>
+            </a>
+
+            <div class="nav-group">
+                <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
+                    <span>Quản lí phim</span>
+                    <span class="nav-arrow">▾</span>
+                </button>
+                <div class="nav-submenu">
+                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
+                    <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
+                </div>
+            </div>
+
+
+            <a href="${pageContext.request.contextPath}/phong-chieu/view"
+               class="nav-item active">
+                <span>Phòng ghế</span>
+            </a>
+
+
+            <a href="#" class="nav-item">
+                <span>Lịch chiếu bán vé</span>
+            </a>
+
+
+
+            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
+            <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
+                <span>Quản lí sản phẩm</span>
+            </a>
+
+            <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
+                <span>Quản lí combo</span>
+            </a>
+        </nav>
+
+        </nav>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar">QL</div>
+                <div class="user-info">
+                    <div class="name">Quản lý rạp</div>
+                    <div class="role">Admin</div>
+                </div>
+            </div>
+
+            <a href="<%= request.getContextPath() %>/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
+        </div>
+    </aside>
 
     <!-- NỘI DUNG QUẢN LÍ THỂ LOẠI -->
     <div class="main-wrapper">
@@ -95,9 +159,10 @@
         <form action="${pageContext.request.contextPath}/the-loai/add" method="post">
             <div class="form-stack">
                 <div class="form-group">
-                    <label for="addMaTheLoai">Mã thể loại</label>
+                    <label for="addMaTheLoai">Mã thể loại<span class="required-star">*</span></label>
                     <input type="text" id="addMaTheLoai" name="maTheLoai" class="form-control"
-                           value="Tự động sinh (Auto ID)" readonly style="background: var(--bg-input); cursor: not-allowed; color: var(--text-secondary);">
+                           value="${openModal == 'add' ? tl.maTheLoai : ''}"
+                           placeholder="VD: TL11">
                 </div>
                 <div class="form-group">
                     <label for="addTenTheLoai">Tên thể loại<span class="required-star">*</span></label>
@@ -176,6 +241,6 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=9"></script>
+<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=6"></script>
 </body>
 </html>

@@ -61,6 +61,7 @@ public class AuthFilter implements Filter {
         // Những đường dẫn chỉ dành cho Quản lý
         boolean isAdminUrl =
                 path.startsWith("/the-loai/")
+                        || path.startsWith("/loai-phong/")
                         || path.startsWith("/phong-chieu/")
                         || path.startsWith("/phim/")
                         || path.startsWith("/quan-ly-combo")

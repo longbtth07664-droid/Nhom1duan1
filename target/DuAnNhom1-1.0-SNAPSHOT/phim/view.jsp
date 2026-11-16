@@ -11,9 +11,73 @@
 <body>
 <div class="app-shell">
     <!-- MENU BÊN TRÁI -->
-    <jsp:include page="/menuadmin.jsp" />
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-text">
+                <h1>Rạp Chiếu Phim CINEMAX</h1>
+                <span>Quản lý</span>
+            </div>
+        </div>
 
-    <!-- NỘI DUNG CHÍNH -->
+        <nav class="sidebar-menu">
+            <div class="menu-group-label">Menu chức năng</div>
+
+
+            <a href="#" class="nav-item active">
+                <span>Tổng quan</span>
+            </a>
+
+            <div class="nav-group">
+                <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
+                    <span>Quản lí phim</span>
+                    <span class="nav-arrow">▾</span>
+                </button>
+                <div class="nav-submenu">
+                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
+                    <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
+                </div>
+            </div>
+
+
+            <a href="${pageContext.request.contextPath}/phong-chieu/view"
+               class="nav-item active">
+                <span>Phòng ghế</span>
+            </a>
+
+
+            <a href="#" class="nav-item">
+                <span>Lịch chiếu bán vé</span>
+            </a>
+
+
+
+            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
+            <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
+                <span>Quản lí sản phẩm</span>
+            </a>
+
+            <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
+                <span>Quản lí combo</span>
+            </a>
+        </nav>
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar"><%= session.getAttribute("userName") != null ? session.getAttribute("userName").toString().substring(0, 1).toUpperCase() : "QL" %></div>
+                <div class="user-info">
+                    <div class="name"><%= session.getAttribute("userName") != null ? session.getAttribute("userName") : "Quản lý rạp" %></div>
+                    <div class="role"><%= session.getAttribute("userRole") != null ? session.getAttribute("userRole") : "QuanLy" %></div>
+                </div>
+            </div>
+
+            <a href="${pageContext.request.contextPath}/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
+        </div>
+    </aside>
+
+    <!-- NỘI DUNG DANH SÁCH PHIM -->
     <div class="main-wrapper">
         <header class="topbar">
             <div class="topbar-left">
@@ -28,35 +92,6 @@
         </header>
 
         <main class="content-area">
-            <!-- 1. BỘ LỌC & TÌM KIẾM PHIM (DIV RIÊNG BIỆT) -->
-            <div class="card" style="margin-bottom: 20px;">
-                <div class="card-header" style="margin-bottom: 12px;">
-                    <div>
-                        <div class="card-title">Bộ lọc & Tìm kiếm phim</div>
-                        <div class="card-subtitle">Tìm kiếm phim theo từ khóa hoặc lọc theo thể loại</div>
-                    </div>
-                </div>
-
-                <form action="${pageContext.request.contextPath}/phim/view" method="get" class="filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
-                    <input type="hidden" name="action" value="search">
-                    <input type="text" name="keyword" class="form-control" style="max-width: 320px;"
-                           placeholder="Nhập mã phim, tên phim, đạo diễn..." value="<c:out value='${keyword}'/>">
-
-                    <select name="maTheLoai" class="form-control" style="max-width: 220px;">
-                        <option value="" ${empty selectedTheLoai || selectedTheLoai == 'Tất cả' ? 'selected' : ''}>-- Tất cả thể loại --</option>
-                        <c:forEach items="${listTheLoai}" var="tl">
-                            <option value="${tl.maTheLoai}" ${selectedTheLoai == tl.maTheLoai.toString() ? 'selected' : ''}>
-                                <c:out value="${tl.tenTheLoai}"/>
-                            </option>
-                        </c:forEach>
-                    </select>
-
-                    <button type="submit" class="btn btn-pink">Tìm kiếm</button>
-                    <a href="${pageContext.request.contextPath}/phim/view" class="btn btn-ghost">Làm mới</a>
-                </form>
-            </div>
-
-            <!-- 2. DANH SÁCH PHIM -->
             <div class="card">
                 <div class="card-header">
                     <div>
@@ -69,15 +104,7 @@
                     </div>
                 </div>
 
-
-
                 <div class="movie-grid">
-                    <c:if test="${empty listPhim}">
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
-                            <p style="font-size: 16px; margin-bottom: 8px;">Không tìm thấy bộ phim nào phù hợp!</p>
-                            <a href="${pageContext.request.contextPath}/phim/view" class="btn btn-ghost btn-sm">Xem tất cả phim</a>
-                        </div>
-                    </c:if>
                     <c:forEach items="${listPhim}" var="item">
                         <article class="movie-card">
                             <div class="movie-poster">
@@ -117,9 +144,6 @@
                                     <c:if test="${not empty item.daoDien}">
                                         <div>Đạo diễn: <c:out value="${item.daoDien}"/></div>
                                     </c:if>
-                                    <c:if test="${not empty item.trangThai}">
-                                        <div>Trạng thái: <span style="display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; background: ${item.trangThai == 'Đang chiếu' ? '#dcfce7; color:#15803d;' : (item.trangThai == 'Sắp chiếu' ? '#fef9c3; color:#a16207;' : '#f1f5f9; color:#475569;')}"><c:out value="${item.trangThai}"/></span></div>
-                                    </c:if>
                                 </div>
                             </div>
 
@@ -137,8 +161,6 @@
                                         data-dotuoi="<c:out value='${item.doTuoi}'/>"
                                         data-poster="<c:out value='${item.poster}'/>"
                                         data-trailer="<c:out value='${item.trailer}'/>"
-                                        data-quocgia="<c:out value='${item.quocGia}'/>"
-                                        data-trangthai="<c:out value='${item.trangThai}'/>"
                                         data-mota="<c:out value='${item.moTa}'/>"
                                         data-tentheloais="<c:out value='${item.tenTheLoaisStr}'/>"
                                         data-matheloais="<c:out value='${item.maTheLoaisStr}'/>"
@@ -155,8 +177,6 @@
                                         data-dotuoi="<c:out value='${item.doTuoi}'/>"
                                         data-poster="<c:out value='${item.poster}'/>"
                                         data-trailer="<c:out value='${item.trailer}'/>"
-                                        data-quocgia="<c:out value='${item.quocGia}'/>"
-                                        data-trangthai="<c:out value='${item.trangThai}'/>"
                                         data-mota="<c:out value='${item.moTa}'/>"
                                         data-matheloais="<c:out value='${item.maTheLoaisStr}'/>"
                                         onclick="openEditPhimFromBtn(this)">Sửa</button>
@@ -184,9 +204,10 @@
         <form action="${pageContext.request.contextPath}/phim/add" method="post">
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="addMaPhim">Mã phim</label>
+                    <label for="addMaPhim">Mã phim<span class="required-star">*</span></label>
                     <input type="text" id="addMaPhim" name="maPhim" class="form-control"
-                           value="Tự động sinh (Auto ID)" readonly style="background: var(--bg-input); cursor: not-allowed; color: var(--text-secondary);">
+                           value="${openModal == 'add' ? formPhim.maPhim : ''}"
+                           placeholder="VD: P11">
                 </div>
                 <div class="form-group">
                     <label for="addTenPhim">Tên phim<span class="required-star">*</span></label>
@@ -210,13 +231,6 @@
                         <option value="T18" ${openModal == 'add' && formPhim.doTuoi == 'T18' ? 'selected' : ''}>T18 - Từ 18 tuổi trở lên</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="addQuocGia">Quốc gia</label>
-                    <input type="text" id="addQuocGia" name="quocGia" class="form-control"
-                           value="${openModal == 'add' ? formPhim.quocGia : ''}"
-                           placeholder="VD: Việt Nam, Mỹ...">
-                </div>
-              
                 <div class="form-group">
                     <label for="addNgayKhoiChieu">Ngày khởi chiếu<span class="required-star">*</span></label>
                     <input type="date" id="addNgayKhoiChieu" name="ngayKhoiChieu" class="form-control"
@@ -243,13 +257,13 @@
                     <label for="addPoster">Poster (tên ảnh / đường dẫn)</label>
                     <input type="text" id="addPoster" name="poster" class="form-control"
                            value="${openModal == 'add' ? formPhim.poster : ''}"
-                           placeholder="VD: mai.jpg hoặc link URL">
+                           placeholder="VD: mai.jpg">
                 </div>
                 <div class="form-group">
-                    <label for="addTrailer">Trailer (video / YouTube URL)</label>
+                    <label for="addTrailer">Trailer (video / đường dẫn)</label>
                     <input type="text" id="addTrailer" name="trailer" class="form-control"
                            value="${openModal == 'add' ? formPhim.trailer : ''}"
-                           placeholder="VD: https://youtube.com/watch?v=...">
+                           placeholder="VD: trailer_p11.mp4">
                 </div>
                 <div class="form-group full">
                     <label>Thể loại phim</label>
@@ -324,20 +338,6 @@
                         <option value="T13" ${openModal == 'update' && formPhim.doTuoi == 'T13' ? 'selected' : ''}>T13 - Từ 13 tuổi trở lên</option>
                         <option value="T16" ${openModal == 'update' && formPhim.doTuoi == 'T16' ? 'selected' : ''}>T16 - Từ 16 tuổi trở lên</option>
                         <option value="T18" ${openModal == 'update' && formPhim.doTuoi == 'T18' ? 'selected' : ''}>T18 - Từ 18 tuổi trở lên</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="editQuocGia">Quốc gia</label>
-                    <input type="text" id="editQuocGia" name="quocGia" class="form-control"
-                           value="${openModal == 'update' ? formPhim.quocGia : ''}"
-                           placeholder="VD: Việt Nam, Mỹ...">
-                </div>
-                <div class="form-group">
-                    <label for="editTrangThai">Trạng thái</label>
-                    <select id="editTrangThai" name="trangThai" class="form-control">
-                        <option value="Đang chiếu" ${openModal == 'update' && formPhim.trangThai == 'Đang chiếu' ? 'selected' : ''}>Đang chiếu</option>
-                        <option value="Sắp chiếu" ${openModal == 'update' && formPhim.trangThai == 'Sắp chiếu' ? 'selected' : ''}>Sắp chiếu</option>
-                        <option value="Ngừng chiếu" ${openModal == 'update' && formPhim.trangThai == 'Ngừng chiếu' ? 'selected' : ''}>Ngừng chiếu</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -434,14 +434,6 @@
                 <div class="form-control" style="background:var(--bg-input);" id="detailDoTuoi"></div>
             </div>
             <div class="form-group">
-                <label>Quốc gia</label>
-                <div class="form-control" style="background:var(--bg-input);" id="detailQuocGia"></div>
-            </div>
-            <div class="form-group">
-                <label>Trạng thái</label>
-                <div class="form-control" style="background:var(--bg-input);" id="detailTrangThai"></div>
-            </div>
-            <div class="form-group">
                 <label>Ngày khởi chiếu</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailNgayKhoiChieu"></div>
             </div>
@@ -476,6 +468,6 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=9"></script>
+<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=7"></script>
 </body>
 </html>

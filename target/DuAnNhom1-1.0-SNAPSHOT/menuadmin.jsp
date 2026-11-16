@@ -5,13 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Quản lý - Rạp Chiếu Phim</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=10">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=8">
 </head>
 <body>
 <div class="app-shell">
     <!-- MENU BÊN TRÁI -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
+
             <div class="brand-text">
                 <h1>Rạp Chiếu Phim CINEMAX</h1>
                 <span>Quản lý</span>
@@ -21,7 +22,7 @@
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu chức năng</div>
 
-            <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="nav-item">
+            <a href="#" class="nav-item active">
                 <span>Tổng quan</span>
             </a>
 
@@ -36,16 +37,25 @@
                 </div>
             </div>
 
-            <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-item">
-                <span>Phòng ghế</span>
+
+            <div class="nav-group">
+                <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
+                    <span>Phòng ghế</span>
+                    <span class="nav-arrow">▾</span>
+                </button>
+                <div class="nav-submenu">
+                    <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-subitem">Danh sách phòng chiếu</a>
+                </div>
+            </div>
+
+
+            <a href="#" class="nav-item">
+                <span>Lịch chiếu bán vé</span>
             </a>
 
-            <a href="" class="nav-item">
-                <span>Lịch chiếu </span>
-            </a>
-            <a href="${pageContext.request.contextPath}/ban-ve" class="nav-item">
-                <span>Bán vé</span>
-            </a>
+
+
+            <%-- Đặt BÊN TRONG thẻ </nav> và chỉ giữ 1 Quản lí sản phẩm + 1 Quản lí combo --%>
             <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item">
                 <span>Quản lí sản phẩm</span>
             </a>
@@ -54,6 +64,9 @@
                 <span>Quản lí combo</span>
             </a>
         </nav>
+
+        </nav>
+
 
         <div class="sidebar-footer">
             <div class="user-card">
@@ -67,10 +80,8 @@
             <a href="<%= request.getContextPath() %>/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
         </div>
     </aside>
-
-    <div class="main-wrapper"></div>
 </div>
 
-<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=11"></script>
+<script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=6"></script>
 </body>
 </html>
