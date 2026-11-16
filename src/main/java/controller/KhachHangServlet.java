@@ -9,14 +9,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import repository.KhachHangRepository;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 @WebServlet(name = "KhachHangServlet", urlPatterns = {
+        "/khach-hang",
+        "/khach-hang/",
         "/khach-hang/view",
         "/khach-hang/detail",
         "/khach-hang/add",
-        "/khach-hang/update"
+        "/khach-hang/update",
+        "/khach-hang/delete"
 })
 public class KhachHangServlet extends HttpServlet {
 
@@ -24,38 +26,46 @@ public class KhachHangServlet extends HttpServlet {
     private static final String VIEW = "/khach-hang/view.jsp";
     private static final int PAGE_SIZE = 5;
 
+    // Tiếp nhận và xử lý các yêu cầu GET (xem danh sách, tìm kiếm, phân trang và xóa khách hàng)
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        req.setCharacterEncoding("UTF-8");
+        resp.setCharacterEncoding("UTF-8");
 
         String path = req.getServletPath();
 
-        if (path.equals("/khach-hang/view")) {
-            loadPaging(req);
-            req.getRequestDispatcher(VIEW).forward(req, resp);
-
-        } else if (path.equals("/khach-hang/detail")) {
-            String id = getParam(req, "id");
-            KhachHang kh = repo.getById(id);
-            if (kh == null) {
-                resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy khách hàng!");
-                return;
-            }
-            req.setAttribute("kh", kh);
-            req.setAttribute("openModal", "detail");
-            loadPaging(req);
-            req.getRequestDispatcher(VIEW).forward(req, resp);
-
-        } else {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+        // Xử lý thao tác xóa một khách hàng
+        if (path.equals("/khach-hang/delete")) {
+            handleDelete(req, resp);
+            return;
         }
+
+        // Tải danh sách khách hàng có hỗ trợ tìm kiếm và phân trang
+        loadData(req);
+
+        // Hiển thị thông báo kết quả trả về từ URL tham số msg
+        String msg = req.getParameter("msg");
+        if ("add_ok".equals(msg)) {
+            req.setAttribute("successMsg", "Thêm mới khách hàng thành công!");
+        } else if ("update_ok".equals(msg)) {
+            req.setAttribute("successMsg", "Cập nhật thông tin khách hàng thành công!");
+        } else if ("delete_ok".equals(msg)) {
+            req.setAttribute("successMsg", "Đã xóa khách hàng thành công!");
+        } else if ("error".equals(msg)) {
+            req.setAttribute("errorMsg", "Có lỗi xảy ra trong quá trình xử lý!");
+        }
+
+        req.getRequestDispatcher(VIEW).forward(req, resp);
     }
 
+    // Tiếp nhận và phân phối các form POST (thêm mới hoặc cập nhật thông tin khách hàng)
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-
         req.setCharacterEncoding("UTF-8");
+        resp.setCharacterEncoding("UTF-8");
+
         String path = req.getServletPath();
 
         if (path.equals("/khach-hang/add")) {
@@ -63,43 +73,45 @@ public class KhachHangServlet extends HttpServlet {
         } else if (path.equals("/khach-hang/update")) {
             handleUpdate(req, resp);
         } else {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            resp.sendRedirect(req.getContextPath() + "/khach-hang/view");
         }
     }
 
-    // ==================== XỬ LÝ THÊM ====================
+    // ==================== XỬ LÝ THÊM MỚI KHÁCH HÀNG ====================
+
+    // Kiểm tra dữ liệu đầu vào và thêm mới một khách hàng vào cơ sở dữ liệu
     private void handleAdd(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-
-        String maKH   = getParam(req, "maKH");
-        String hoTen  = getParam(req, "hoTen");
-        String sdt    = getParam(req, "sdt");
+        String maKH = getParam(req, "maKH").toUpperCase();
+        String hoTen = getParam(req, "hoTen");
+        String sdt = getParam(req, "sdt");
         String gioiTinh = getParam(req, "gioiTinh");
         String diemStr = getParam(req, "diemTichLuy");
 
-        // Điểm tích lũy mặc định = 0 khi thêm mới
         Integer diemTichLuy = 0;
         String error = null;
 
         if (maKH.isEmpty() || hoTen.isEmpty() || sdt.isEmpty() || gioiTinh.isEmpty()) {
-            error = "Vui lòng nhập đầy đủ Mã, Họ tên, Số điện thoại và Giới tính!";
+            error = "Vui lòng nhập đầy đủ Mã KH, Họ tên, Số điện thoại và Giới tính!";
+        } else if (!sdt.matches("^0[0-9]{9,10}$")) {
+            error = "Số điện thoại không hợp lệ! Vui lòng nhập từ 10-11 chữ số bắt đầu bằng số 0.";
         }
 
         if (error == null && !diemStr.isEmpty()) {
             try {
                 diemTichLuy = Integer.parseInt(diemStr);
-                if (diemTichLuy < 0) error = "Điểm tích lũy không được âm!";
+                if (diemTichLuy < 0) error = "Điểm tích lũy không được là số âm!";
             } catch (NumberFormatException e) {
                 error = "Điểm tích lũy phải là số nguyên!";
             }
         }
 
         if (error == null && repo.getById(maKH) != null) {
-            error = "Mã khách hàng [" + maKH + "] đã tồn tại!";
+            error = "Mã khách hàng [" + maKH + "] đã tồn tại trên hệ thống!";
         }
 
         if (error == null && repo.existsBySdt(sdt, null)) {
-            error = "Số điện thoại [" + sdt + "] đã được đăng ký!";
+            error = "Số điện thoại [" + sdt + "] đã được đăng ký bởi khách hàng khác!";
         }
 
         KhachHang kh = new KhachHang(maKH, hoTen, sdt, diemTichLuy, gioiTinh);
@@ -109,35 +121,39 @@ public class KhachHangServlet extends HttpServlet {
             return;
         }
 
-        if (!repo.add(kh)) {
-            forwardWithError(req, resp, kh, "add", "Thêm khách hàng thất bại! Vui lòng kiểm tra kết nối CSDL.");
+        boolean ok = repo.add(kh);
+        if (!ok) {
+            forwardWithError(req, resp, kh, "add", "Thêm khách hàng thất bại! Vui lòng kiểm tra lại kết nối CSDL.");
             return;
         }
 
-        resp.sendRedirect(req.getContextPath() + "/khach-hang/view");
+        resp.sendRedirect(req.getContextPath() + "/khach-hang/view?msg=add_ok");
     }
 
-    // ==================== XỬ LÝ CẬP NHẬT ====================
+    // ==================== XỬ LÝ CẬP NHẬT KHÁCH HÀNG ====================
+
+    // Kiểm tra dữ liệu và cập nhật thông tin họ tên, SĐT, giới tính hoặc điểm tích lũy
     private void handleUpdate(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-
-        String maKH   = getParam(req, "maKH");
-        String hoTen  = getParam(req, "hoTen");
-        String sdt    = getParam(req, "sdt");
+        String maKH = getParam(req, "maKH").toUpperCase();
+        String hoTen = getParam(req, "hoTen");
+        String sdt = getParam(req, "sdt");
         String gioiTinh = getParam(req, "gioiTinh");
-        String diemStr  = getParam(req, "diemTichLuy");
+        String diemStr = getParam(req, "diemTichLuy");
 
         Integer diemTichLuy = 0;
         String error = null;
 
         if (maKH.isEmpty() || hoTen.isEmpty() || sdt.isEmpty() || gioiTinh.isEmpty()) {
             error = "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Giới tính!";
+        } else if (!sdt.matches("^0[0-9]{9,10}$")) {
+            error = "Số điện thoại không hợp lệ! Vui lòng nhập từ 10-11 chữ số bắt đầu bằng số 0.";
         }
 
         if (error == null) {
             try {
                 diemTichLuy = diemStr.isEmpty() ? 0 : Integer.parseInt(diemStr);
-                if (diemTichLuy < 0) error = "Điểm tích lũy không được âm!";
+                if (diemTichLuy < 0) error = "Điểm tích lũy không được là số âm!";
             } catch (NumberFormatException e) {
                 error = "Điểm tích lũy phải là số nguyên!";
             }
@@ -148,7 +164,7 @@ public class KhachHangServlet extends HttpServlet {
         }
 
         if (error == null && repo.existsBySdt(sdt, maKH)) {
-            error = "Số điện thoại [" + sdt + "] đã được đăng ký bởi khách hàng khác!";
+            error = "Số điện thoại [" + sdt + "] đã thuộc về một khách hàng khác!";
         }
 
         KhachHang kh = new KhachHang(maKH, hoTen, sdt, diemTichLuy, gioiTinh);
@@ -158,55 +174,76 @@ public class KhachHangServlet extends HttpServlet {
             return;
         }
 
-        if (!repo.update(kh)) {
-            forwardWithError(req, resp, kh, "update", "Cập nhật thất bại! Vui lòng kiểm tra kết nối CSDL.");
+        boolean ok = repo.update(kh);
+        if (!ok) {
+            forwardWithError(req, resp, kh, "update", "Cập nhật thất bại! Vui lòng thử lại.");
             return;
         }
 
-        resp.sendRedirect(req.getContextPath() + "/khach-hang/view");
+        resp.sendRedirect(req.getContextPath() + "/khach-hang/view?msg=update_ok");
     }
 
-    // ==================== HÀM HỖ TRỢ ====================
+    // ==================== XỬ LÝ XÓA KHÁCH HÀNG ====================
 
-    // Phân trang: 5 khách hàng / 1 trang
-    private void loadPaging(HttpServletRequest req) {
+    // Xóa khách hàng khỏi hệ thống nếu không có ràng buộc dữ liệu
+    private void handleDelete(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        String id = getParam(req, "id");
+        if (id.isEmpty()) {
+            resp.sendRedirect(req.getContextPath() + "/khach-hang/view?msg=error");
+            return;
+        }
+
+        boolean ok = repo.delete(id);
+        resp.sendRedirect(req.getContextPath() + "/khach-hang/view?msg=" + (ok ? "delete_ok" : "error"));
+    }
+
+    // ==================== CÁC HÀM HỖ TRỢ ====================
+
+    // Tải và tính toán danh sách khách hàng phân trang kết hợp tìm kiếm theo từ khóa
+    private void loadData(HttpServletRequest req) {
+        String keyword = getParam(req, "keyword");
+
         int page = 1;
         String pageParam = req.getParameter("page");
         if (pageParam != null && !pageParam.trim().isEmpty()) {
-            try { page = Integer.parseInt(pageParam.trim()); } catch (NumberFormatException e) { page = 1; }
+            try {
+                page = Integer.parseInt(pageParam.trim());
+            } catch (NumberFormatException e) {
+                page = 1;
+            }
         }
 
-        int totalItems = repo.count();
+        int totalItems = repo.countSearch(keyword);
         int totalPages = (int) Math.ceil((double) totalItems / PAGE_SIZE);
         if (totalPages <= 0) totalPages = 1;
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
 
-        List<KhachHang> all = repo.getAll();
-        int start = (page - 1) * PAGE_SIZE;
-        int end = Math.min(start + PAGE_SIZE, totalItems);
-        List<KhachHang> pagedList = (start < totalItems) ? all.subList(start, end) : Collections.emptyList();
+        List<KhachHang> list = repo.search(keyword, page, PAGE_SIZE);
 
-        req.setAttribute("listKhachHang", pagedList);
+        req.setAttribute("listKhachHang", list);
         req.setAttribute("currentPage", page);
         req.setAttribute("totalPages", totalPages);
         req.setAttribute("totalItems", totalItems);
+        req.setAttribute("totalAll", repo.count());
+        req.setAttribute("keyword", keyword);
     }
 
-    // Lấy param và trim
+    // Đọc tham số từ HTTP Request và loại bỏ khoảng trắng hai đầu
     private String getParam(HttpServletRequest req, String name) {
         String v = req.getParameter(name);
         return v != null ? v.trim() : "";
     }
 
-    // Quay lại view với thông báo lỗi và mở modal tương ứng
+    // Chuyển hướng về giao diện view kèm đối tượng lỗi và tự động mở lại modal tương ứng
     private void forwardWithError(HttpServletRequest req, HttpServletResponse resp,
                                   KhachHang kh, String openModal, String error)
             throws ServletException, IOException {
         req.setAttribute("kh", kh);
         req.setAttribute("openModal", openModal);
         req.setAttribute("error", error);
-        loadPaging(req);
+        loadData(req);
         req.getRequestDispatcher(VIEW).forward(req, resp);
     }
 }

@@ -65,8 +65,11 @@ public class AuthFilter implements Filter {
                         || path.startsWith("/phong-chieu/")
                         || path.startsWith("/phim/")
                         || path.startsWith("/quan-ly-combo")
+                        || path.startsWith("/quan-ly-san-pham")
+                        || path.startsWith("/suat-chieu")
+                        || path.startsWith("/ghe")
                         || path.equals("/menuadmin.jsp")
-                        || path.startsWith("/khach-hang/");
+                        || path.startsWith("/khach-hang");
 
         if (isAdminUrl) {
 

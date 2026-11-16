@@ -14,11 +14,13 @@ import java.io.IOException;
 })
 public class LoaiPhongServlet extends HttpServlet {
 
+    // Điều hướng về màn hình phòng chiếu và tự động bật popup Quản lý loại phòng
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.sendRedirect(req.getContextPath() + "/phong-chieu/view?openModal=loaiPhong");
     }
 
+    // Chuyển tiếp request POST sang xử lý tương tự như GET
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         doGet(req, resp);

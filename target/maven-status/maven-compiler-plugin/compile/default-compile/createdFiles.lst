@@ -1,12 +1,17 @@
 util\HibernateConfig.class
 repository\TaiKhoanRepository.class
+controller\GheServlet.class
 entity\TaiKhoan.class
+repository\GheRepository.class
+entity\LoaiGhe.class
 filter\AuthFilter.class
+repository\LoaiGheRepository.class
 repository\TheLoaiRepository.class
 entity\ChiTietComboId.class
 util\TestDB.class
 controller\LoginServlet.class
 repository\PhimRepository.class
+entity\Ghe.class
 com\example\DuAnNhom1\HelloServlet.class
 controller\PhimServlet.class
 controller\LogoutServlet.class

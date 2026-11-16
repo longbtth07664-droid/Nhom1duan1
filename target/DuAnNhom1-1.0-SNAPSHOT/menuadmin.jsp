@@ -45,6 +45,7 @@
                 </button>
                 <div class="nav-submenu">
                     <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-subitem">Danh sách phòng chiếu</a>
+                    <a href="${pageContext.request.contextPath}/ghe" class="nav-subitem">Sơ đồ & Quản lý ghế</a>
                 </div>
             </div>
 

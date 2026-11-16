@@ -10,6 +10,7 @@ import java.util.List;
 
 public class LoaiPhongRepository {
 
+    // Lấy toàn bộ danh sách loại phòng từ cơ sở dữ liệu
     public List<LoaiPhong> getAll() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery("FROM LoaiPhong ORDER BY maLoaiPhong", LoaiPhong.class).list();
@@ -19,6 +20,7 @@ public class LoaiPhongRepository {
         }
     }
 
+    // Tìm kiếm 1 loại phòng theo mã loại phòng
     public LoaiPhong getOne(String maLoaiPhong) {
         if (maLoaiPhong == null || maLoaiPhong.trim().isEmpty()) {
             return null;
@@ -31,6 +33,7 @@ public class LoaiPhongRepository {
         }
     }
 
+    // Thêm mới một loại phòng vào cơ sở dữ liệu
     public boolean add(LoaiPhong lp) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -47,6 +50,7 @@ public class LoaiPhongRepository {
         }
     }
 
+    // Cập nhật thông tin của một loại phòng
     public boolean update(LoaiPhong lp) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -63,6 +67,7 @@ public class LoaiPhongRepository {
         }
     }
 
+    // Xóa một loại phòng theo mã loại phòng
     public boolean delete(String maLoaiPhong) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {

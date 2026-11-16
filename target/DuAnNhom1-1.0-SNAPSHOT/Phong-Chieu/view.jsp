@@ -44,6 +44,7 @@
                 </button>
                 <div class="nav-submenu">
                     <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-subitem active">Danh sách phòng chiếu</a>
+                    <a href="${pageContext.request.contextPath}/ghe" class="nav-subitem">Sơ đồ & Quản lý ghế</a>
                 </div>
             </div>
 
@@ -127,6 +128,10 @@
                                 <td><c:out value="${item.sucChua}"/> ghế</td>
                                 <td>
                                     <div class="action-group">
+                                        <a href="${pageContext.request.contextPath}/ghe?maPhong=<c:out value='${item.maPhong}'/>"
+                                           class="btn btn-pink btn-sm"
+                                           style="text-decoration:none;"
+                                           title="Xem và quản lý sơ đồ ghế phòng này">Ghế</a>
                                         <button type="button"
                                                 class="btn btn-ghost btn-sm"
                                                 data-ma="<c:out value='${item.maPhong}'/>"
@@ -462,6 +467,7 @@
 
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
 <script>
+    // Mở popup thêm mới phòng chiếu và reset trắng form nhập liệu
     function openAddPhongChieu() {
         const err = document.getElementById('addPhongChieuError');
         if (err) err.style.display = 'none';
@@ -472,6 +478,7 @@
         document.getElementById('addPhongChieuModal').classList.add('open');
     }
 
+    // Mở popup cập nhật phòng chiếu và nạp dữ liệu từ nút bấm
     function openEditPhongChieuFromBtn(btn) {
         const err = document.getElementById('editPhongChieuError');
         if (err) err.style.display = 'none';
@@ -495,6 +502,7 @@
         document.getElementById('editPhongChieuModal').classList.add('open');
     }
 
+    // Mở popup xem chi tiết thông tin phòng chiếu
     function openDetailPhongChieuFromBtn(btn) {
         document.getElementById('detailMaPhong').textContent = btn.getAttribute('data-ma') || '';
         document.getElementById('detailTenPhong').textContent = btn.getAttribute('data-ten') || '';
@@ -503,6 +511,7 @@
         document.getElementById('detailPhongChieuModal').classList.add('open');
     }
 
+    // Đổ dữ liệu loại phòng lên form để chuẩn bị cập nhật
     function startEditLoaiPhong(btn) {
         const ma = btn.getAttribute('data-ma') || '';
         const ten = btn.getAttribute('data-ten') || '';
@@ -523,6 +532,7 @@
         document.getElementById('lpBtnCancel').style.display = 'inline-flex';
     }
 
+    // Hủy chế độ chỉnh sửa loại phòng và quay lại trạng thái thêm mới
     function cancelEditLoaiPhong() {
         const form = document.getElementById('loaiPhongForm');
         form.action = '${pageContext.request.contextPath}/phong-chieu/loai-phong-add';

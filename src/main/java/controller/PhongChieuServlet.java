@@ -32,6 +32,7 @@ public class PhongChieuServlet extends HttpServlet {
     private static final String VIEW = "/Phong-Chieu/view.jsp";
     private static final String VIEW_UPDATE = "/Phong-Chieu/view-update.jsp";
 
+    // Tiếp nhận và điều hướng các yêu cầu GET (xem danh sách, chi tiết, mở form sửa, xóa loại phòng)
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -94,6 +95,7 @@ public class PhongChieuServlet extends HttpServlet {
         }
     }
 
+    // Tiếp nhận và phân phối các form POST (thêm/sửa phòng chiếu, thêm/sửa loại phòng)
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -119,6 +121,7 @@ public class PhongChieuServlet extends HttpServlet {
     }
 
     // ==================== QUẢN LÝ LOẠI PHÒNG (CRUD TRONG PHÒNG CHIẾU) ====================
+    // Xóa một loại phòng sau khi kiểm tra không có phòng chiếu nào đang sử dụng
     private void handleDeleteLoaiPhong(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String id = getParameter(request, "id");
         if (id.isEmpty()) {
@@ -135,6 +138,7 @@ public class PhongChieuServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view?openModal=loaiPhong&lpMsg=" + (ok ? "delete_ok" : "error"));
     }
 
+    // Kiểm tra dữ liệu hợp lệ và thêm mới một loại phòng chiếu
     private void handleAddLoaiPhong(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String ma = getParameter(request, "maLoaiPhong");
         String ten = getParameter(request, "tenLoaiPhong");
@@ -153,6 +157,7 @@ public class PhongChieuServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view?openModal=loaiPhong&lpMsg=" + (ok ? "add_ok" : "error"));
     }
 
+    // Kiểm tra dữ liệu và cập nhật thông tin loại phòng chiếu
     private void handleUpdateLoaiPhong(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String ma = getParameter(request, "maLoaiPhong");
         String ten = getParameter(request, "tenLoaiPhong");
@@ -166,6 +171,7 @@ public class PhongChieuServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view?openModal=loaiPhong&lpMsg=" + (ok ? "update_ok" : "error"));
     }
 
+    // Kiểm tra dữ liệu đầu vào và thêm mới phòng chiếu vào database
     private void handleAdd(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -234,6 +240,7 @@ public class PhongChieuServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view");
     }
 
+    // Kiểm tra tính hợp lệ của dữ liệu và cập nhật phòng chiếu
     private void handleUpdate(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -310,6 +317,7 @@ public class PhongChieuServlet extends HttpServlet {
     }
 
     // ==================== HÀM HỖ TRỢ PHÂN TRANG (5 PHÒNG / 1 TRANG) ====================
+    // Tính toán phân trang và nạp danh sách 5 phòng chiếu cho trang hiện tại
     private void loadDataPaging(HttpServletRequest request) {
         int page = 1;
         int pageSize = 5; // Cố định 5 phòng chiếu trên 1 trang
@@ -353,13 +361,13 @@ public class PhongChieuServlet extends HttpServlet {
         request.setAttribute("listLoaiPhong", new repository.LoaiPhongRepository().getAll());
     }
 
-    // Lấy dữ liệu từ form và loại bỏ khoảng trắng
+    // Đọc tham số từ request và loại bỏ khoảng trắng thừa hai đầu
     private String getParameter(HttpServletRequest request, String name) {
         String value = request.getParameter(name);
         return value != null ? value.trim() : "";
     }
 
-    // Quay lại trang danh sách và giữ dữ liệu khi có lỗi
+    // Chuyển tiếp về giao diện JSP kèm thông báo lỗi và giữ lại dữ liệu đang nhập
     private void forwardToView(
             HttpServletRequest request,
             HttpServletResponse response,
