@@ -49,8 +49,8 @@
             </div>
 
 
-            <a href="#" class="nav-item">
-                <span>Lịch chiếu bán vé</span>
+            <a href="${pageContext.request.contextPath}/suat-chieu/view" class="nav-item">
+                <span>Quản lý lịch chiếu</span>
             </a>
 
 

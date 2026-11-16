@@ -58,6 +58,10 @@
             <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
                 <span>Quản lí combo</span>
             </a>
+
+            <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
+                <span>Quản lí khách hàng</span>
+            </a>
         </nav>
 
         </nav>
