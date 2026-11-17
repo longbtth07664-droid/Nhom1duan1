@@ -1,0 +1,463 @@
+package repository;
+
+import entity.ChiTietHoaDon;
+import entity.HoaDon;
+import entity.KhachHang;
+import entity.Ve;
+
+import java.math.BigDecimal;
+import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+
+public class HoaDonRepository {
+
+    private static final String DB_URL = "jdbc:sqlserver://localhost:1433;databaseName=QuanLyDatVeRapPhim;encrypt=true;trustServerCertificate=true;";
+    private static final String DB_USER = "sa";
+    private static final String DB_PASS = "123";
+
+    static {
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+    }
+
+    private boolean checkColumnExists(Connection conn, String tableName, String columnName) {
+        try {
+            DatabaseMetaData meta = conn.getMetaData();
+            try (ResultSet rs = meta.getColumns(null, null, tableName, columnName)) {
+                return rs.next();
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Lấy danh sách hóa đơn kèm lọc từ khóa, khoảng ngày và phương thức thanh toán
+     */
+    public List<HoaDon> getAll(String keyword, String fromDate, String toDate, String phuongThuc) {
+        List<HoaDon> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT h.MaDatVe, h.MaTK, h.NgayDat, h.TongTien, h.TrangThai, ");
+        sql.append("tk.HoTen AS TenThuNgan, ");
+        sql.append("tt.PhuongThuc AS PhuongThucTT ");
+        sql.append("FROM HoaDon h ");
+        sql.append("LEFT JOIN TaiKhoan tk ON h.MaTK = tk.MaTK ");
+        sql.append("LEFT JOIN ( ");
+        sql.append("    SELECT MaDatVe, MAX(PhuongThuc) AS PhuongThuc ");
+        sql.append("    FROM ThanhToan ");
+        sql.append("    GROUP BY MaDatVe ");
+        sql.append(") tt ON h.MaDatVe = tt.MaDatVe ");
+        sql.append("WHERE 1=1 ");
+
+        List<Object> params = new ArrayList<>();
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String kw = "%" + keyword.trim() + "%";
+            sql.append("AND (CAST(h.MaDatVe AS VARCHAR) LIKE ? OR tk.HoTen LIKE ?) ");
+            params.add(kw);
+            params.add(kw);
+        }
+
+        if (fromDate != null && !fromDate.trim().isEmpty()) {
+            sql.append("AND h.NgayDat >= ? ");
+            params.add(fromDate.trim() + " 00:00:00");
+        }
+
+        if (toDate != null && !toDate.trim().isEmpty()) {
+            sql.append("AND h.NgayDat <= ? ");
+            params.add(toDate.trim() + " 23:59:59");
+        }
+
+        if (phuongThuc != null && !phuongThuc.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(phuongThuc.trim())) {
+            sql.append("AND tt.PhuongThuc = ? ");
+            params.add(phuongThuc.trim());
+        }
+
+        sql.append("ORDER BY h.NgayDat DESC, h.MaDatVe DESC");
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    HoaDon hd = new HoaDon();
+                    hd.setMaDatVe(rs.getInt("MaDatVe"));
+                    hd.setMaTK(rs.getInt("MaTK"));
+                    Timestamp ts = rs.getTimestamp("NgayDat");
+                    if (ts != null) {
+                        hd.setNgayDat(ts.toLocalDateTime());
+                    }
+                    hd.setTongTien(rs.getBigDecimal("TongTien"));
+                    hd.setTrangThai(rs.getString("TrangThai"));
+                    hd.setTenThuNgan(rs.getString("TenThuNgan"));
+                    String pt = rs.getString("PhuongThucTT");
+                    hd.setPhuongThuc(pt != null ? pt : "Tiền mặt");
+                    list.add(hd);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Lấy thông tin chi tiết đầy đủ của 1 hóa đơn (bao gồm danh sách vé & combo)
+     */
+    public HoaDon getById(int maDatVe) {
+        HoaDon hd = null;
+        String sqlHd = "SELECT h.MaDatVe, h.MaTK, h.NgayDat, h.TongTien, h.TienGiam, h.TrangThai, " +
+                "tk.HoTen AS TenThuNgan, " +
+                "tt.PhuongThuc AS PhuongThucTT " +
+                "FROM HoaDon h " +
+                "LEFT JOIN TaiKhoan tk ON h.MaTK = tk.MaTK " +
+                "LEFT JOIN (SELECT MaDatVe, MAX(PhuongThuc) AS PhuongThuc FROM ThanhToan GROUP BY MaDatVe) tt ON h.MaDatVe = tt.MaDatVe " +
+                "WHERE h.MaDatVe = ?";
+
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlHd)) {
+                ps.setInt(1, maDatVe);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        hd = new HoaDon();
+                        hd.setMaDatVe(rs.getInt("MaDatVe"));
+                        hd.setMaTK(rs.getInt("MaTK"));
+                        Timestamp ts = rs.getTimestamp("NgayDat");
+                        if (ts != null) {
+                            hd.setNgayDat(ts.toLocalDateTime());
+                        }
+                        hd.setTongTien(rs.getBigDecimal("TongTien"));
+                        hd.setTienGiam(rs.getBigDecimal("TienGiam"));
+                        hd.setTrangThai(rs.getString("TrangThai"));
+                        hd.setTenThuNgan(rs.getString("TenThuNgan"));
+                        String pt = rs.getString("PhuongThucTT");
+                        hd.setPhuongThuc(pt != null ? pt : "Tiền mặt");
+                    }
+                }
+            }
+
+            if (hd == null) return null;
+
+            // Lấy danh sách Vé
+            String sqlVe = "SELECT v.MaVe, v.MaDatVe, v.MaSuat, v.MaGhe, v.GiaVe, v.MaQR, v.TrangThai, " +
+                    "g.HangGhe, g.SoGhe, " +
+                    "p.TenPhim, pc.TenPhong, sc.NgayChieu, sc.GioBatDau " +
+                    "FROM Ve v " +
+                    "LEFT JOIN Ghe g ON v.MaGhe = g.MaGhe " +
+                    "LEFT JOIN SuatChieu sc ON v.MaSuat = sc.MaSuat " +
+                    "LEFT JOIN Phim p ON sc.MaPhim = p.MaPhim " +
+                    "LEFT JOIN PhongChieu pc ON sc.MaPhong = pc.MaPhong " +
+                    "WHERE v.MaDatVe = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlVe)) {
+                ps.setInt(1, maDatVe);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Ve ve = new Ve();
+                        ve.setMaVe(rs.getInt("MaVe"));
+                        ve.setMaDatVe(rs.getInt("MaDatVe"));
+                        ve.setMaSuat(rs.getInt("MaSuat"));
+                        ve.setMaGhe(rs.getInt("MaGhe"));
+                        ve.setGiaVe(rs.getBigDecimal("GiaVe"));
+                        ve.setMaQR(rs.getString("MaQR"));
+                        ve.setTrangThai(rs.getString("TrangThai"));
+
+                        String hang = rs.getString("HangGhe");
+                        int so = rs.getInt("SoGhe");
+                        ve.setTenGhe((hang != null ? hang : "") + (so > 0 ? so : ""));
+                        ve.setTenPhim(rs.getString("TenPhim"));
+                        ve.setTenPhong(rs.getString("TenPhong"));
+
+                        java.sql.Date d = rs.getDate("NgayChieu");
+                        if (d != null) ve.setNgayChieu(d.toString());
+
+                        Time t = rs.getTime("GioBatDau");
+                        if (t != null) ve.setGioChieu(t.toString().substring(0, 5));
+
+                        hd.getDanhSachVe().add(ve);
+                    }
+                }
+            }
+
+            // Lấy danh sách Combo (ChiTietHoaDon)
+            String sqlCombo = "SELECT ct.MaChiTiet, ct.MaDatVe, ct.MaCombo, ct.SoLuong, ct.DonGia, " +
+                    "cb.TenCombo " +
+                    "FROM ChiTietHoaDon ct " +
+                    "LEFT JOIN Combo cb ON ct.MaCombo = cb.MaCombo " +
+                    "WHERE ct.MaDatVe = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlCombo)) {
+                ps.setInt(1, maDatVe);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        ChiTietHoaDon ct = new ChiTietHoaDon();
+                        ct.setMaChiTiet(rs.getInt("MaChiTiet"));
+                        ct.setMaDatVe(rs.getInt("MaDatVe"));
+                        ct.setMaCombo(rs.getInt("MaCombo"));
+                        ct.setSoLuong(rs.getInt("SoLuong"));
+                        ct.setDonGia(rs.getBigDecimal("DonGia"));
+                        ct.setTenCombo(rs.getString("TenCombo"));
+                        hd.getDanhSachChiTiet().add(ct);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return hd;
+    }
+
+    /**
+     * Tạo hóa đơn, vé, chi tiết combo và bản ghi thanh toán trong 1 transaction an toàn
+     */
+    public int taoHoaDonThanhToan(int maTK, String maKH, BigDecimal tongTien, BigDecimal tienGiam,
+                                  String phuongThuc, List<Ve> listVe, List<ChiTietHoaDon> listCombo) {
+        Connection conn = null;
+        int generatedMaDatVe = -1;
+
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+
+            boolean hasMaKH = checkColumnExists(conn, "HoaDon", "MaKH");
+            boolean hasTienGiam = checkColumnExists(conn, "HoaDon", "TienGiam");
+
+            // 1. Insert vào HoaDon
+            StringBuilder insertHd = new StringBuilder("INSERT INTO HoaDon (MaTK, NgayDat, TongTien");
+            if (hasTienGiam) insertHd.append(", TienGiam");
+            if (hasMaKH && maKH != null && !maKH.trim().isEmpty()) insertHd.append(", MaKH");
+            insertHd.append(", TrangThai) VALUES (?, ?, ?");
+            if (hasTienGiam) insertHd.append(", ?");
+            if (hasMaKH && maKH != null && !maKH.trim().isEmpty()) insertHd.append(", ?");
+            insertHd.append(", ?)");
+
+            try (PreparedStatement psHd = conn.prepareStatement(insertHd.toString(), Statement.RETURN_GENERATED_KEYS)) {
+                int col = 1;
+                psHd.setInt(col++, maTK > 0 ? maTK : 1);
+                psHd.setTimestamp(col++, new Timestamp(System.currentTimeMillis()));
+                psHd.setBigDecimal(col++, tongTien != null ? tongTien : BigDecimal.ZERO);
+                if (hasTienGiam) {
+                    psHd.setBigDecimal(col++, tienGiam != null ? tienGiam : BigDecimal.ZERO);
+                }
+                if (hasMaKH && maKH != null && !maKH.trim().isEmpty()) {
+                    psHd.setString(col++, maKH.trim());
+                }
+                psHd.setString(col++, "Đã hoàn tất");
+
+                psHd.executeUpdate();
+                try (ResultSet rsKeys = psHd.getGeneratedKeys()) {
+                    if (rsKeys.next()) {
+                        generatedMaDatVe = rsKeys.getInt(1);
+                    }
+                }
+            }
+
+            if (generatedMaDatVe <= 0) {
+                conn.rollback();
+                return -1;
+            }
+
+            // 2. Insert danh sách Vé
+            if (listVe != null && !listVe.isEmpty()) {
+                String sqlVe = "INSERT INTO Ve (MaDatVe, MaSuat, MaGhe, GiaVe, MaQR, TrangThai) VALUES (?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement psVe = conn.prepareStatement(sqlVe)) {
+                    for (Ve v : listVe) {
+                        psVe.setInt(1, generatedMaDatVe);
+                        psVe.setInt(2, v.getMaSuat() != null ? v.getMaSuat() : 1);
+                        psVe.setInt(3, v.getMaGhe() != null ? v.getMaGhe() : 1);
+                        psVe.setBigDecimal(4, v.getGiaVe() != null ? v.getGiaVe() : BigDecimal.ZERO);
+
+                        String qrCode = v.getMaQR();
+                        if (qrCode == null || qrCode.trim().isEmpty()) {
+                            qrCode = "CINEMAX-HD" + generatedMaDatVe + "-S" + v.getMaSuat() + "-G" + v.getMaGhe() + "-" +
+                                    UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                        }
+                        psVe.setString(5, qrCode);
+                        psVe.setString(6, "Đã bán");
+                        psVe.addBatch();
+                    }
+                    psVe.executeBatch();
+                }
+            }
+
+            // 3. Insert danh sách ChiTietHoaDon (Combo bắp nước)
+            if (listCombo != null && !listCombo.isEmpty()) {
+                String sqlCombo = "INSERT INTO ChiTietHoaDon (MaDatVe, MaCombo, SoLuong, DonGia) VALUES (?, ?, ?, ?)";
+                try (PreparedStatement psCombo = conn.prepareStatement(sqlCombo)) {
+                    for (ChiTietHoaDon ct : listCombo) {
+                        if (ct.getMaCombo() == null || ct.getSoLuong() == null || ct.getSoLuong() <= 0) continue;
+                        psCombo.setInt(1, generatedMaDatVe);
+                        psCombo.setInt(2, ct.getMaCombo());
+                        psCombo.setInt(3, ct.getSoLuong());
+                        psCombo.setBigDecimal(4, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                        psCombo.addBatch();
+                    }
+                    psCombo.executeBatch();
+                }
+            }
+
+            // 4. Insert vào ThanhToan
+            String sqlTT = "INSERT INTO ThanhToan (MaDatVe, PhuongThuc, NgayThanhToan, TrangThai) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement psTT = conn.prepareStatement(sqlTT)) {
+                psTT.setInt(1, generatedMaDatVe);
+                psTT.setString(2, (phuongThuc != null && !phuongThuc.trim().isEmpty()) ? phuongThuc.trim() : "Tiền mặt");
+                psTT.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                psTT.setString(4, "Thành công");
+                psTT.executeUpdate();
+            }
+
+            // 5. Cập nhật điểm tích lũy Khách hàng (nếu có khách hàng)
+            if (maKH != null && !maKH.trim().isEmpty()) {
+                try {
+                    int diemCong = (tongTien != null) ? tongTien.intValue() / 10000 : 0;
+                    int diemTru = (tienGiam != null) ? tienGiam.intValue() / 1000 : 0;
+                    int delta = diemCong - diemTru;
+
+                    String sqlKh = "UPDATE KhachHang SET DiemTichLuy = CASE WHEN DiemTichLuy + ? < 0 THEN 0 ELSE DiemTichLuy + ? END WHERE MaKH = ?";
+                    try (PreparedStatement psKh = conn.prepareStatement(sqlKh)) {
+                        psKh.setInt(1, delta);
+                        psKh.setInt(2, delta);
+                        psKh.setString(3, maKH.trim());
+                        psKh.executeUpdate();
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Bỏ qua lỗi cập nhật điểm KH: " + ex.getMessage());
+                }
+            }
+
+            conn.commit();
+            return generatedMaDatVe;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ignored) {}
+            }
+            return -1;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    /**
+     * Thống kê tổng hợp doanh thu và số lượng đơn hàng
+     */
+    public Map<String, Object> getThongKe() {
+        Map<String, Object> map = new HashMap<>();
+        BigDecimal tongDoanhThu = BigDecimal.ZERO;
+        BigDecimal doanhThuHomNay = BigDecimal.ZERO;
+        int tongHoaDon = 0;
+        int hoaDonHomNay = 0;
+
+        String sqlTong = "SELECT COUNT(*) AS TongHD, SUM(TongTien) AS TongTien FROM HoaDon WHERE TrangThai IS NULL OR TrangThai <> N'Đã hủy'";
+        String sqlToday = "SELECT COUNT(*) AS HDToday, SUM(TongTien) AS TienToday FROM HoaDon " +
+                "WHERE (TrangThai IS NULL OR TrangThai <> N'Đã hủy') " +
+                "AND CONVERT(date, NgayDat) = CONVERT(date, GETDATE())";
+
+        try (Connection conn = getConnection()) {
+            try (Statement st = conn.createStatement();
+                 ResultSet rs = st.executeQuery(sqlTong)) {
+                if (rs.next()) {
+                    tongHoaDon = rs.getInt("TongHD");
+                    BigDecimal bd = rs.getBigDecimal("TongTien");
+                    if (bd != null) tongDoanhThu = bd;
+                }
+            }
+
+            try (Statement st = conn.createStatement();
+                 ResultSet rs = st.executeQuery(sqlToday)) {
+                if (rs.next()) {
+                    hoaDonHomNay = rs.getInt("HDToday");
+                    BigDecimal bd = rs.getBigDecimal("TienToday");
+                    if (bd != null) doanhThuHomNay = bd;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        map.put("tongDoanhThu", tongDoanhThu);
+        map.put("doanhThuHomNay", doanhThuHomNay);
+        map.put("tongHoaDon", tongHoaDon);
+        map.put("hoaDonHomNay", hoaDonHomNay);
+        return map;
+    }
+
+    /**
+     * Tìm khách hàng theo Số điện thoại hoặc Mã KH
+     */
+    public KhachHang timKhachHangTheoSDT(String sdt) {
+        if (sdt == null || sdt.trim().isEmpty()) return null;
+        String sql = "SELECT MaKH, HoTen, SDT, DiemTichLuy, GioiTinh FROM KhachHang WHERE SDT = ? OR MaKH = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sdt.trim());
+            ps.setString(2, sdt.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    KhachHang kh = new KhachHang();
+                    kh.setMaKH(rs.getString("MaKH"));
+                    kh.setHoTen(rs.getString("HoTen"));
+                    kh.setSdt(rs.getString("SDT"));
+                    kh.setDiemTichLuy(rs.getInt("DiemTichLuy"));
+                    kh.setGioiTinh(rs.getString("GioiTinh"));
+                    return kh;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Tạo nhanh khách hàng mới nếu chưa có trong hệ thống khi thanh toán
+     */
+    public KhachHang taoKhachHangNhanh(String hoTen, String sdt) {
+        if (sdt == null || sdt.trim().isEmpty()) return null;
+        KhachHang existing = timKhachHangTheoSDT(sdt);
+        if (existing != null) return existing;
+
+        String newMaKH = "KH" + System.currentTimeMillis() % 100000;
+        String sql = "INSERT INTO KhachHang (MaKH, HoTen, SDT, DiemTichLuy, GioiTinh) VALUES (?, ?, ?, 0, N'Khác')";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newMaKH);
+            ps.setString(2, (hoTen != null && !hoTen.trim().isEmpty()) ? hoTen.trim() : "Khách hàng " + sdt);
+            ps.setString(3, sdt.trim());
+            ps.executeUpdate();
+
+            KhachHang kh = new KhachHang();
+            kh.setMaKH(newMaKH);
+            kh.setHoTen(hoTen);
+            kh.setSdt(sdt);
+            kh.setDiemTichLuy(0);
+            return kh;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+}
