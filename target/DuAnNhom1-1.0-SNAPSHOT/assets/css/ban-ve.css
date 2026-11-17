@@ -1,0 +1,711 @@
+/* ============================================================================
+ * FILE: assets/css/ban-ve.css
+ * MỤC ĐÍCH: Giao diện Quầy Bán Vé (POS) Cinema CINEMAX
+ * Chuẩn 100% theo giao diện thiết kế:
+ * - Topbar tối màu hiển thị Ca làm việc & Thu ngân
+ * - Thẻ phim kèm trực tiếp các nút Suất chiếu trong ngày
+ * - Giỏ chi tiết hóa đơn bên phải cập nhật thời gian thực
+ * ============================================================================ */
+
+/* 1. TOPBAR TỐI MÀU (DARK TOPBAR) */
+.topbar-pos-dark {
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.pos-shift-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #cbd5e1;
+}
+
+.pos-shift-info strong {
+    color: #ffffff;
+}
+
+.pos-stepper-dark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-pill-btn {
+    padding: 6px 16px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    color: #cbd5e1;
+    background: #1e293b;
+    border: 1px solid #334155;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.step-pill-btn:hover:not(.disabled) {
+    background: #334155;
+    color: #ffffff;
+}
+
+.step-pill-btn.active {
+    background: #db2777 !important;
+    border-color: #db2777 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(219, 39, 119, 0.4);
+}
+
+.step-pill-btn.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* 2. BỐ CỤC 2 CỘT */
+.pos-container {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    align-items: start;
+    margin-top: 10px;
+}
+
+@media (max-width: 1024px) {
+    .pos-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 3. KHỐI BƯỚC THAO TÁC BÊN TRÁI */
+.pos-section-block {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.pos-step-heading {
+    font-size: 12px;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.pos-step-heading-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.search-box-compact {
+    display: flex;
+    align-items: center;
+}
+
+.search-input-pos {
+    background: #334155;
+    border: 1px solid #475569;
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 12px;
+    width: 220px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.search-input-pos::placeholder {
+    color: #94a3b8;
+}
+
+.search-input-pos:focus {
+    border-color: #db2777;
+    background: #1e293b;
+    box-shadow: 0 0 0 2px rgba(219, 39, 119, 0.3);
+}
+
+/* 4. THANH CHỌN NGÀY COMPACT */
+.date-strip-compact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.date-pill-pos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 85px;
+    padding: 8px 14px;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    color: #334155;
+    transition: all 0.2s ease;
+}
+
+.date-pill-pos:hover {
+    border-color: #db2777;
+    transform: translateY(-2px);
+}
+
+.date-pill-pos.active {
+    background: #db2777 !important;
+    border-color: #db2777 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3);
+}
+
+.date-pill-pos .day-title {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.date-pill-pos .date-text {
+    font-size: 14px;
+    font-weight: 800;
+}
+
+/* 5. THẺ PHIM NGANG KÈM SUẤT CHIẾU (CHUẨN ẢNH THIẾT KẾ) */
+.movie-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.movie-schedule-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 16px;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.movie-schedule-card:hover {
+    border-color: #fbcfe8;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+}
+
+.movie-schedule-card.selected {
+    border-color: #db2777 !important;
+    box-shadow: 0 0 0 2px rgba(219, 39, 119, 0.25), 0 8px 24px rgba(219, 39, 119, 0.1);
+    background: #fffdfd;
+}
+
+.card-poster-wrap {
+    width: 85px;
+    height: 120px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #1e293b;
+    border: 1px solid #cbd5e1;
+}
+
+.card-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-poster-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.card-content-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.movie-name-heading {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge-age-pos {
+    background: #fef3c7;
+    color: #b45309;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 5px;
+}
+
+.badge-selected-status {
+    color: #db2777;
+    font-size: 11px;
+    font-weight: 800;
+    background: #fdf2f8;
+    border: 1px solid #fbcfe8;
+    padding: 2px 10px;
+    border-radius: 99px;
+}
+
+.movie-meta-text {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.showtimes-section-title {
+    font-size: 10px;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.showtime-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.showtime-btn-pill {
+    padding: 6px 14px;
+    border-radius: 99px;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #0f172a;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+.showtime-btn-pill:hover {
+    border-color: #db2777;
+    color: #db2777;
+    transform: translateY(-2px);
+}
+
+.showtime-btn-pill.active {
+    background: #db2777 !important;
+    border-color: #db2777 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(219, 39, 119, 0.35);
+}
+
+.showtime-btn-pill .sc-room {
+    font-size: 10px;
+    opacity: 0.85;
+}
+
+.no-movie-box {
+    text-align: center;
+    padding: 40px 20px;
+    border: 2px dashed #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+/* 6. CỘT PHẢI - CHI TIẾT HÓA ĐƠN (CHUẨN ẢNH) */
+.pos-cart-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    position: sticky;
+    top: 16px;
+}
+
+.cart-title-top {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    padding-bottom: 12px;
+    border-bottom: 1.5px solid #e2e8f0;
+    margin-bottom: 14px;
+}
+
+.cart-movie-highlight {
+    margin-bottom: 14px;
+}
+
+.cart-movie-name {
+    margin: 0 0 6px 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.2px;
+}
+
+.cart-sub-meta {
+    font-size: 12px;
+    color: #475569;
+    margin-bottom: 2px;
+}
+
+.cart-info-block {
+    padding: 8px 0;
+}
+
+.cart-line-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.label-light {
+    color: #64748b;
+}
+
+.value-bold {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.text-pink {
+    color: #db2777 !important;
+}
+
+.cart-grand-total-wrap {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1.5px solid #e2e8f0;
+}
+
+.total-row-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2px;
+}
+
+.total-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0f172a;
+    text-transform: uppercase;
+}
+
+.total-value {
+    font-size: 22px;
+    font-weight: 900;
+    color: #db2777;
+}
+
+.total-vat-note {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 16px;
+}
+
+.cart-button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-pos-action {
+    width: 100%;
+    padding: 12px;
+    background: #db2777;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(219, 39, 119, 0.25);
+}
+
+.btn-pos-action:hover:not(:disabled) {
+    background: #be185d;
+    transform: translateY(-1px);
+}
+
+.btn-pos-reset {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.btn-pos-reset:hover {
+    text-decoration: underline;
+}
+
+/* 7. PHẦN GHẾ & COMBO */
+.seat-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.screen-wrap {
+    width: 80%;
+    margin: 0 auto 24px auto;
+    text-align: center;
+}
+
+.cinema-screen-bar {
+    height: 6px;
+    background: linear-gradient(90deg, #db2777 0%, #f43f5e 50%, #db2777 100%);
+    border-radius: 99px;
+    box-shadow: 0 4px 16px rgba(219, 39, 119, 0.4);
+}
+
+.screen-text {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #94a3b8;
+    margin-top: 5px;
+}
+
+.seats-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.seat-row-pos {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.row-name {
+    width: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.pos-seat {
+    min-width: 32px;
+    height: 30px;
+    padding: 0 4px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.pos-seat.type-thuong {
+    background: #e2e8f0;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.pos-seat.type-thuong:hover {
+    background: #cbd5e1;
+    transform: scale(1.1);
+}
+
+.pos-seat.type-vip {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1.5px solid #f59e0b;
+}
+
+.pos-seat.type-vip:hover {
+    background: #fde68a;
+    transform: scale(1.1);
+}
+
+.pos-seat.type-doi {
+    min-width: 64px;
+    background: #fce7f3;
+    color: #9d174d;
+    border: 1.5px solid #ec4899;
+}
+
+.pos-seat.type-doi:hover {
+    background: #fbcfe8;
+    transform: scale(1.08);
+}
+
+.pos-seat.selected {
+    background: #db2777 !important;
+    color: #ffffff !important;
+    border-color: #be185d !important;
+    box-shadow: 0 0 10px rgba(219, 39, 119, 0.6);
+    transform: scale(1.08);
+}
+
+.pos-seat.sold {
+    background: #1e293b !important;
+    color: #64748b !important;
+    border-color: #334155 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+.pos-seat.disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* COMBO */
+.combo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.combo-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+
+.combo-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.combo-info p {
+    margin: 0;
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+.combo-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.combo-price {
+    font-size: 15px;
+    font-weight: 800;
+    color: #db2777;
+}
+
+.counter-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #f8fafc;
+}
+
+.counter-btn {
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+}
+
+.counter-btn:hover {
+    color: #db2777;
+}
+
+.counter-val {
+    width: 28px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+}

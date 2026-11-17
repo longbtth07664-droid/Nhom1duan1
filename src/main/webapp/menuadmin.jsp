@@ -26,6 +26,10 @@
                 <span>Tổng quan</span>
             </a>
 
+            <a href="${pageContext.request.contextPath}/ban-ve" class="nav-item">
+                <span>Bán vé tại quầy (POS)</span>
+            </a>
+
             <div class="nav-group">
                 <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
                     <span>Quản lí phim</span>

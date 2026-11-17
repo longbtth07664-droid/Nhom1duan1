@@ -7,6 +7,7 @@ entity\LoaiGhe.class
 filter\AuthFilter.class
 repository\LoaiGheRepository.class
 repository\TheLoaiRepository.class
+controller\BanVeServlet$MovieScheduleItem.class
 entity\ChiTietComboId.class
 util\TestDB.class
 controller\LoginServlet.class
