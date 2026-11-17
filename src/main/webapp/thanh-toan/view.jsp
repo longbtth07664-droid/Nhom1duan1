@@ -359,37 +359,14 @@
 <body>
 <div class="app-shell">
     <!-- MENU BÊN TRÁI -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-text">
-                <h1>Rạp Chiếu Phim CINEMAX</h1>
-                <span>${sessionScope.userRole != null ? sessionScope.userRole : "Quầy vé"}</span>
-            </div>
-        </div>
-
-        <nav class="sidebar-menu">
-            <div class="menu-group-label">Menu chức năng</div>
-
-            <a href="${pageContext.request.contextPath}/ban-ve" class="nav-item">
-                <span><i class="fa-solid fa-cash-register" style="margin-right:8px;"></i> Bán vé tại quầy (POS)</span>
-            </a>
-
-            <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item">
-                <span><i class="fa-solid fa-file-invoice-dollar" style="margin-right:8px;"></i> Quản lý hóa đơn & Vé</span>
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="user-card">
-                <div class="user-avatar">${sessionScope.userName != null ? sessionScope.userName.substring(0, 1).toUpperCase() : "U"}</div>
-                <div class="user-info">
-                    <div class="name">${sessionScope.userName != null ? sessionScope.userName : "Nhân viên"}</div>
-                    <div class="role">${sessionScope.userRole != null ? sessionScope.userRole : "Staff"}</div>
-                </div>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
-        </div>
-    </aside>
+    <c:choose>
+        <c:when test="${sessionScope.userRole == 'NhanVien' || sessionScope.userRole == 'Nhân viên'}">
+            <jsp:include page="/menunv.jsp" />
+        </c:when>
+        <c:otherwise>
+            <jsp:include page="/menuadmin.jsp" />
+        </c:otherwise>
+    </c:choose>
 
     <!-- NỘI DUNG CHÍNH -->
     <main class="main-content">

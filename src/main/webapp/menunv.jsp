@@ -25,6 +25,10 @@
             <a href="${pageContext.request.contextPath}/ban-ve" class="nav-item">
                 <span>Bán Hàng</span>
             </a>
+
+            <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item">
+                <span>Quản lí hóa đơn</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">

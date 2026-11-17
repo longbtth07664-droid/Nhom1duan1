@@ -89,9 +89,10 @@
                 </c:when>
 
                 <c:when test="${currentStep == 3}">
-                    <button type="button" class="btn-pos-action" onclick="alert('Đã sẵn sàng chuyển sang màn hình Thanh toán & In vé!')">
+                    <a href="${pageContext.request.contextPath}/thanh-toan?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}"
+                       class="btn-pos-action" style="text-align:center; text-decoration:none; display:block;">
                         ✓ Xác nhận đơn & Thu tiền
-                    </button>
+                    </a>
                 </c:when>
             </c:choose>
 

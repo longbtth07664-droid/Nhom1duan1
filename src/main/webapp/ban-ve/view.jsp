@@ -54,10 +54,15 @@
                            class="step-pill-btn ${currentStep == 3 ? 'active' : ''}">
                             3. Chọn Combo
                         </a>
+                        <a href="${pageContext.request.contextPath}/thanh-toan?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}"
+                           class="step-pill-btn ${currentStep == 4 ? 'active' : ''}">
+                            4. Thanh toán
+                        </a>
                     </c:when>
                     <c:otherwise>
                         <span class="step-pill-btn disabled">2. Chọn ghế</span>
                         <span class="step-pill-btn disabled">3. Chọn Combo</span>
+                        <span class="step-pill-btn disabled">4. Thanh toán</span>
                     </c:otherwise>
                 </c:choose>
             </div>
