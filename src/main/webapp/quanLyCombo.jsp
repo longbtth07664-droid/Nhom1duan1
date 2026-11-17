@@ -89,7 +89,7 @@
                 <span>Phòng ghế</span>
             </a>
 
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/suat-chieu/view" class="nav-item">
                 <span>Lịch chiếu bán vé</span>
             </a>
 
