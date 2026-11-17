@@ -105,7 +105,7 @@
 
     <!-- Nút chuyển bước -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:14px; border-top:1px solid #e2e8f0;">
-        <button type="button" class="btn btn-outline btn-sm" onclick="goToStep(1)">← Đổi phim / Suất chiếu khác</button>
-        <button type="button" class="btn btn-pink" onclick="goToStep(3)">Tiếp tục: Chọn Combo bắp nước →</button>
+        <a href="${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&step=1" class="btn btn-outline btn-sm" style="text-decoration:none;">← Đổi phim / Suất chiếu khác</a>
+        <a href="${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}&step=3" class="btn btn-pink" style="text-decoration:none;">Tiếp tục: Chọn Combo bắp nước →</a>
     </div>
 </div>

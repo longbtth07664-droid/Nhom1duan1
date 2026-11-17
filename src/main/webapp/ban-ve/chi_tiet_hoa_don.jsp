@@ -82,9 +82,10 @@
                 </c:when>
 
                 <c:when test="${currentStep == 2}">
-                    <button type="button" class="btn-pos-action" id="btnNextStep" data-current-step="2" onclick="goToStep(3)">
+                    <a href="${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}&step=3"
+                       class="btn-pos-action" style="text-align:center; text-decoration:none; display:block;">
                         Tiếp tục: Chọn Combo bắp nước →
-                    </button>
+                    </a>
                 </c:when>
 
                 <c:when test="${currentStep == 3}">

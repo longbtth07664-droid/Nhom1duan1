@@ -64,7 +64,7 @@
 
     <!-- Nút hoàn tất đơn -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px; padding-top:16px; border-top:1px solid #e2e8f0;">
-        <button type="button" class="btn btn-outline btn-sm" onclick="goToStep(2)">← Quay lại chọn ghế ngồi</button>
+        <a href="${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}&step=2" class="btn btn-outline btn-sm" style="text-decoration:none;">← Quay lại chọn ghế ngồi</a>
         <button type="button" class="btn btn-pink" onclick="alert('Đã sẵn sàng chuyển sang màn hình Thanh toán & In hóa đơn vé!')">
             ✓ Xác nhận đơn & Chuyển sang thanh toán
         </button>
