@@ -1,0 +1,358 @@
+/* THỐNG KÊ: CSS chỉ áp dụng trong trang báo cáo, dùng bảng màu CINEMAX. */
+.thong-ke .content-area {
+    max-width:1700px;
+    width:100%;
+    margin:0 auto;
+    padding:30px;
+}
+/* 1. Tiêu đề đầu trang */
+.tk-hero {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:24px;
+    margin-bottom:26px;
+}
+.tk-eyebrow {
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:1.5px;
+    color:var(--text-muted);
+}
+.tk-hero h1 {
+    font-size:30px;
+    letter-spacing:-1px;
+    margin:7px 0;
+}
+.tk-hero p,.tk-muted,.tk-footnote {
+    font-size:12px;
+    color:var(--text-secondary);
+    line-height:1.7;
+}
+.tk-status {
+    padding:10px 14px;
+    background:#ecfdf5;
+    border:1px solid #bbf7d0;
+    border-radius:30px;
+    font-size:11px;
+    color:#166534;
+    font-weight:600;
+}
+.thong-ke .card {
+    padding:24px;
+    margin-bottom:0;
+    border:1px solid var(--border-subtle);
+    box-shadow:0 4px 20px #0f172a03;
+}
+/* 2. Bộ lọc và nút chọn nhanh */
+.tk-filter {
+    margin-bottom:24px!important;
+}
+.tk-filter form {
+    display:flex;
+    align-items:flex-end;
+    gap:16px;
+}
+.tk-filter .form-group {
+    margin:0;
+    min-width:185px;
+}
+.tk-filter label {
+    font-size:12px;
+    font-weight:600;
+}
+.tk-filter .btn {
+    min-height:40px;
+}
+.tk-shortcuts {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:16px;
+}
+.tk-shortcuts a {
+    border:1px solid var(--border-subtle);
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:11px;
+}
+.tk-shortcuts a:hover,.tk-shortcuts a:focus {
+    background:var(--pink-soft);
+    border-color:var(--pink);
+}
+.tk-shortcuts>span {
+    margin-left:auto;
+    font-size:11px;
+    color:var(--text-muted);
+}
+/* 3. Thẻ chỉ số tổng quan */
+.tk-kpis {
+    display:grid;
+    grid-template-columns:1.4fr 1fr 1fr 1fr;
+    gap:16px;
+    margin-bottom:24px;
+}
+.tk-kpi {
+    padding:24px;
+    background:white;
+    border:1px solid var(--border-subtle);
+    border-radius:16px;
+    overflow-wrap:anywhere;
+}
+.tk-kpi>span {
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.9px;
+    color:var(--text-secondary);
+}
+.tk-kpi h2 {
+    font-size:30px;
+    letter-spacing:-.8px;
+    margin:12px 0 8px;
+    font-variant-numeric:tabular-nums;
+}
+.tk-kpi small {
+    font-size:16px;
+}
+.tk-kpi p {
+    font-size:11px;
+    color:var(--text-secondary);
+}
+.tk-kpi.tk-primary {
+    background:linear-gradient(125deg,#be123c,#f43f5e);
+    border-color:transparent;
+    color:white;
+    box-shadow:0 8px 24px #f43f5e24;
+}
+.tk-primary>span,.tk-primary p {
+    color:#ffe4e6;
+}
+/* 4. Biểu đồ và cơ cấu giao dịch */
+.tk-overview {
+    display:grid;
+    grid-template-columns:minmax(0,2fr) minmax(270px,1fr);
+    gap:20px;
+    margin-bottom:24px;
+}
+.tk-heading {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-bottom:10px;
+}
+.thong-ke h2 {
+    font-size:17px;
+    font-weight:750;
+}
+.tk-kpi h2 {
+    font-size:30px;
+}
+.tk-heading h2,.tk-summary h2 {
+    margin-top:5px;
+}
+.tk-legend {
+    font-size:11px;
+    color:var(--pink);
+    white-space:nowrap;
+}
+.tk-chart-scroll {
+    overflow-x:auto;
+    margin-top:24px;
+}
+.tk-chart {
+    display:flex;
+    gap:7px;
+    min-width:100%;
+    width:max-content;
+    height:220px;
+    align-items:flex-end;
+    background:repeating-linear-gradient(to top,transparent 0,transparent 48px,#f1f5f9 49px,#f1f5f9 50px);
+}
+.tk-column {
+    flex:1 0 32px;
+    min-width:32px;
+    text-align:center;
+}
+.tk-bar-track {
+    height:180px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    border-bottom:1px solid var(--border-subtle);
+}
+.tk-bar {
+    width:65%;
+    max-width:35px;
+    background:linear-gradient(to top,#fb7185,#fda4af);
+    border-radius:5px 5px 0 0;
+}
+.tk-column:hover .tk-bar {
+    background:var(--pink);
+}
+.tk-column>span {
+    display:block;
+    font-size:9px;
+    color:var(--text-muted);
+    padding:8px 0;
+}
+.tk-summary dl {
+    margin:20px 0;
+}
+.tk-summary dl>div {
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 0;
+    border-bottom:1px solid var(--border-subtle);
+}
+.tk-summary dt {
+    font-size:12px;
+    color:var(--text-secondary);
+}
+.tk-summary dd {
+    font-weight:700;
+    font-size:13px;
+    text-align:right;
+}
+.tk-average dd {
+    color:var(--pink);
+}
+/* 5. Bảng xếp hạng và chi tiết từng ngày */
+.tk-rankings {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    margin-bottom:24px;
+}
+.tk-ranking {
+    min-width:0;
+}
+.thong-ke table {
+    width:100%;
+    border-collapse:collapse;
+    white-space:nowrap;
+}
+.thong-ke th {
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+.thong-ke td {
+    font-size:12px;
+}
+.thong-ke td,.thong-ke th {
+    padding:13px 10px;
+}
+.tk-rank {
+    background:var(--pink-soft);
+    color:var(--pink);
+    border-radius:7px;
+    display:inline-flex;
+    width:25px;
+    height:25px;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+}
+.tk-type {
+    display:block;
+    font-size:10px;
+    color:var(--text-muted);
+    margin-top:3px;
+}
+.tk-no-rows {
+    text-align:center;
+    padding:35px!important;
+    color:var(--text-muted);
+}
+.tk-table-scroll {
+    max-height:420px;
+    overflow:auto;
+}
+.tk-table-scroll thead {
+    position:sticky;
+    top:0;
+    background:#f8fafc;
+}
+.thong-ke tfoot {
+    background:var(--pink-soft);
+    color:#9f1239;
+}
+.tk-footnote {
+    margin-top:18px;
+    font-size:11px;
+}
+.tk-message {
+    background:#eff6ff;
+    border:1px solid #bfdbfe;
+    border-radius:12px;
+    padding:18px 22px;
+    margin-bottom:24px;
+    color:#1e40af;
+}
+.tk-message p {
+    margin-top:5px;
+    font-size:12px;
+}
+.tk-warning {
+    background:#fffbeb;
+    border-color:#fde68a;
+    color:#92400e;
+}
+.tk-error {
+    background:#fff1f2;
+    border-color:#fecdd3;
+    color:#9f1239;
+}
+/* 6. Bố cục trên màn hình nhỏ */
+@media(max-width:1200px) {
+    .tk-kpis {
+        grid-template-columns:1fr 1fr;
+    }
+    .tk-rankings {
+        grid-template-columns:1fr;
+    }
+    .tk-hero {
+        align-items:flex-start;
+        flex-direction:column;
+    }
+}
+@media(max-width:760px) {
+    .thong-ke .content-area {
+        padding:18px;
+    }
+    .tk-overview {
+        grid-template-columns:1fr;
+    }
+    .tk-filter form {
+        flex-wrap:wrap;
+    }
+    .tk-filter .form-group {
+        flex:1;
+        min-width:120px;
+    }
+    .tk-filter form>.btn {
+        width:100%;
+    }
+    .tk-hero h1 {
+        font-size:25px;
+    }
+    .tk-kpis {
+        gap:10px;
+    }
+    .tk-kpi {
+        padding:16px;
+    }
+    .tk-kpi h2 {
+        font-size:24px;
+    }
+    .thong-ke .card {
+        padding:18px;
+    }
+    .tk-shortcuts>span {
+        width:100%;
+        margin-left:0;
+    }
+}
