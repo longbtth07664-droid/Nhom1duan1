@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<fmt:setLocale value="vi_VN"/>
 <%-- Dữ liệu và mã gợi ý luôn được tải qua servlet. --%>
 <c:if test="${requestScope.dsSanPham == null}"><c:redirect url="/quan-ly-san-pham"/></c:if>
 <!DOCTYPE html>
@@ -229,7 +230,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Mã sản phẩm<span class="required-star">*</span></label>
-                    <input type="text" name="maSP" class="form-control" value="${newId}" readonly>
+                    <input type="text" class="form-control" value="Tự động khi lưu" readonly>
                 </div>
                 <div class="form-group">
                     <label>Tên sản phẩm<span class="required-star">*</span></label>

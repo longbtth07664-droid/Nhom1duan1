@@ -3,6 +3,8 @@ package entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
@@ -12,8 +14,9 @@ import java.math.BigDecimal;
 public class SanPham {
 
     @Id
-    @Column(name = "MaSP", length = 20, nullable = false)
-    private String maSP;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "MaSP", nullable = false)
+    private Integer maSP;
 
     @Column(name = "TenSP", length = 100, nullable = false)
     private String tenSP;
@@ -37,7 +40,7 @@ public class SanPham {
     public SanPham() {
     }
 
-    public SanPham(String maSP, String tenSP, String loaiSP, String donViTinh, BigDecimal giaBan, int soLuongTon, String trangThai) {
+    public SanPham(Integer maSP, String tenSP, String loaiSP, String donViTinh, BigDecimal giaBan, int soLuongTon, String trangThai) {
         this.maSP = maSP;
         this.tenSP = tenSP;
         this.loaiSP = loaiSP;
@@ -47,8 +50,8 @@ public class SanPham {
         this.trangThai = trangThai;
     }
 
-    public String getMaSP() { return maSP; }
-    public void setMaSP(String maSP) { this.maSP = maSP; }
+    public Integer getMaSP() { return maSP; }
+    public void setMaSP(Integer maSP) { this.maSP = maSP; }
 
     public String getTenSP() { return tenSP; }
     public void setTenSP(String tenSP) { this.tenSP = tenSP; }

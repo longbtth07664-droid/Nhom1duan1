@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<fmt:setLocale value="vi_VN"/>
 <c:if test="${requestScope.dsCombo == null}"><c:redirect url="/quan-ly-combo"/></c:if>
 <!DOCTYPE html>
 <html lang="vi">
@@ -165,7 +166,7 @@
                 <div class="card-header">
                     <div>
                         <div class="card-title">Danh sách combo</div>
-                        <div class="card-subtitle">Thư mục lưu ảnh: assets/images/combo/ (định dạng .jpg)</div>
+                        <div class="card-subtitle">Thư mục lưu ảnh: assets/images/combo/ (jpg, jpeg, png, webp)</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="btn btn-outline">Quản lí sản phẩm</a>
@@ -209,7 +210,7 @@
                                 <td>${st.index + 1}</td>
                                 <td>
                                         <%-- Tự load ảnh từ assets/images/combo/, nếu chưa có file .jpg thì hiện khung tên file --%>
-                                    <c:set var="imgName" value="${not empty cb.hinhAnh ? cb.hinhAnh : cb.maCombo.concat('.jpg')}"/>
+                                    <c:set var="imgName" value="${not empty cb.hinhAnh ? cb.hinhAnh : cb.maCombo.toString().concat('.jpg')}"/>
                                     <img class="combo-thumb"
                                          src="${pageContext.request.contextPath}/assets/images/combo/${imgName}"
                                          alt="${cb.tenCombo}"
@@ -280,7 +281,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Mã combo<span class="required-star">*</span></label>
-                    <input type="text" name="maCombo" class="form-control" value="${newId}" readonly>
+                    <input type="text" class="form-control" value="Tự động khi lưu" readonly>
                 </div>
                 <div class="form-group">
                     <label>Tên combo<span class="required-star">*</span></label>
@@ -295,8 +296,8 @@
                     <%-- Thêm mới luôn đang bán; server cũng kiểm tra. --%><input class="form-control" value="Đang bán" readonly>
                 </div>
                 <div class="form-group">
-                    <label>Tên file hình ảnh (.jpg)</label>
-                    <input type="text" name="hinhAnh" class="form-control" value="${newId.toLowerCase()}.jpg" placeholder="VD: combo_couple.jpg">
+                    <label>Tên file hình ảnh (jpg, jpeg, png, webp)</label>
+                    <input type="text" name="hinhAnh" class="form-control" value="" placeholder="VD: combo_couple.jpg">
                 </div>
                 <div class="form-group">
                     <label>Mô tả</label>
@@ -395,7 +396,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Tên file hình ảnh (.jpg)</label>
+                        <label>Tên file hình ảnh (jpg, jpeg, png, webp)</label>
                         <input type="text" name="hinhAnh" class="form-control" value="<c:out value='${editCombo.hinhAnh}'/>" placeholder="VD: combo_couple.jpg">
                     </div>
                     <div class="form-group">
@@ -487,7 +488,7 @@
                 <div class="form-control" style="background:var(--bg-input);" id="dtGiaCombo"></div>
             </div>
             <div class="form-group">
-                <label>File hình ảnh (.jpg)</label>
+                <label>File hình ảnh (jpg, jpeg, png, webp)</label>
                 <div class="form-control" style="background:var(--bg-input);" id="dtHinhAnh"></div>
             </div>
         </div>

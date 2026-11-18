@@ -10,32 +10,32 @@ public class ChiTietComboId implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String maCombo; // Trùng tên với @Id maCombo trong ChiTietCombo
-    private String maSP;    // Trùng tên với @Id maSP trong ChiTietCombo
+    private Integer maCombo; // Trùng tên với @Id maCombo trong ChiTietCombo
+    private Integer maSP;    // Trùng tên với @Id maSP trong ChiTietCombo
 
     public ChiTietComboId() {
     }
 
-    public ChiTietComboId(String maCombo, String maSP) {
+    public ChiTietComboId(Integer maCombo, Integer maSP) {
         this.maCombo = maCombo;
         this.maSP = maSP;
     }
 
     // --- Getter & Setter ---
 
-    public String getMaCombo() {
+    public Integer getMaCombo() {
         return maCombo;
     }
 
-    public void setMaCombo(String maCombo) {
+    public void setMaCombo(Integer maCombo) {
         this.maCombo = maCombo;
     }
 
-    public String getMaSP() {
+    public Integer getMaSP() {
         return maSP;
     }
 
-    public void setMaSP(String maSP) {
+    public void setMaSP(Integer maSP) {
         this.maSP = maSP;
     }
 

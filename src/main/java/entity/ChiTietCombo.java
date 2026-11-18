@@ -11,13 +11,13 @@ public class ChiTietCombo {
 
     // Phần 1 của khóa chính — mã combo cha
     @Id
-    @Column(name = "MaCombo", length = 20, nullable = false)
-    private String maCombo;
+    @Column(name = "MaCombo", nullable = false)
+    private Integer maCombo;
 
     // Phần 2 của khóa chính — mã sản phẩm con
     @Id
-    @Column(name = "MaSP", length = 20, nullable = false)
-    private String maSP;
+    @Column(name = "MaSP", nullable = false)
+    private Integer maSP;
 
     // Số lượng sản phẩm trong combo, mặc định = 1
     @Column(name = "SoLuong", nullable = false)
@@ -43,7 +43,7 @@ public class ChiTietCombo {
     }
 
     // Constructor đầy đủ — dùng khi đọc dữ liệu từ Form
-    public ChiTietCombo(String maCombo, String maSP, int soLuong, String ghiChu) {
+    public ChiTietCombo(Integer maCombo, Integer maSP, int soLuong, String ghiChu) {
         this.maCombo = maCombo;
         this.maSP = maSP;
         this.soLuong = soLuong;
@@ -52,19 +52,19 @@ public class ChiTietCombo {
 
     // --- Getter & Setter ---
 
-    public String getMaCombo() {
+    public Integer getMaCombo() {
         return maCombo;
     }
 
-    public void setMaCombo(String maCombo) {
+    public void setMaCombo(Integer maCombo) {
         this.maCombo = maCombo;
     }
 
-    public String getMaSP() {
+    public Integer getMaSP() {
         return maSP;
     }
 
-    public void setMaSP(String maSP) {
+    public void setMaSP(Integer maSP) {
         this.maSP = maSP;
     }
 

@@ -3,6 +3,8 @@ package entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
@@ -12,10 +14,11 @@ import java.math.BigDecimal;
 @Table(name = "Combo")
 public class Combo {
 
-    // Mã combo — Khóa chính, VD: "CB01", "CB02"
+    // Mã combo — INT IDENTITY do SQL Server cấp khi thêm mới.
     @Id
-    @Column(name = "MaCombo", length = 20, nullable = false)
-    private String maCombo;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "MaCombo", nullable = false)
+    private Integer maCombo;
 
     // Tên combo hiển thị, VD: "Combo Solo", "Combo Couple"
     @Column(name = "TenCombo", length = 100, nullable = false)
@@ -42,7 +45,7 @@ public class Combo {
     }
 
     // Constructor đầy đủ — dùng khi nhận dữ liệu từ Form
-    public Combo(String maCombo, String tenCombo, BigDecimal giaCombo, String moTa, String hinhAnh, String trangThai) {
+    public Combo(Integer maCombo, String tenCombo, BigDecimal giaCombo, String moTa, String hinhAnh, String trangThai) {
         this.maCombo = maCombo;
         this.tenCombo = tenCombo;
         this.giaCombo = giaCombo;
@@ -53,11 +56,11 @@ public class Combo {
 
     // --- Getter & Setter ---
 
-    public String getMaCombo() {
+    public Integer getMaCombo() {
         return maCombo;
     }
 
-    public void setMaCombo(String maCombo) {
+    public void setMaCombo(Integer maCombo) {
         this.maCombo = maCombo;
     }
 
