@@ -13,7 +13,8 @@ try {
     if ($branch -ne 'main') { throw "Dang o nhanh '$branch'. Hay gop code sang main truoc; script chi dong bo main." }
     $mergePath = & git rev-parse --git-path MERGE_HEAD
     if (Test-Path -LiteralPath $mergePath) { throw 'Hay xu ly merge hien tai va commit truoc.' }
-    Invoke-Git -GitArgs @('add', '--all', '--', '.', ':!target', ':!.idea', ':!*.iml')
+    # target da duoc .gitignore bo qua; khong truyen no thanh pathspec rieng.
+    Invoke-Git -GitArgs @('add', '--all', '--', '.', ':(exclude).idea/**', ':(exclude)*.iml')
     & git diff --cached --quiet
     $diffExit = $LASTEXITCODE
     if ($diffExit -eq 1) { Invoke-Git -GitArgs @('commit', '-m', $Message) }
