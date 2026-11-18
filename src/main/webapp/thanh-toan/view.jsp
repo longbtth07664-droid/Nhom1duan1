@@ -802,7 +802,11 @@
             discountRow.style.display = 'none';
         }
 
-        calculateChange();
+        if (!document.getElementById('inputCashGiven').value) {
+            setExactCash();
+        } else {
+            calculateChange();
+        }
         updateVietQr();
     }
 
@@ -916,7 +920,11 @@
         // Kiểm tra tiền khách đưa nếu là tiền mặt
         if (CHECKOUT_STATE.currentMethod === 'Tiền mặt') {
             const inputVal = document.getElementById('inputCashGiven').value.replace(/[^0-9]/g, '');
-            const given = parseFloat(inputVal) || 0;
+            let given = parseFloat(inputVal) || 0;
+            if (given === 0) {
+                setExactCash();
+                given = CHECKOUT_STATE.grandTotal;
+            }
             if (given < CHECKOUT_STATE.grandTotal) {
                 alert('Số tiền khách đưa chưa đủ để thanh toán!');
                 document.getElementById('inputCashGiven').focus();

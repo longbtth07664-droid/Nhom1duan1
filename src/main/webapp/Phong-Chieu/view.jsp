@@ -63,6 +63,10 @@
             <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
                 <span>Quản lí khách hàng</span>
             </a>
+
+            <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item">
+                <span>Quản lí hóa đơn</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">
