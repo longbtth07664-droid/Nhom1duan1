@@ -30,7 +30,8 @@ public class WebSmokeCheck {
                 "/quan-ly-san-pham", "/quan-ly-san-pham?action=search&keyword=1",
                 "/quan-ly-san-pham?action=edit&id=1", "/quan-ly-combo",
                 "/quan-ly-combo?action=search&keyword=1", "/quan-ly-combo?action=edit&id=1",
-                "/quan-ly-combo?action=chiTiet&id=1", "/thong-ke?from=2026-03-20&to=2026-03-20"
+                "/quan-ly-combo?action=chiTiet&id=1", "/thong-ke?from=2026-03-20&to=2026-03-20",
+                "/thong-ke?mode=month&year=2026", "/thong-ke?mode=year&startYear=2025&endYear=2026"
             };
             for (String path : paths) {
                 HttpResponse<String> page = client.send(HttpRequest.newBuilder(URI.create(base + path))
@@ -47,11 +48,19 @@ public class WebSmokeCheck {
                     Files.writeString(Path.of("target/thong-ke-smoke.html"), page.body());
                     check(page.body().matches("(?s).*344[.,\\x{00a0}]000.*"), "Sample revenue rendered");
                     check(page.body().contains("Năm nay"), "Year filter rendered");
+                    if (path.contains("mode=month"))
+                        check(page.body().contains("03/2026") && page.body().contains("12/2026") && page.body().contains("Chi tiết từng tháng"), "Monthly table and chart rendered");
+                    if (path.contains("mode=year"))
+                        check(page.body().contains("Chi tiết từng năm"), "Yearly table rendered");
                 }
                 if (path.contains("action=chiTiet")) {
                     check(page.body().contains("\"maSP\":\"1\"") && page.body().contains("\"soLuong\":1"), "Detail JSON with integer identities");
                 }
                 System.out.println("PASS: HTTP 200 " + path);
+            }
+            for (String bad : new String[]{"mode=year&startYear=2026&endYear=2025", "mode=year&startYear=2000&endYear=2026", "mode=month&year=abc", "mode=unknown"}) {
+                HttpResponse<String> page = client.send(HttpRequest.newBuilder(URI.create(base + "/thong-ke?" + bad)).GET().build(), HttpResponse.BodyHandlers.ofString());
+                check(page.statusCode() == 400 && page.body().contains("Chưa thể hiển thị báo cáo"), "Invalid filter returns helpful HTTP 400");
             }
         } finally {
             if (webapp.getLoader() != null && webapp.getLoader().getClassLoader() != null) {

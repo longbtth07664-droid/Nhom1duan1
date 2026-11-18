@@ -17,7 +17,7 @@ Hai file dùng chung chỉ bổ sung tích hợp: `menuadmin.jsp` thêm liên k�
 
 ## Quy tắc tính
 
-- Lọc theo **ngày lập hóa đơn**, không phải ngày chiếu hay ngày thanh toán. Mặc định từ đầu tháng đến hôm nay theo giờ Việt Nam. Mỗi lần tối đa 366 ngày và lấy trọn ngày cuối.
+- Lọc theo **ngày lập hóa đơn**, không phải ngày chiếu hay ngày thanh toán. Mặc định từ đầu tháng đến hôm nay theo giờ Việt Nam. Theo ngày tối đa 366 ngày; theo tháng lấy đủ 12 tháng của một năm; theo năm tối đa 10 năm. Lấy trọn ngày cuối.
 - Chỉ tính hóa đơn `Đã hoàn tất` có ít nhất một thanh toán `Thành công`. Nhiều lần thanh toán không làm nhân doanh thu.
 - Doanh thu sau giảm lấy từ `HoaDon.TongTien`; không trừ `TienGiam` thêm lần nữa.
 - Vé hợp lệ: `Chưa in`, `Đã in`, `Đã soát vé`. Giá trị vé dùng `Ve.GiaVe` đã lưu khi bán.
@@ -49,3 +49,9 @@ java '-Dfile.encoding=UTF-8' -cp 'target/classes;target/DuAnNhom1-1.0-SNAPSHOT/W
 ```
 
 Kiểm thử lấy cấu hình kết nối hiện tại từ `HibernateConfig.java`. Máy cần truy cập được SQL Server của dự án. Dữ liệu thật lúc kiểm tra chưa có hóa đơn, nên màn hình thực tế sẽ hiện trạng thái chưa có giao dịch; không thêm số liệu giả vào báo cáo.
+
+## Chế độ nhóm số liệu
+
+Chọn Ngày để nhập từ/đến ngày; chọn Tháng để nhập năm; chọn Năm để nhập từ/đến năm. Biểu đồ và bảng chi tiết tự đổi nhãn tương ứng. Tổng doanh thu, số hóa đơn, số vé, giảm giá, trung bình và xếp hạng đều dùng đúng phạm vi được chọn. Tháng/năm không có giao dịch vẫn hiện 0.
+
+Repository tổng hợp từng hóa đơn rồi từng ngày bằng SQL. `ThongKeReport.groupBy` cộng lại các ngày bằng vòng lặp và Map để thành tháng/năm. Không sửa dữ liệu bán hàng, không chạy truy vấn riêng cho từng kỳ. Kiểm thử bổ sung: 12 tháng, nhiều năm, kỳ trống, năm nhuận, tổng và xếp hạng giữ nguyên, bộ lọc sai trả HTTP 400.

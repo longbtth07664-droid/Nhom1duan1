@@ -29,6 +29,22 @@ public class ThongKeServlet extends HttpServlet {
         }
     }
 
+    /** [TK-KIEMTRA-NHOM] Mỗi chế độ có giới hạn riêng để báo cáo dễ đọc. */
+    public static void validateRange(LocalDate from, LocalDate to, String mode) {
+        if ("day".equals(mode)) {
+            validateRange(from, to);
+        } else if ("month".equals(mode) || "year".equals(mode)) {
+            if (from.getYear() < 1900 || to.getYear() > 9998 || to.isBefore(from))
+                throw new IllegalArgumentException("Khoảng năm không hợp lệ (1900–9998).");
+            if ("month".equals(mode) && from.getYear() != to.getYear())
+                throw new IllegalArgumentException("Theo tháng chỉ xem một năm mỗi lần.");
+            if (to.getYear() - from.getYear() > 9)
+                throw new IllegalArgumentException("Theo năm xem tối đa 10 năm mỗi lần.");
+        } else {
+            throw new IllegalArgumentException("Chế độ thống kê không hợp lệ.");
+        }
+    }
+
     @Override
     /** [ThongKeServlet-doGet] Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -42,12 +58,46 @@ public class ThongKeServlet extends HttpServlet {
         LocalDate from = today.withDayOfMonth(1);
         LocalDate to = today;
         setQuickDates(request, today);
+        String mode = request.getParameter("mode");
+        if (mode == null) mode = "day";
+        request.setAttribute("mode", mode);
+        request.setAttribute("selectedYear", today.getYear());
+        request.setAttribute("startYear", today.getYear() - 4);
+        request.setAttribute("endYear", today.getYear());
+        String periodName = "ngày";
 
         try {
             // 3. ĐỌC BỘ LỌC: lần đầu mở trang dùng đầu tháng đến hôm nay.
             String start = request.getParameter("from");
             String end = request.getParameter("to");
-            if (start != null || end != null) {
+            if ("month".equals(mode) || "year".equals(mode)) {
+                // [TK-BOLOC] Theo tháng lấy đủ năm; theo năm lấy đủ các năm.
+                int firstYear;
+                int lastYear;
+                try {
+                    if ("month".equals(mode)) {
+                        String year = request.getParameter("year");
+                        firstYear = year == null ? today.getYear() : Integer.parseInt(year);
+                        lastYear = firstYear;
+                        request.setAttribute("selectedYear", firstYear);
+                        periodName = "tháng";
+                    } else {
+                        String first = request.getParameter("startYear");
+                        String last = request.getParameter("endYear");
+                        firstYear = first == null ? today.getYear() - 4 : Integer.parseInt(first);
+                        lastYear = last == null ? today.getYear() : Integer.parseInt(last);
+                        request.setAttribute("startYear", firstYear);
+                        request.setAttribute("endYear", lastYear);
+                        periodName = "năm";
+                    }
+                    if (firstYear < 1900 || lastYear > 9998 || lastYear < firstYear)
+                        throw new IllegalArgumentException("Khoảng năm không hợp lệ (1900–9998).");
+                    from = LocalDate.of(firstYear, 1, 1);
+                    to = LocalDate.of(lastYear, 12, 31);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Năm phải là số nguyên hợp lệ.");
+                }
+            } else if (start != null || end != null) {
                 if (start == null || end == null || start.isBlank() || end.isBlank()) {
                     throw new IllegalArgumentException("Vui lòng nhập đầy đủ từ ngày và đến ngày.");
                 }
@@ -60,8 +110,8 @@ public class ThongKeServlet extends HttpServlet {
             }
 
             // 4. LẤY SỐ LIỆU: chỉ truy vấn sau khi ngày đã hợp lệ.
-            validateRange(from, to);
-            ThongKeReport report = repository.load(from, to);
+            validateRange(from, to, mode);
+            ThongKeReport report = repository.load(from, to).groupBy(mode);
             request.setAttribute("report", report);
         } catch (IllegalArgumentException e) {
             // Sai bộ lọc: hiển thị lý do để người dùng sửa lại.
@@ -78,6 +128,7 @@ public class ThongKeServlet extends HttpServlet {
         // 5. HIỂN THỊ: giữ lại khoảng ngày đã chọn trên form.
         request.setAttribute("from", from.toString());
         request.setAttribute("to", to.toString());
+        request.setAttribute("periodName", periodName);
         request.getRequestDispatcher("/WEB-INF/views/thongKe.jsp").forward(request, response);
     }
 
