@@ -223,4 +223,60 @@ public class SuatChieuRepository {
             return null;
         }
     }
+
+    // Lấy tất cả các suất chiếu đang mở bán trong ngày (phục vụ màn hình Bán vé POS)
+    public List<SuatChieu> getByNgay(LocalDate ngayChieu) {
+        if (ngayChieu == null) return new ArrayList<>();
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String hql = "FROM SuatChieu sc " +
+                    "WHERE sc.ngayChieu = :ngayChieu " +
+                    "AND (sc.trangThai IS NULL OR sc.trangThai <> 'Đã hủy') " +
+                    "ORDER BY sc.gioBatDau ASC";
+            return session.createQuery(hql, SuatChieu.class)
+                    .setParameter("ngayChieu", ngayChieu)
+                    .getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    // Lấy danh sách suất chiếu của 1 phim trong 1 ngày cụ thể (phục vụ màn hình Bán vé POS)
+    public List<SuatChieu> getByPhimVaNgay(Integer maPhim, LocalDate ngayChieu) {
+        if (maPhim == null || ngayChieu == null) return new ArrayList<>();
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String hql = "FROM SuatChieu sc WHERE sc.phim.maPhim = :maPhim " +
+                    "AND sc.ngayChieu = :ngayChieu " +
+                    "AND sc.trangThai <> 'Đã hủy' " +
+                    "ORDER BY sc.gioBatDau ASC";
+            return session.createQuery(hql, SuatChieu.class)
+                    .setParameter("maPhim", maPhim)
+                    .setParameter("ngayChieu", ngayChieu)
+                    .getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    // Lấy danh sách ID các ghế đã được bán trong 1 suất chiếu (để hiển thị trạng thái 'Đã bán')
+    public List<Integer> getBookedSeatIds(Integer maSuat) {
+        if (maSuat == null) return new ArrayList<>();
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String sql = "SELECT MaGhe FROM Ve WHERE MaSuat = :maSuat AND (TrangThai IS NULL OR TrangThai <> N'Đã hủy')";
+            List<?> list = session.createNativeQuery(sql)
+                    .setParameter("maSuat", maSuat)
+                    .getResultList();
+            List<Integer> seatIds = new ArrayList<>();
+            for (Object obj : list) {
+                if (obj != null) {
+                    seatIds.add(((Number) obj).intValue());
+                }
+            }
+            return seatIds;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
 }

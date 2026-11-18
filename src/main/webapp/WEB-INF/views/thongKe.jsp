@@ -27,6 +27,8 @@
                     <a href="${pageContext.request.contextPath}/thong-ke" class="nav-item active" aria-current="page">
                         <span>Tổng quan</span>
                     </a>
+                    <a href="${pageContext.request.contextPath}/ban-ve" class="nav-item"><span>Bán vé tại quầy (POS)</span></a>
+                    <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item"><span>Quản lí hóa đơn</span></a>
                     <div class="nav-group">
                         <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
                             <span>Quản lí phim</span>

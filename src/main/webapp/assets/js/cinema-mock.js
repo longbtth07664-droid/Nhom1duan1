@@ -52,11 +52,17 @@ function initSidebarHighlight() {
     } else if (currentPath.includes('/phong-chieu')) {
         const item = sidebar.querySelector('a[href*="/phong-chieu"]');
         if (item) item.classList.add('active');
+    } else if (currentPath.includes('/suat-chieu')) {
+        const item = sidebar.querySelector('a[href*="/suat-chieu"]');
+        if (item) item.classList.add('active');
     } else if (currentPath.includes('/quan-ly-san-pham')) {
         const item = sidebar.querySelector('a[href*="/quan-ly-san-pham"]');
         if (item) item.classList.add('active');
     } else if (currentPath.includes('/quan-ly-combo')) {
         const item = sidebar.querySelector('a[href*="/quan-ly-combo"]');
+        if (item) item.classList.add('active');
+    } else if (currentPath.includes('/khach-hang')) {
+        const item = sidebar.querySelector('a[href*="/khach-hang"]');
         if (item) item.classList.add('active');
     } else if (currentPath.includes('/ban-ve')) {
         const item = sidebar.querySelector('a[href*="/ban-ve"]');
