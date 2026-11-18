@@ -102,7 +102,8 @@ public class ThanhToanServlet extends HttpServlet {
             Object curUser = session.getAttribute("currentUser");
             if (curUser instanceof TaiKhoan) {
                 try {
-                    maTK = Integer.parseInt(((TaiKhoan) curUser).getMaTK().trim());
+                    Integer tkId = ((TaiKhoan) curUser).getMaTK();
+                    if (tkId != null) maTK = tkId;
                 } catch (Exception ignored) {}
             }
         }
