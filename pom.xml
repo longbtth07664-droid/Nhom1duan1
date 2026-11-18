@@ -41,11 +41,11 @@
             <artifactId>hibernate-core-jakarta</artifactId>
             <version>5.6.10.Final</version>
         </dependency>
+        <!-- Khai báo trực tiếp API dùng bởi các entity để IDE nhận diện annotation. -->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <version>3.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

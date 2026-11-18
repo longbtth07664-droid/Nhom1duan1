@@ -14,7 +14,7 @@ public class TaiKhoan {
 
     @Id
     @Column(name = "MaTK", length = 20)
-    private String maTK;
+    private Integer maTK;
 
     @Column(name = "HoTen", nullable = false, length = 100)
     private String hoTen;

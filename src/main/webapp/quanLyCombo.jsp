@@ -1,6 +1,8 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<fmt:setLocale value="vi_VN"/>
+<c:if test="${requestScope.dsCombo == null}"><c:redirect url="/quan-ly-combo"/></c:if>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -70,7 +72,8 @@
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu chức năng</div>
 
-            <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="nav-item">
+            <%-- [Ghi chú - Khánh]: Điều hướng Tổng quan về /thong-ke --%>
+            <a href="${pageContext.request.contextPath}/thong-ke" class="nav-item">
                 <span>Tổng quan</span>
             </a>
 
@@ -132,11 +135,13 @@
                 </div>
             </div>
             <div class="topbar-right">
-                <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="btn btn-ghost btn-sm">Menu chính</a>
+                <%-- [Ghi chú - Khánh]: Menu chính trỏ về Tổng quan /thong-ke --%>
+                <a href="${pageContext.request.contextPath}/thong-ke" class="btn btn-ghost btn-sm">Menu chính</a>
             </div>
         </header>
 
         <main class="content-area">
+<c:if test="${not empty param.error}"><div class="alert-error"><c:out value="${param.error}"/></div></c:if>
 
             <%-- Thông báo trạng thái --%>
             <c:if test="${param.msg == 'add_ok'}">
@@ -165,7 +170,7 @@
                 <div class="card-header">
                     <div>
                         <div class="card-title">Danh sách combo</div>
-                        <div class="card-subtitle">Thư mục lưu ảnh: assets/images/combo/ (định dạng .jpg)</div>
+                        <div class="card-subtitle">Thư mục lưu ảnh: assets/images/combo/ (jpg, jpeg, png, webp)</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="btn btn-outline">Quản lí sản phẩm</a>
@@ -209,7 +214,7 @@
                                 <td>${st.index + 1}</td>
                                 <td>
                                         <%-- Tự load ảnh từ assets/images/combo/, nếu chưa có file .jpg thì hiện khung tên file --%>
-                                    <c:set var="imgName" value="${not empty cb.hinhAnh ? cb.hinhAnh : cb.maCombo.concat('.jpg')}"/>
+                                    <c:set var="imgName" value="${not empty cb.hinhAnh ? cb.hinhAnh : cb.maCombo.toString().concat('.jpg')}"/>
                                     <img class="combo-thumb"
                                          src="${pageContext.request.contextPath}/assets/images/combo/${imgName}"
                                          alt="${cb.tenCombo}"
@@ -275,11 +280,12 @@
         </div>
 
         <form action="${pageContext.request.contextPath}/quan-ly-combo" method="post" onsubmit="return validateComboForm('add')">
-            <input type="hidden" name="action" value="add">
+            <input type="hidden" name="token" value="${sessionScope.comboToken}">
+<input type="hidden" name="action" value="add">
             <div class="form-grid">
                 <div class="form-group">
                     <label>Mã combo<span class="required-star">*</span></label>
-                    <input type="text" name="maCombo" class="form-control" value="${newId}" readonly>
+                    <input type="text" class="form-control" value="Tự động khi lưu" readonly>
                 </div>
                 <div class="form-group">
                     <label>Tên combo<span class="required-star">*</span></label>
@@ -287,18 +293,15 @@
                 </div>
                 <div class="form-group">
                     <label>Giá combo (VNĐ)<span class="required-star">*</span></label>
-                    <input type="number" name="giaCombo" class="form-control" min="1000" placeholder="VD: 110000" required>
+                    <input type="number" name="giaCombo" id="addGiaCombo" class="form-control" value="0" readonly>
                 </div>
                 <div class="form-group">
                     <label>Trạng thái</label>
-                    <select name="trangThai" class="form-control">
-                        <option value="Đang bán" selected>Đang bán</option>
-                        <option value="Ngừng bán">Ngừng bán</option>
-                    </select>
+                    <%-- Thêm mới luôn đang bán; server cũng kiểm tra. --%><input class="form-control" value="Đang bán" readonly>
                 </div>
                 <div class="form-group">
-                    <label>Tên file hình ảnh (.jpg)</label>
-                    <input type="text" name="hinhAnh" class="form-control" value="${newId.toLowerCase()}.jpg" placeholder="VD: combo_couple.jpg">
+                    <label>Tên file hình ảnh (jpg, jpeg, png, webp)</label>
+                    <input type="text" name="hinhAnh" class="form-control" value="" placeholder="VD: combo_couple.jpg">
                 </div>
                 <div class="form-group">
                     <label>Mô tả</label>
@@ -306,13 +309,15 @@
                 </div>
             </div>
 
-            <div class="combo-detail-box">
+            <%-- COMBO: mức giảm trên tổng giá lẻ. --%><div class="form-group"><label>Mức giảm giá</label><select class="form-control" name="giamGia" id="addGiamGia" onchange="tinhTongGiaLe('add')"><option value="0">Không giảm</option><option value="10">Giảm 10%</option><option value="20">Giảm 20%</option><option value="50">Giảm 50%</option></select></div>
+<div class="combo-detail-box">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <strong style="font-size:13px;">Tích chọn sản phẩm đưa vào combo<span class="required-star">*</span></strong>
                     <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="btn btn-ghost btn-sm">+ Thêm sản phẩm mới</a>
                 </div>
 
-                <div class="sp-picker-wrap">
+                <input type="search" class="form-control" placeholder="Tìm mã hoặc tên sản phẩm..." oninput="locSanPham('add',this.value)"><p id="addEmpty" hidden>Không tìm thấy sản phẩm.</p>
+<div class="sp-picker-wrap">
                     <table>
                         <thead>
                         <tr>
@@ -328,21 +333,21 @@
                             <tr>
                                 <td style="text-align:center;">
                                     <input type="checkbox" name="ctMaSP" value="${sp.maSP}"
-                                           data-gia="${sp.giaBan}"
-                                           onchange="toggleProductRow(this, 'add')">
+                                           data-gia="${sp.giaBan}" data-stock="${sp.soLuongTon}" data-active="${sp.trangThai == 'Đang kinh doanh'}"
+                                           ${sp.soLuongTon <= 0 ? 'disabled' : ''} onchange="toggleProductRow(this, 'add')">
                                 </td>
                                 <td>
                                     <strong><c:out value="${sp.tenSP}"/></strong><br>
-                                    <span style="font-size:11px; color:var(--text-secondary);">${sp.maSP} - ${sp.donViTinh}</span>
+                                    <span style="font-size:11px; color:var(--text-secondary);"><c:out value="${sp.maSP}"/> - <c:out value="${sp.donViTinh}"/> · Tồn: ${sp.soLuongTon} · <c:out value="${sp.trangThai}"/></span>
                                 </td>
                                 <td><fmt:formatNumber value="${sp.giaBan}" pattern="#,###"/> đ</td>
                                 <td>
-                                    <input type="number" name="ctSoLuong_${sp.maSP}" value="1" min="1"
+                                    <input type="number" name="ctSoLuong_${sp.maSP}" value="1" min="1" max="${sp.soLuongTon}" required
                                            class="form-control" style="padding:6px 8px;" disabled
                                            onchange="tinhTongGiaLe('add')">
                                 </td>
                                 <td>
-                                    <input type="text" name="ctGhiChu_${sp.maSP}" placeholder="Ghi chú..."
+                                    <input type="text" maxlength="100" name="ctGhiChu_${sp.maSP}" placeholder="Ghi chú..."
                                            class="form-control" style="padding:6px 8px;" disabled>
                                 </td>
                             </tr>
@@ -371,7 +376,9 @@
             </div>
 
             <form action="${pageContext.request.contextPath}/quan-ly-combo" method="post" onsubmit="return validateComboForm('edit')">
-                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="token" value="${sessionScope.comboToken}">
+<input type="hidden" name="version" value="${version}">
+<input type="hidden" name="action" value="update">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Mã combo</label>
@@ -383,7 +390,7 @@
                     </div>
                     <div class="form-group">
                         <label>Giá combo (VNĐ)<span class="required-star">*</span></label>
-                        <input type="number" name="giaCombo" class="form-control" value="${editCombo.giaCombo}" min="1000" required>
+                        <input type="number" name="giaCombo" id="editGiaCombo" data-original="${editCombo.giaCombo}" class="form-control" value="${editCombo.giaCombo}" readonly>
                     </div>
                     <div class="form-group">
                         <label>Trạng thái</label>
@@ -393,7 +400,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Tên file hình ảnh (.jpg)</label>
+                        <label>Tên file hình ảnh (jpg, jpeg, png, webp)</label>
                         <input type="text" name="hinhAnh" class="form-control" value="<c:out value='${editCombo.hinhAnh}'/>" placeholder="VD: combo_couple.jpg">
                     </div>
                     <div class="form-group">
@@ -402,9 +409,11 @@
                     </div>
                 </div>
 
-                <div class="combo-detail-box">
+                <%-- COMBO: mức giảm trên tổng giá lẻ. --%><div class="form-group"><label>Mức giảm giá</label><select class="form-control" name="giamGia" id="editGiamGia" onchange="tinhTongGiaLe('edit')"><option value="-1">Giữ giá đã lưu</option><option value="0">Không giảm</option><option value="10">Giảm 10%</option><option value="20">Giảm 20%</option><option value="50">Giảm 50%</option></select></div>
+<div class="combo-detail-box">
                     <strong style="font-size:13px;">Tích chọn sản phẩm bên trong combo<span class="required-star">*</span></strong>
-                    <div class="sp-picker-wrap">
+                    <input type="search" class="form-control" placeholder="Tìm mã hoặc tên sản phẩm..." oninput="locSanPham('edit',this.value)"><p id="editEmpty" hidden>Không tìm thấy sản phẩm.</p>
+<div class="sp-picker-wrap">
                         <table>
                             <thead>
                             <tr>
@@ -416,30 +425,30 @@
                             </tr>
                             </thead>
                             <tbody id="editPickerBody">
-                            <c:forEach items="${dsSanPham}" var="sp">
+                            <c:forEach items="${dsSanPhamSua}" var="sp">
                                 <c:set var="ctItem" value="${editChiTietMap[sp.maSP]}"/>
                                 <c:set var="isChecked" value="${ctItem != null}"/>
                                 <tr class="${isChecked ? 'sp-row-active' : ''}">
                                     <td style="text-align:center;">
                                         <input type="checkbox" name="ctMaSP" value="${sp.maSP}"
-                                               data-gia="${sp.giaBan}"
-                                            ${isChecked ? 'checked' : ''}
+                                               data-gia="${sp.giaBan}" data-stock="${sp.soLuongTon}" data-active="${sp.trangThai == 'Đang kinh doanh'}"
+                                            ${isChecked ? 'checked' : ''} ${!isChecked && (sp.soLuongTon <= 0 || sp.trangThai != 'Đang kinh doanh') ? 'disabled' : ''}
                                                onchange="toggleProductRow(this, 'edit')">
                                     </td>
                                     <td>
                                         <strong><c:out value="${sp.tenSP}"/></strong><br>
-                                        <span style="font-size:11px; color:var(--text-secondary);">${sp.maSP} - ${sp.donViTinh}</span>
+                                        <span style="font-size:11px; color:var(--text-secondary);"><c:out value="${sp.maSP}"/> - <c:out value="${sp.donViTinh}"/> · Tồn: ${sp.soLuongTon} · <c:out value="${sp.trangThai}"/></span>
                                     </td>
                                     <td><fmt:formatNumber value="${sp.giaBan}" pattern="#,###"/> đ</td>
                                     <td>
                                         <input type="number" name="ctSoLuong_${sp.maSP}"
-                                               value="${isChecked ? ctItem.soLuong : 1}" min="1"
+                                               value="${isChecked ? ctItem.soLuong : 1}" min="1" max="${sp.soLuongTon}" required
                                                class="form-control" style="padding:6px 8px;"
                                             ${isChecked ? '' : 'disabled'}
                                                onchange="tinhTongGiaLe('edit')">
                                     </td>
                                     <td>
-                                        <input type="text" name="ctGhiChu_${sp.maSP}"
+                                        <input type="text" maxlength="100" name="ctGhiChu_${sp.maSP}"
                                                value="<c:out value='${isChecked ? ctItem.ghiChu : ""}'/>"
                                                placeholder="Ghi chú..."
                                                class="form-control" style="padding:6px 8px;"
@@ -483,7 +492,7 @@
                 <div class="form-control" style="background:var(--bg-input);" id="dtGiaCombo"></div>
             </div>
             <div class="form-group">
-                <label>File hình ảnh (.jpg)</label>
+                <label>File hình ảnh (jpg, jpeg, png, webp)</label>
                 <div class="form-control" style="background:var(--bg-input);" id="dtHinhAnh"></div>
             </div>
         </div>
@@ -525,37 +534,85 @@
         tinhTongGiaLe(mode);
     }
 
-    // Tính tổng giá lẻ các món đang tích để người dùng dễ đặt giá Combo
-    function tinhTongGiaLe(mode) {
-        var tbody = document.getElementById(mode + 'PickerBody');
-        if (!tbody) return;
-        var tong = 0;
-        var checks = tbody.querySelectorAll('input[type="checkbox"]:checked');
-        for (var i = 0; i < checks.length; i++) {
-            var gia = Number(checks[i].getAttribute('data-gia') || 0);
-            var slInput = checks[i].closest('tr').querySelector('input[type="number"]');
-            var sl = Number(slInput ? slInput.value : 1) || 1;
-            tong += gia * sl;
-        }
-        var label = document.getElementById(mode + 'TongGiaLe');
-        if (label) {
-            label.textContent = 'Tổng giá lẻ các món đã chọn: ' + tong.toLocaleString('vi-VN') + ' đ';
-        }
-    }
 
-    // Kiểm tra phải tích ít nhất 1 sản phẩm trước khi bấm Lưu Combo
+    // COMBO: lọc dòng theo mã/tên, không bỏ lựa chọn đã tích.
+    function locSanPham(mode, text) {
+        function clean(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d'); }
+        var count=0;
+        document.querySelectorAll('#'+mode+'PickerBody tr').forEach(function(row) {
+            row.hidden=!clean(row.textContent).includes(clean(text.trim()));
+            if(!row.hidden) count++;
+        });
+        document.getElementById(mode+'Empty').hidden=count>0;
+    }
+    // COMBO: tính cả những món đang bị bộ lọc ẩn; giá lưu được server tính lại.
+    function tinhTongGiaLe(mode) {
+        var body=document.getElementById(mode+'PickerBody');
+        if(!body) return;
+        var total=0;
+        body.querySelectorAll('input[type="checkbox"]:checked').forEach(function(cb) {
+            var qty=Number(cb.closest('tr').querySelector('input[type="number"]').value);
+            if(Number.isInteger(qty)&&qty>0) total+=Number(cb.dataset.gia)*qty;
+        });
+        document.getElementById(mode+'TongGiaLe').textContent='Tổng giá lẻ: '+total.toLocaleString('vi-VN')+' đ';
+        var price=document.getElementById(mode+'GiaCombo');
+        var rate=Number(document.getElementById(mode+'GiamGia').value);
+        price.value=rate===-1?price.dataset.original:Math.round(total*(100-rate)/100);
+    }
+    // COMBO: báo chính xác món vượt kho hoặc đã ngừng bán.
     function validateComboForm(mode) {
-        var tbody = document.getElementById(mode + 'PickerBody');
-        var checked = tbody.querySelectorAll('input[type="checkbox"]:checked');
-        if (checked.length === 0) {
-            alert('Vui lòng tích chọn ít nhất 1 sản phẩm cho combo!');
-            return false;
+        var items=document.querySelectorAll('#'+mode+'PickerBody input[type="checkbox"]:checked');
+        if(!items.length) { alert('Hãy chọn ít nhất một sản phẩm.'); return false; }
+        for(var cb of items) {
+            var qty=Number(cb.closest('tr').querySelector('input[type="number"]').value);
+            if(!Number.isInteger(qty)||qty<1||qty>Number(cb.dataset.stock)||cb.dataset.active!=='true') {
+                alert('Sản phẩm '+cb.value+': số lượng phải từ 1 đến '+cb.dataset.stock+' và còn kinh doanh.');
+                return false;
+            }
         }
+        tinhTongGiaLe(mode);
+        try { sessionStorage.setItem('comboDraft',JSON.stringify(Array.from(new FormData(document.getElementById(mode+'GiaCombo').form).entries()))); } catch(e) {}
         return true;
     }
+    // COMBO: đổi thành phần sẽ tính lại giá; giữ bản nhập khi server trả lỗi.
+    document.addEventListener('DOMContentLoaded',function() {
+        ['add','edit'].forEach(function(mode) {
+            var body=document.getElementById(mode+'PickerBody');
+            if(!body) return;
+            body.addEventListener('invalid',function(e){e.target.closest('tr').hidden=false;},true);
+            body.addEventListener('input',function(){
+                var rate=document.getElementById(mode+'GiamGia');
+                if(rate.value==='-1') rate.value='0';
+                tinhTongGiaLe(mode);
+            });
+            tinhTongGiaLe(mode);
+        });
+        try {
+            var params=new URLSearchParams(location.search);
+            if(params.get('msg')==='error') {
+                var entries=JSON.parse(sessionStorage.getItem('comboDraft')||'[]');
+                var action=entries.find(function(e){return e[0]==='action';});
+                var mode=action&&action[1]==='add'?'add':'edit';
+                var price=document.getElementById(mode+'GiaCombo');
+                if(!price) return;
+                var form=price.form;
+                form.querySelectorAll('input[type="checkbox"]').forEach(function(el){el.checked=false;toggleProductRow(el,mode);});
+                entries.forEach(function(pair){
+                    Array.from(form.elements).filter(function(el){return el.name===pair[0];}).forEach(function(el){
+                        if(el.type==='checkbox') {
+                            if(el.value===pair[1]) {el.checked=true;toggleProductRow(el,mode);}
+                        } else if(!['token','version','maCombo'].includes(el.name)) el.value=pair[1];
+                    });
+                });
+                tinhTongGiaLe(mode); openModal(mode+'ComboModal');
+            } else if(params.get('msg')) sessionStorage.removeItem('comboDraft');
+        } catch(e) { /* Không có bản nháp thì giữ form mặc định. */ }
+    });
 
     // Mở modal Chi tiết và đổ dữ liệu an toàn
+    var detailRequest=0; // Bỏ phản hồi cũ khi chuyển combo.
     function xemChiTietCombo(btn) {
+        var requestId=++detailRequest;
         var ma = btn.getAttribute('data-ma') || '';
         document.getElementById('dtMaCombo').textContent = ma;
         document.getElementById('dtTenCombo').textContent = btn.getAttribute('data-ten') || '';
@@ -568,8 +625,9 @@
         openModal('detailComboModal');
 
         fetch('${pageContext.request.contextPath}/quan-ly-combo?action=chiTiet&id=' + encodeURIComponent(ma))
-            .then(function (res) { return res.json(); })
+            .then(function (res) { if(!res.ok) throw new Error("Không tải được chi tiết"); return res.json(); })
             .then(function (data) {
+                if(requestId!==detailRequest) return;
                 tbody.innerHTML = '';
                 if (data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">Chưa có sản phẩm nào trong combo này.</td></tr>';
@@ -594,6 +652,7 @@
                 });
             })
             .catch(function (err) {
+                if(requestId!==detailRequest) return;
                 console.error(err);
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#DC2626;">Lỗi tải chi tiết combo!</td></tr>';
             });
@@ -603,7 +662,10 @@
         var ma = btn.getAttribute('data-ma');
         var ten = btn.getAttribute('data-ten');
         if (confirm('Bạn có chắc muốn xóa combo "' + ten + '" (' + ma + ') không?')) {
-            window.location.href = '${pageContext.request.contextPath}/quan-ly-combo?action=delete&id=' + encodeURIComponent(ma);
+            var form=document.createElement('form'); form.method='post'; form.action='${pageContext.request.contextPath}/quan-ly-combo';
+            [['action','delete'],['id',ma],['token','${sessionScope.comboToken}']].forEach(function(pair){
+                var input=document.createElement('input'); input.type='hidden'; input.name=pair[0]; input.value=pair[1]; form.appendChild(input);
+            }); document.body.appendChild(form); form.submit();
         }
     }
 

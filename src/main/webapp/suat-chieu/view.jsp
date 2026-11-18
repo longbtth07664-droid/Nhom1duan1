@@ -324,7 +324,8 @@
 
         <nav class="sidebar-menu">
             <div class="menu-group-label">Menu chức năng</div>
-            <a href="${pageContext.request.contextPath}/menuadmin.jsp" class="nav-item"><span>Tổng quan</span></a>
+            <%-- [Ghi chú - Khánh]: Điều hướng Tổng quan về /thong-ke --%>
+            <a href="${pageContext.request.contextPath}/thong-ke" class="nav-item"><span>Tổng quan</span></a>
 
             <div class="nav-group">
                 <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
