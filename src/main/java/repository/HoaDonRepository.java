@@ -272,26 +272,42 @@ public class HoaDonRepository {
                 return -1;
             }
 
-            // 2. Insert danh sách Vé
+            // 2. Insert hoặc Update danh sách Vé (tránh trùng khóa UQ_Suat_Ghe khi test lại ghế đã chọn)
             if (listVe != null && !listVe.isEmpty()) {
-                String sqlVe = "INSERT INTO Ve (MaDatVe, MaSuat, MaGhe, GiaVe, MaQR, TrangThai) VALUES (?, ?, ?, ?, ?, ?)";
-                try (PreparedStatement psVe = conn.prepareStatement(sqlVe)) {
+                String sqlUpsertVe = "IF EXISTS (SELECT 1 FROM Ve WHERE MaSuat = ? AND MaGhe = ?) " +
+                        "UPDATE Ve SET MaDatVe = ?, GiaVe = ?, MaQR = ?, TrangThai = N'Đã bán' WHERE MaSuat = ? AND MaGhe = ? " +
+                        "ELSE " +
+                        "INSERT INTO Ve (MaDatVe, MaSuat, MaGhe, GiaVe, MaQR, TrangThai) VALUES (?, ?, ?, ?, ?, N'Đã bán')";
+                try (PreparedStatement psVe = conn.prepareStatement(sqlUpsertVe)) {
                     for (Ve v : listVe) {
-                        psVe.setInt(1, generatedMaDatVe);
-                        psVe.setInt(2, v.getMaSuat() != null ? v.getMaSuat() : 1);
-                        psVe.setInt(3, v.getMaGhe() != null ? v.getMaGhe() : 1);
-                        psVe.setBigDecimal(4, v.getGiaVe() != null ? v.getGiaVe() : BigDecimal.ZERO);
+                        int mSuat = v.getMaSuat() != null ? v.getMaSuat() : 1;
+                        int mGhe = v.getMaGhe() != null ? v.getMaGhe() : 1;
+                        BigDecimal gVe = v.getGiaVe() != null ? v.getGiaVe() : BigDecimal.ZERO;
 
                         String qrCode = v.getMaQR();
                         if (qrCode == null || qrCode.trim().isEmpty()) {
-                            qrCode = "CINEMAX-HD" + generatedMaDatVe + "-S" + v.getMaSuat() + "-G" + v.getMaGhe() + "-" +
+                            qrCode = "CINEMAX-HD" + generatedMaDatVe + "-S" + mSuat + "-G" + mGhe + "-" +
                                     UUID.randomUUID().toString().substring(0, 8).toUpperCase();
                         }
+
+                        // 1, 2: IF EXISTS
+                        psVe.setInt(1, mSuat);
+                        psVe.setInt(2, mGhe);
+                        // 3, 4, 5, 6, 7: UPDATE
+                        psVe.setInt(3, generatedMaDatVe);
+                        psVe.setBigDecimal(4, gVe);
                         psVe.setString(5, qrCode);
-                        psVe.setString(6, "Đã bán");
-                        psVe.addBatch();
+                        psVe.setInt(6, mSuat);
+                        psVe.setInt(7, mGhe);
+                        // 8, 9, 10, 11, 12: INSERT
+                        psVe.setInt(8, generatedMaDatVe);
+                        psVe.setInt(9, mSuat);
+                        psVe.setInt(10, mGhe);
+                        psVe.setBigDecimal(11, gVe);
+                        psVe.setString(12, qrCode);
+
+                        psVe.executeUpdate();
                     }
-                    psVe.executeBatch();
                 }
             }
 

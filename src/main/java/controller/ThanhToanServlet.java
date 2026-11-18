@@ -102,7 +102,8 @@ public class ThanhToanServlet extends HttpServlet {
             Object curUser = session.getAttribute("currentUser");
             if (curUser instanceof TaiKhoan) {
                 try {
-                    maTK = Integer.parseInt(((TaiKhoan) curUser).getMaTK().trim());
+                    Integer tkId = ((TaiKhoan) curUser).getMaTK();
+                    if (tkId != null) maTK = tkId;
                 } catch (Exception ignored) {}
             }
         }
@@ -183,6 +184,11 @@ public class ThanhToanServlet extends HttpServlet {
         // Phân tích danh sách Combo
         List<ChiTietHoaDon> listCombo = parseComboList(combosData);
 
+        System.out.println(">>> ThanhToanServlet doPost: seatsData=" + seatsData);
+        System.out.println(">>> ThanhToanServlet doPost: listVe.size=" + listVe.size());
+        System.out.println(">>> ThanhToanServlet doPost: combosData=" + combosData);
+        System.out.println(">>> ThanhToanServlet doPost: listCombo.size=" + listCombo.size());
+
         // Gọi Repository tạo hóa đơn và thanh toán
         int maDatVe = hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, tongTien, tienGiam, phuongThuc, listVe, listCombo);
 
@@ -197,6 +203,7 @@ public class ThanhToanServlet extends HttpServlet {
     private List<Ve> parseVeList(String json, int defaultMaSuat) {
         List<Ve> list = new ArrayList<>();
         if (json == null || json.trim().isEmpty()) return list;
+        json = json.replace("\\\"", "\"");
 
         // Trích xuất các object {"maGhe":..., "gia":...}
         Pattern p = Pattern.compile("\\{([^\\}]+)\\}");
@@ -227,6 +234,7 @@ public class ThanhToanServlet extends HttpServlet {
     private List<ChiTietHoaDon> parseComboList(String json) {
         List<ChiTietHoaDon> list = new ArrayList<>();
         if (json == null || json.trim().isEmpty()) return list;
+        json = json.replace("\\\"", "\"");
 
         Pattern p = Pattern.compile("\\{([^\\}]+)\\}");
         Matcher m = p.matcher(json);
@@ -235,6 +243,9 @@ public class ThanhToanServlet extends HttpServlet {
             String maComboVal = extractFieldFromBlock(block, "maCombo");
             String soLuongVal = extractFieldFromBlock(block, "soLuong");
             String giaVal = extractFieldFromBlock(block, "gia");
+            if (giaVal == null) {
+                giaVal = extractFieldFromBlock(block, "donGia");
+            }
 
             if (maComboVal != null && soLuongVal != null) {
                 try {
@@ -258,8 +269,10 @@ public class ThanhToanServlet extends HttpServlet {
     }
 
     private String extractFieldFromBlock(String block, String field) {
-        Pattern p = Pattern.compile("\"?" + field + "\"?:\\s*\"?([^,\"}]+)\"?");
-        Matcher m = p.matcher(block);
+        if (block == null) return null;
+        String clean = block.replace("\\", "").replace("\"", "").replace("'", "");
+        Pattern p = Pattern.compile("\\b" + field + "\\s*:\\s*([^,}]+)");
+        Matcher m = p.matcher(clean);
         if (m.find()) {
             return m.group(1).trim();
         }

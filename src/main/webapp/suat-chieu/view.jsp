@@ -349,6 +349,7 @@
             <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item"><span>Quản lí sản phẩm</span></a>
             <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item"><span>Quản lí combo</span></a>
             <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item"><span>Quản lí khách hàng</span></a>
+            <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item"><span>Quản lí hóa đơn</span></a>
         </nav>
 
         <div class="sidebar-footer">
