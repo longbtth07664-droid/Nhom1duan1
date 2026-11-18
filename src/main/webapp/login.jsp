@@ -299,7 +299,11 @@
             Transaction tx = null;
             try (Session s = HibernateConfig.getFACTORY().openSession()) {
                 tx = s.beginTransaction();
-                TaiKhoan updateTk = s.get(TaiKhoan.class, userId);
+                Object idKey = userId;
+                try {
+                    idKey = Integer.valueOf(userId);
+                } catch (Exception ignored) {}
+                TaiKhoan updateTk = (TaiKhoan) s.get(TaiKhoan.class, (java.io.Serializable) idKey);
                 if (updateTk != null) {
                     updateTk.setPassword(newPassword.trim());
                     s.update(updateTk);
