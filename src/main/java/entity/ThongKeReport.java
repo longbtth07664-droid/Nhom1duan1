@@ -54,6 +54,38 @@ public class ThongKeReport {
     }
     public boolean isEmpty() { return invoices == 0; }
 
+    /** [TK-NHOM] Gom các ngày thành tháng/năm bằng vòng lặp.
+     * SQL vẫn tổng hợp đúng từng hóa đơn trước; chỉ cộng lại số liệu đã có.
+     * Ngày trống cũng được gom nên luôn có đủ 12 tháng hoặc các năm đã chọn.
+     */
+    public ThongKeReport groupBy(String mode) {
+        if ("day".equals(mode)) return this;
+        if (!"month".equals(mode) && !"year".equals(mode))
+            throw new IllegalArgumentException("Chế độ thống kê không hợp lệ.");
+        java.util.Map<LocalDate, Day> groups = new java.util.LinkedHashMap<>();
+        for (Day day : days) {
+            LocalDate key = day.date.withDayOfMonth(1);
+            if ("year".equals(mode)) key = key.withDayOfYear(1);
+            Day old = groups.get(key);
+            if (old == null) {
+                old = new Day(key, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                        BigDecimal.ZERO, 0, 0, 0, 0);
+            }
+            Day sum = new Day(key, old.revenue.add(day.revenue), old.discount.add(day.discount),
+                    old.ticketValue.add(day.ticketValue), old.productValue.add(day.productValue),
+                    old.invoices + day.invoices, old.tickets + day.tickets,
+                    old.items + day.items, old.mismatches + day.mismatches);
+            sum.mode = mode;
+            groups.put(key, sum);
+        }
+        ThongKeReport result = new ThongKeReport();
+        for (Day row : groups.values()) result.addDay(row);
+        result.films.addAll(films);
+        result.products.addAll(products);
+        result.prepareChart();
+        return result;
+    }
+
     // Chuẩn hóa độ cao biểu đồ trên server, chỉ xuất số vào thuộc tính CSS.
     /** [ThongKeReport-prepareChart] Hai vòng lặp: tìm doanh thu lớn nhất rồi đổi mỗi ngày sang phần trăm chiều cao cột. */
     public void prepareChart() {
@@ -84,6 +116,7 @@ public class ThongKeReport {
         private final BigDecimal revenue, discount, ticketValue, productValue;
         private final long invoices, tickets, items, mismatches;
         private int height;
+        private String mode = "day";
         public Day(LocalDate date, BigDecimal revenue, BigDecimal discount, BigDecimal ticketValue,
                    BigDecimal productValue, long invoices, long tickets, long items, long mismatches) {
             this.date = date;
@@ -96,8 +129,15 @@ public class ThongKeReport {
             this.items = items;
             this.mismatches = mismatches;
         }
-        public String getDate() { return date.toString(); }
-        public String getLabel() { return date.format(DateTimeFormatter.ofPattern("dd/MM")); }
+        public String getDate() {
+            if ("month".equals(mode)) return date.format(DateTimeFormatter.ofPattern("MM/yyyy"));
+            if ("year".equals(mode)) return String.valueOf(date.getYear());
+            return date.toString();
+        }
+        public String getLabel() {
+            if (!"day".equals(mode)) return getDate();
+            return date.format(DateTimeFormatter.ofPattern("dd/MM"));
+        }
         public BigDecimal getRevenue() { return revenue; }
         public BigDecimal getDiscount() { return discount; }
         public BigDecimal getTicketValue() { return ticketValue; }

@@ -77,6 +77,25 @@ public class ThongKeIntegrationCheck {
    check(sample.getRevenue().intValueExact()==344000 && sample.getDiscount().intValueExact()==16000,"Sample net revenue: do not discount twice");
    check(sample.getTicketValue().intValueExact()==175000 && sample.getProductValue().intValueExact()==185000,"Sample ticket and combo values");
    check(sample.getInvoices()==2 && sample.getTickets()==2 && sample.getItems()==2 && sample.getMismatches()==0,"Sample counts and reconciliation");
+   ThongKeReport allDays=repo.load(test,LocalDate.of(2026,1,1),LocalDate.of(2026,12,31));
+   ThongKeReport months=allDays.groupBy("month");
+   check(months.getDays().size()==12,"Always show 12 months including empty months");
+   check(months.getDays().get(2).getDate().equals("03/2026") && months.getDays().get(2).getRevenue().intValueExact()==344000,"March bucket and label");
+   check(months.getDays().get(0).getInvoices()==0,"Empty month is zero");
+   check(months.getRevenue().compareTo(allDays.getRevenue())==0 && months.getMismatches()==allDays.getMismatches(),"Grouping preserves revenue and reconciliation");
+   check(months.getTickets()==allDays.getTickets() && months.getItems()==allDays.getItems() && months.getDiscount().equals(allDays.getDiscount()),"Grouping preserves quantities and discount");
+   check(months.getFilms().size()==allDays.getFilms().size() && months.getProducts().size()==allDays.getProducts().size(),"Rankings use same period");
+   ThongKeReport years=repo.load(test,LocalDate.of(2025,1,1),LocalDate.of(2026,12,31)).groupBy("year");
+   check(years.getDays().size()==2 && years.getDays().get(0).getDate().equals("2025") && years.getDays().get(0).getRevenue().signum()==0,"Empty year and year label");
+   check(years.getDays().get(1).getRevenue().compareTo(allDays.getRevenue())==0,"Year totals equal daily totals");
+   ThongKeServlet.validateRange(LocalDate.of(2024,1,1),LocalDate.of(2024,12,31),"month");
+   ThongKeServlet.validateRange(LocalDate.of(2017,1,1),LocalDate.of(2026,12,31),"year");
+   for(String mode:new String[]{"year","invalid"}) {
+    try {ThongKeServlet.validateRange(LocalDate.of(2016,1,1),LocalDate.of(2026,12,31),mode);throw new AssertionError("Invalid mode/range accepted");}
+    catch(IllegalArgumentException expected) {}
+   }
+   check(repo.load(test,LocalDate.of(2024,1,1),LocalDate.of(2024,12,31)).groupBy("month").getDays().size()==12,"Leap year has exactly 12 monthly buckets");
+   System.out.println("PASS: monthly/yearly aggregation, empty periods, leap year, range limits, same totals and rankings.");
    ThongKeReport empty=repo.load(test,LocalDate.of(2020,1,1),LocalDate.of(2020,1,2));
    check(empty.isEmpty() && empty.getAverage().signum()==0 && empty.getDays().size()==2,"Empty result");
    // Tạo thay đổi chưa commit trên bảng tạm rồi gọi báo cáo.

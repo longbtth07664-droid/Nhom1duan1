@@ -96,11 +96,32 @@
                     <%-- THỐNG KÊ: bộ lọc dùng GET; server kiểm tra ngày và giới hạn khoảng xem. --%>
                     <section class="card tk-filter">
                         <form method="get" action="${pageContext.request.contextPath}/thong-ke">
+                            <%-- [TK-GIAODIEN] Server quyết định khoảng ngày thật; JS chỉ đổi ô nhập. --%>
                             <div class="form-group">
+                                <label for="tkMode">Thống kê theo</label>
+                                <select class="form-control" id="tkMode" name="mode" onchange="doiCheDoThongKe()">
+                                    <option value="day" ${mode == 'day' ? 'selected' : ''}>Ngày</option>
+                                    <option value="month" ${mode == 'month' ? 'selected' : ''}>Tháng</option>
+                                    <option value="year" ${mode == 'year' ? 'selected' : ''}>Năm</option>
+                                </select>
+                            </div>
+                            <div class="form-group" data-mode="month">
+                                <label for="tkYear">Năm cần xem (12 tháng)</label>
+                                <input class="form-control" type="number" id="tkYear" name="year" min="1900" max="9998" value="${selectedYear}" required>
+                            </div>
+                            <div class="form-group" data-mode="year">
+                                <label for="tkStartYear">Từ năm</label>
+                                <input class="form-control" type="number" id="tkStartYear" name="startYear" min="1900" max="9998" value="${startYear}" required>
+                            </div>
+                            <div class="form-group" data-mode="year">
+                                <label for="tkEndYear">Đến năm</label>
+                                <input class="form-control" type="number" id="tkEndYear" name="endYear" min="1900" max="9998" value="${endYear}" required>
+                            </div>
+                            <div class="form-group" data-mode="day">
                                 <label for="tkFrom">Từ ngày</label>
                                 <input class="form-control" type="date" id="tkFrom" name="from" value="${from}" required>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" data-mode="day">
                                 <label for="tkTo">Đến ngày</label>
                                 <input class="form-control" type="date" id="tkTo" name="to" value="${to}" required>
                             </div>
@@ -111,8 +132,9 @@
                             <a href="?from=${weekStart}&amp;to=${today}">7 ngày qua</a>
                             <a href="?from=${monthStart}&amp;to=${today}">Tháng này</a>
                             <a href="?from=${previousStart}&amp;to=${previousEnd}">Tháng trước</a>
-                            <a href="?from=${yearStart}&amp;to=${today}">Năm nay</a>
-                            <span>Tối đa 366 ngày / báo cáo</span>
+                            <a href="?mode=month">Năm nay (12 tháng)</a>
+                            <a href="?mode=year">5 năm gần đây</a>
+                            <span>Theo ngày: tối đa 366 ngày · Theo tháng: 12 tháng · Theo năm: tối đa 10 năm</span>
                         </div>
                     </section>
                     <c:choose>
@@ -176,7 +198,7 @@
                                     <div class="tk-heading">
                                         <div>
                                             <span class="tk-eyebrow">DIỄN BIẾN KINH DOANH</span>
-                                            <h2>Doanh thu theo ngày</h2>
+                                            <h2>Doanh thu theo ${periodName}</h2>
                                         </div>
                                         <span class="tk-legend">● Sau giảm giá</span>
                                     </div>
@@ -328,15 +350,15 @@
                                 <div class="tk-heading">
                                     <div>
                                         <span class="tk-eyebrow">ĐỐI CHIẾU SỐ LIỆU</span>
-                                        <h2>Chi tiết từng ngày</h2>
+                                        <h2>Chi tiết từng ${periodName}</h2>
                                     </div>
-                                    <span class="tk-muted">Gồm ngày không phát sinh</span>
+                                    <span class="tk-muted">Gồm cả kỳ không phát sinh</span>
                                 </div>
                                 <div class="table-wrap tk-table-scroll">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>Ngày</th>
+                                                <th>Kỳ thống kê</th>
                                                 <th>Hóa đơn</th>
                                                 <th>Vé</th>
                                                 <th>SP / Combo</th>
@@ -382,6 +404,19 @@
             </div>
         </div>
 <script>
+    // [TK-DOICHE DO] Chỉ gửi các ô thuộc chế độ đang chọn, tránh required ở ô ẩn.
+    function doiCheDoThongKe() {
+        var mode = document.getElementById('tkMode').value;
+        var groups = document.querySelectorAll('[data-mode]');
+        for (var i = 0; i < groups.length; i++) {
+            var active = groups[i].getAttribute('data-mode') === mode;
+            groups[i].hidden = !active;
+            groups[i].style.display = active ? '' : 'none';
+            var inputs = groups[i].querySelectorAll('input');
+            for (var j = 0; j < inputs.length; j++) inputs[j].disabled = !active;
+        }
+    }
+    doiCheDoThongKe();
     // Menu dùng riêng tại trang này, giữ nguyên mã menu của các module khác.
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('open');
