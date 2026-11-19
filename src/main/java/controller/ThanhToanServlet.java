@@ -117,6 +117,7 @@ public class ThanhToanServlet extends HttpServlet {
         String seatsData = req.getParameter("seatsData");
         String combosData = req.getParameter("combosData");
         String maSuatStr = req.getParameter("maSuat");
+        String isPendingStr = req.getParameter("isPending");
 
         // Nếu gửi qua Content-Type application/json thì đọc từ body
         String contentType = req.getContentType();
@@ -137,7 +138,12 @@ public class ThanhToanServlet extends HttpServlet {
             seatsData = extractJsonArray(jsonBody, "seatsData");
             combosData = extractJsonArray(jsonBody, "combosData");
             maSuatStr = extractJsonField(jsonBody, "maSuat");
+            if (isPendingStr == null) {
+                isPendingStr = extractJsonField(jsonBody, "isPending");
+            }
         }
+
+        boolean isPending = "true".equalsIgnoreCase(isPendingStr) || "1".equals(isPendingStr);
 
         if (phuongThuc == null || phuongThuc.trim().isEmpty()) {
             phuongThuc = "Tiền mặt";
@@ -194,12 +200,17 @@ public class ThanhToanServlet extends HttpServlet {
             return;
         }
 
-        // Gọi Repository tạo hóa đơn và thanh toán
-        int maDatVe = hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, tongTien, tienGiam, phuongThuc, listVe, listCombo);
+        // Gọi Repository tạo hóa đơn và thanh toán (có cờ isPending để lưu Chờ thanh toán)
+        int maDatVe = hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, tongTien, tienGiam, phuongThuc, listVe, listCombo, isPending);
 
         if (maDatVe > 0) {
-            String redirectUrl = req.getContextPath() + "/thanh-toan?completedId=" + maDatVe;
-            resp.getWriter().write("{\"success\":true,\"maDatVe\":" + maDatVe + ",\"redirectUrl\":\"" + redirectUrl + "\"}");
+            if (isPending) {
+                String redirectUrl = req.getContextPath() + "/hoa-don";
+                resp.getWriter().write("{\"success\":true,\"isPending\":true,\"maDatVe\":" + maDatVe + ",\"message\":\"Đã tạo và lưu hóa đơn #" + maDatVe + " ở trạng thái Chờ thanh toán!\",\"redirectUrl\":\"" + redirectUrl + "\"}");
+            } else {
+                String redirectUrl = req.getContextPath() + "/thanh-toan?completedId=" + maDatVe;
+                resp.getWriter().write("{\"success\":true,\"isPending\":false,\"maDatVe\":" + maDatVe + ",\"redirectUrl\":\"" + redirectUrl + "\"}");
+            }
         } else {
             resp.getWriter().write("{\"success\":false,\"message\":\"Không thể lưu hóa đơn vào CSDL. Vui lòng thử lại!\"}");
         }

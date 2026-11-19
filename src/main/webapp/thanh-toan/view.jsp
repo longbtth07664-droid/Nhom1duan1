@@ -595,10 +595,17 @@
                         </div>
                     </div>
 
-                    <!-- NÚT XÁC NHẬN THANH TOÁN -->
-                    <button type="button" class="btn-checkout-submit" onclick="executeCheckout()">
-                        <i class="fa-solid fa-check"></i> XÁC NHẬN THANH TOÁN & IN VÉ (F9)
-                    </button>
+                    <!-- NÚT XÁC NHẬN THANH TOÁN & LƯU ĐƠN CHỜ THANH TOÁN -->
+                    <div style="display:flex; gap:12px; margin-top:20px;">
+                        <button type="button" id="btnSavePending" class="btn btn-outline" 
+                                style="flex:1; height:48px; font-weight:700; border-color:#f59e0b; color:#d97706; background:#fffbeb; border-radius:10px; font-size:13px;" 
+                                onclick="savePendingOrder()" title="Lưu tạm hóa đơn chưa thu tiền để giữ chỗ">
+                            <i class="fa-solid fa-hourglass-half" style="margin-right:6px;"></i> Lưu chờ thanh toán
+                        </button>
+                        <button type="button" class="btn-checkout-submit" style="flex:1.6; margin-top:0;" onclick="executeCheckout()">
+                            <i class="fa-solid fa-check"></i> XÁC NHẬN THANH TOÁN (F9)
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1070,7 +1077,66 @@
             console.error(err);
             alert('Lỗi kết nối tới máy chủ!');
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-check"></i> XÁC NHẬN THANH TOÁN & IN VÉ (F9)';
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> XÁC NHẬN THANH TOÁN (F9)';
+        });
+    }
+
+    function savePendingOrder() {
+        if (!CHECKOUT_STATE.selectedSeats || CHECKOUT_STATE.selectedSeats.length === 0) {
+            alert('Chưa có vé ghế nào được chọn để lưu đơn! Vui lòng chọn ghế trước.');
+            return;
+        }
+
+        if (!confirm('Xác nhận lưu đơn hàng này vào danh sách [Chờ thanh toán]?\nGhế sẽ được giữ chỗ và bạn có thể thu tiền sau trong Quản lý hóa đơn.')) {
+            return;
+        }
+
+        const payload = {
+            isPending: true,
+            maSuat: CHECKOUT_STATE.maSuat,
+            sdt: (CHECKOUT_STATE.currentMember && CHECKOUT_STATE.currentMember.sdt) ? CHECKOUT_STATE.currentMember.sdt : (document.getElementById('inputMemberPhone') ? document.getElementById('inputMemberPhone').value.trim() : ''),
+            hoTen: (CHECKOUT_STATE.currentMember && CHECKOUT_STATE.currentMember.hoTen) ? CHECKOUT_STATE.currentMember.hoTen : (document.getElementById('inputMemberName') ? document.getElementById('inputMemberName').value.trim() : ''),
+            phuongThuc: CHECKOUT_STATE.currentMethod,
+            tongTien: CHECKOUT_STATE.grandTotal,
+            tienGiam: CHECKOUT_STATE.discount,
+            seatsData: JSON.stringify(CHECKOUT_STATE.selectedSeats),
+            combosData: JSON.stringify(Object.values(CHECKOUT_STATE.selectedCombos))
+        };
+
+        const btnPending = document.getElementById('btnSavePending');
+        if (btnPending) {
+            btnPending.disabled = true;
+            btnPending.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu đơn...';
+        }
+
+        fetch('${pageContext.request.contextPath}/thanh-toan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Xóa giỏ hàng phiên làm việc hiện tại
+                sessionStorage.removeItem('pos_selected_seats');
+                sessionStorage.removeItem('pos_selected_combos');
+                alert(data.message || 'Đã lưu đơn thành công ở trạng thái Chờ thanh toán!');
+                window.location.href = data.redirectUrl || '${pageContext.request.contextPath}/hoa-don';
+            } else {
+                alert(data.message || 'Lưu đơn thất bại!');
+                if (btnPending) {
+                    btnPending.disabled = false;
+                    btnPending.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> Lưu chờ thanh toán';
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Lỗi kết nối tới máy chủ khi lưu đơn!');
+            if (btnPending) {
+                btnPending.disabled = false;
+                btnPending.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> Lưu chờ thanh toán';
+            }
         });
     }
 

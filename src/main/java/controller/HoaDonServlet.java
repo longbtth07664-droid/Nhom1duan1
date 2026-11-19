@@ -103,14 +103,62 @@ public class HoaDonServlet extends HttpServlet {
             return;
         }
 
-        // 2. Mặc định: Hiển thị trang Quản lý hóa đơn & Thống kê
+        // 2. API Thu tiền hóa đơn Chờ thanh toán
+        if ("payNow".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            String idStr = req.getParameter("id");
+            String phuongThuc = req.getParameter("phuongThuc");
+            if (idStr == null || idStr.trim().isEmpty()) {
+                resp.getWriter().write("{\"success\":false,\"message\":\"Thiếu mã hóa đơn cần thu tiền!\"}");
+                return;
+            }
+            try {
+                int id = Integer.parseInt(idStr.trim());
+                boolean ok = hoaDonRepo.hoanTatThanhToan(id, phuongThuc);
+                if (ok) {
+                    resp.getWriter().write("{\"success\":true,\"message\":\"Đã thu tiền và hoàn tất hóa đơn #" + id + " thành công!\",\"maDatVe\":" + id + "}");
+                } else {
+                    resp.getWriter().write("{\"success\":false,\"message\":\"Không thể cập nhật thanh toán cho hóa đơn #" + id + "\"}");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                resp.getWriter().write("{\"success\":false,\"message\":\"Lỗi: " + escapeJson(e.getMessage()) + "\"}");
+            }
+            return;
+        }
+
+        // 3. API Hủy đơn hàng Chờ thanh toán
+        if ("cancel".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            String idStr = req.getParameter("id");
+            if (idStr == null || idStr.trim().isEmpty()) {
+                resp.getWriter().write("{\"success\":false,\"message\":\"Thiếu mã hóa đơn cần hủy!\"}");
+                return;
+            }
+            try {
+                int id = Integer.parseInt(idStr.trim());
+                boolean ok = hoaDonRepo.huyHoaDon(id);
+                if (ok) {
+                    resp.getWriter().write("{\"success\":true,\"message\":\"Đã hủy hóa đơn #" + id + " và giải phóng ghế thành công!\"}");
+                } else {
+                    resp.getWriter().write("{\"success\":false,\"message\":\"Không thể hủy hóa đơn #" + id + "\"}");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                resp.getWriter().write("{\"success\":false,\"message\":\"Lỗi: " + escapeJson(e.getMessage()) + "\"}");
+            }
+            return;
+        }
+
+        // 4. Mặc định: Hiển thị trang Quản lý hóa đơn & Thống kê
         String keyword = req.getParameter("keyword");
         String fromDate = req.getParameter("fromDate");
         String toDate = req.getParameter("toDate");
         String phuongThuc = req.getParameter("phuongThuc");
+        String trangThai = req.getParameter("trangThai");
 
         Map<String, Object> thongKe = hoaDonRepo.getThongKe();
-        List<HoaDon> list = hoaDonRepo.getAll(keyword, fromDate, toDate, phuongThuc);
+        List<HoaDon> list = hoaDonRepo.getAll(keyword, fromDate, toDate, phuongThuc, trangThai);
 
         req.setAttribute("thongKe", thongKe);
         req.setAttribute("danhSachHoaDon", list);
@@ -118,6 +166,7 @@ public class HoaDonServlet extends HttpServlet {
         req.setAttribute("fromDate", fromDate);
         req.setAttribute("toDate", toDate);
         req.setAttribute("phuongThuc", phuongThuc);
+        req.setAttribute("trangThai", trangThai);
 
         req.getRequestDispatcher("/hoa-don/view.jsp").forward(req, resp);
     }

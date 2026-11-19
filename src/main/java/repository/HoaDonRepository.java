@@ -41,9 +41,13 @@ public class HoaDonRepository {
     }
 
     /**
-     * Lấy danh sách hóa đơn kèm lọc từ khóa, khoảng ngày và phương thức thanh toán
+     * Lấy danh sách hóa đơn kèm lọc từ khóa, khoảng ngày, phương thức thanh toán và trạng thái
      */
     public List<HoaDon> getAll(String keyword, String fromDate, String toDate, String phuongThuc) {
+        return getAll(keyword, fromDate, toDate, phuongThuc, null);
+    }
+
+    public List<HoaDon> getAll(String keyword, String fromDate, String toDate, String phuongThuc, String trangThai) {
         List<HoaDon> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT h.MaDatVe, h.MaTK, h.NgayDat, h.TongTien, h.TrangThai, ");
@@ -80,6 +84,11 @@ public class HoaDonRepository {
         if (phuongThuc != null && !phuongThuc.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(phuongThuc.trim())) {
             sql.append("AND tt.PhuongThuc = ? ");
             params.add(phuongThuc.trim());
+        }
+
+        if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(trangThai.trim())) {
+            sql.append("AND h.TrangThai = ? ");
+            params.add(trangThai.trim());
         }
 
         sql.append("ORDER BY h.NgayDat DESC, h.MaDatVe DESC");
@@ -227,8 +236,20 @@ public class HoaDonRepository {
      */
     public int taoHoaDonThanhToan(int maTK, String maKH, BigDecimal tongTien, BigDecimal tienGiam,
                                   String phuongThuc, List<Ve> listVe, List<ChiTietHoaDon> listCombo) {
+        return taoHoaDonThanhToan(maTK, maKH, tongTien, tienGiam, phuongThuc, listVe, listCombo, false);
+    }
+
+    /**
+     * Tạo hóa đơn với tùy chọn Lưu tạm (Chờ thanh toán) hoặc Hoàn tất ngay
+     */
+    public int taoHoaDonThanhToan(int maTK, String maKH, BigDecimal tongTien, BigDecimal tienGiam,
+                                  String phuongThuc, List<Ve> listVe, List<ChiTietHoaDon> listCombo, boolean isPending) {
         Connection conn = null;
         int generatedMaDatVe = -1;
+
+        String trangThaiHD = isPending ? "Chờ thanh toán" : "Đã hoàn tất";
+        String trangThaiVe = isPending ? "Chờ thanh toán" : "Đã bán";
+        String trangThaiTT = isPending ? "Chờ xử lý" : "Thành công";
 
         try {
             conn = getConnection();
@@ -257,7 +278,7 @@ public class HoaDonRepository {
                 if (hasMaKH && maKH != null && !maKH.trim().isEmpty()) {
                     psHd.setString(col++, maKH.trim());
                 }
-                psHd.setString(col++, "Đã hoàn tất");
+                psHd.setString(col++, trangThaiHD);
 
                 psHd.executeUpdate();
                 try (ResultSet rsKeys = psHd.getGeneratedKeys()) {
@@ -275,9 +296,9 @@ public class HoaDonRepository {
             // 2. Insert hoặc Update danh sách Vé (tránh trùng khóa UQ_Suat_Ghe khi test lại ghế đã chọn)
             if (listVe != null && !listVe.isEmpty()) {
                 String sqlUpsertVe = "IF EXISTS (SELECT 1 FROM Ve WHERE MaSuat = ? AND MaGhe = ?) " +
-                        "UPDATE Ve SET MaDatVe = ?, GiaVe = ?, MaQR = ?, TrangThai = N'Đã bán' WHERE MaSuat = ? AND MaGhe = ? " +
+                        "UPDATE Ve SET MaDatVe = ?, GiaVe = ?, MaQR = ?, TrangThai = ? WHERE MaSuat = ? AND MaGhe = ? " +
                         "ELSE " +
-                        "INSERT INTO Ve (MaDatVe, MaSuat, MaGhe, GiaVe, MaQR, TrangThai) VALUES (?, ?, ?, ?, ?, N'Đã bán')";
+                        "INSERT INTO Ve (MaDatVe, MaSuat, MaGhe, GiaVe, MaQR, TrangThai) VALUES (?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement psVe = conn.prepareStatement(sqlUpsertVe)) {
                     for (Ve v : listVe) {
                         int mSuat = v.getMaSuat() != null ? v.getMaSuat() : 1;
@@ -293,18 +314,21 @@ public class HoaDonRepository {
                         // 1, 2: IF EXISTS
                         psVe.setInt(1, mSuat);
                         psVe.setInt(2, mGhe);
-                        // 3, 4, 5, 6, 7: UPDATE
+                        // 3, 4, 5, 6: UPDATE (MaDatVe, GiaVe, MaQR, TrangThai)
                         psVe.setInt(3, generatedMaDatVe);
                         psVe.setBigDecimal(4, gVe);
                         psVe.setString(5, qrCode);
-                        psVe.setInt(6, mSuat);
-                        psVe.setInt(7, mGhe);
-                        // 8, 9, 10, 11, 12: INSERT
-                        psVe.setInt(8, generatedMaDatVe);
-                        psVe.setInt(9, mSuat);
-                        psVe.setInt(10, mGhe);
-                        psVe.setBigDecimal(11, gVe);
-                        psVe.setString(12, qrCode);
+                        psVe.setString(6, trangThaiVe);
+                        // 7, 8: WHERE MaSuat = ?, MaGhe = ?
+                        psVe.setInt(7, mSuat);
+                        psVe.setInt(8, mGhe);
+                        // 9, 10, 11, 12, 13, 14: INSERT (MaDatVe, MaSuat, MaGhe, GiaVe, MaQR, TrangThai)
+                        psVe.setInt(9, generatedMaDatVe);
+                        psVe.setInt(10, mSuat);
+                        psVe.setInt(11, mGhe);
+                        psVe.setBigDecimal(12, gVe);
+                        psVe.setString(13, qrCode);
+                        psVe.setString(14, trangThaiVe);
 
                         psVe.executeUpdate();
                     }
@@ -333,12 +357,12 @@ public class HoaDonRepository {
                 psTT.setInt(1, generatedMaDatVe);
                 psTT.setString(2, (phuongThuc != null && !phuongThuc.trim().isEmpty()) ? phuongThuc.trim() : "Tiền mặt");
                 psTT.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
-                psTT.setString(4, "Thành công");
+                psTT.setString(4, trangThaiTT);
                 psTT.executeUpdate();
             }
 
-            // 5. Cập nhật điểm tích lũy Khách hàng (nếu có khách hàng)
-            if (maKH != null && !maKH.trim().isEmpty()) {
+            // 5. Cập nhật điểm tích lũy Khách hàng (chỉ khi hoàn tất thanh toán)
+            if (!isPending && maKH != null && !maKH.trim().isEmpty()) {
                 try {
                     int diemCong = (tongTien != null) ? tongTien.intValue() / 10000 : 0;
                     int diemTru = (tienGiam != null) ? tienGiam.intValue() / 1000 : 0;
@@ -475,5 +499,300 @@ public class HoaDonRepository {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /**
+     * Hoàn tất thanh toán cho hóa đơn đang "Chờ thanh toán"
+     */
+    public boolean hoanTatThanhToan(int maDatVe, String phuongThuc) {
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Cập nhật trạng thái Hóa đơn -> "Đã hoàn tất"
+            String sqlHd = "UPDATE HoaDon SET TrangThai = N'Đã hoàn tất' WHERE MaDatVe = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlHd)) {
+                ps.setInt(1, maDatVe);
+                ps.executeUpdate();
+            }
+
+            // 2. Cập nhật trạng thái Vé -> "Đã bán"
+            String sqlVe = "UPDATE Ve SET TrangThai = N'Đã bán' WHERE MaDatVe = ? AND (TrangThai = N'Chờ thanh toán' OR TrangThai IS NULL)";
+            try (PreparedStatement ps = conn.prepareStatement(sqlVe)) {
+                ps.setInt(1, maDatVe);
+                ps.executeUpdate();
+            }
+
+            // 3. Cập nhật ThanhToan -> "Thành công" và phương thức
+            String sqlTT = "UPDATE ThanhToan SET TrangThai = N'Thành công', PhuongThuc = ?, NgayThanhToan = GETDATE() WHERE MaDatVe = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlTT)) {
+                ps.setString(1, (phuongThuc != null && !phuongThuc.trim().isEmpty()) ? phuongThuc.trim() : "Tiền mặt");
+                ps.setInt(2, maDatVe);
+                int rows = ps.executeUpdate();
+                if (rows == 0) {
+                    String sqlInsertTT = "INSERT INTO ThanhToan (MaDatVe, PhuongThuc, NgayThanhToan, TrangThai) VALUES (?, ?, GETDATE(), N'Thành công')";
+                    try (PreparedStatement psIns = conn.prepareStatement(sqlInsertTT)) {
+                        psIns.setInt(1, maDatVe);
+                        psIns.setString(2, (phuongThuc != null && !phuongThuc.trim().isEmpty()) ? phuongThuc.trim() : "Tiền mặt");
+                        psIns.executeUpdate();
+                    }
+                }
+            }
+
+            // 4. Cộng điểm tích lũy cho khách hàng (nếu có MaKH)
+            try {
+                String sqlGetKh = "SELECT MaKH, TongTien, TienGiam FROM HoaDon WHERE MaDatVe = ?";
+                try (PreparedStatement psGet = conn.prepareStatement(sqlGetKh)) {
+                    psGet.setInt(1, maDatVe);
+                    try (ResultSet rs = psGet.executeQuery()) {
+                        if (rs.next()) {
+                            String maKh = rs.getString("MaKH");
+                            BigDecimal tongTien = rs.getBigDecimal("TongTien");
+                            BigDecimal tienGiam = rs.getBigDecimal("TienGiam");
+                            if (maKh != null && !maKh.trim().isEmpty()) {
+                                int diemCong = (tongTien != null) ? tongTien.intValue() / 10000 : 0;
+                                int diemTru = (tienGiam != null) ? tienGiam.intValue() / 1000 : 0;
+                                int delta = diemCong - diemTru;
+                                String sqlKh = "UPDATE KhachHang SET DiemTichLuy = CASE WHEN DiemTichLuy + ? < 0 THEN 0 ELSE DiemTichLuy + ? END WHERE MaKH = ?";
+                                try (PreparedStatement psKh = conn.prepareStatement(sqlKh)) {
+                                    psKh.setInt(1, delta);
+                                    psKh.setInt(2, delta);
+                                    psKh.setString(3, maKh.trim());
+                                    psKh.executeUpdate();
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("Bỏ qua lỗi cộng điểm KH khi thu tiền: " + ex.getMessage());
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    /**
+     * Hủy hóa đơn và nhả ghế lại cho phòng chiếu
+     */
+    public boolean huyHoaDon(int maDatVe) {
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+
+            String sqlHd = "UPDATE HoaDon SET TrangThai = N'Đã hủy' WHERE MaDatVe = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlHd)) {
+                ps.setInt(1, maDatVe);
+                ps.executeUpdate();
+            }
+
+            String sqlVe = "UPDATE Ve SET TrangThai = N'Đã hủy' WHERE MaDatVe = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlVe)) {
+                ps.setInt(1, maDatVe);
+                ps.executeUpdate();
+            }
+
+            String sqlTT = "UPDATE ThanhToan SET TrangThai = N'Đã hủy' WHERE MaDatVe = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlTT)) {
+                ps.setInt(1, maDatVe);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    /**
+     * Soát vé (Check-in) theo mã QR hoặc mã vé
+     */
+    public Map<String, Object> kiemTraVaCheckInVe(String code) {
+        Map<String, Object> result = new HashMap<>();
+        if (code == null || code.trim().isEmpty()) {
+            result.put("success", false);
+            result.put("statusCode", "INVALID_INPUT");
+            result.put("message", "Vui lòng nhập hoặc quét mã vé / mã QR!");
+            return result;
+        }
+
+        String cleanCode = code.trim();
+        if (cleanCode.startsWith("#")) cleanCode = cleanCode.substring(1);
+
+        String sql = "SELECT v.MaVe, v.MaDatVe, v.MaSuat, v.MaGhe, v.GiaVe, v.MaQR, v.TrangThai AS TrangThaiVe, " +
+                "g.HangGhe, g.SoGhe, " +
+                "p.TenPhim, pc.TenPhong, sc.NgayChieu, sc.GioBatDau, " +
+                "hd.TrangThai AS TrangThaiHD, hd.TongTien " +
+                "FROM Ve v " +
+                "LEFT JOIN Ghe g ON v.MaGhe = g.MaGhe " +
+                "LEFT JOIN SuatChieu sc ON v.MaSuat = sc.MaSuat " +
+                "LEFT JOIN Phim p ON sc.MaPhim = p.MaPhim " +
+                "LEFT JOIN PhongChieu pc ON sc.MaPhong = pc.MaPhong " +
+                "LEFT JOIN HoaDon hd ON v.MaDatVe = hd.MaDatVe " +
+                "WHERE v.MaQR = ? OR CAST(v.MaVe AS VARCHAR) = ? OR v.MaQR LIKE ?";
+
+        try (Connection conn = getConnection()) {
+            Ve ve = null;
+            String trangThaiVe = "";
+            String trangThaiHD = "";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, cleanCode);
+                ps.setString(2, cleanCode);
+                ps.setString(3, "%" + cleanCode + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        ve = new Ve();
+                        ve.setMaVe(rs.getInt("MaVe"));
+                        ve.setMaDatVe(rs.getInt("MaDatVe"));
+                        ve.setMaSuat(rs.getInt("MaSuat"));
+                        ve.setMaGhe(rs.getInt("MaGhe"));
+                        ve.setGiaVe(rs.getBigDecimal("GiaVe"));
+                        ve.setMaQR(rs.getString("MaQR"));
+
+                        trangThaiVe = rs.getString("TrangThaiVe");
+                        ve.setTrangThai(trangThaiVe);
+
+                        trangThaiHD = rs.getString("TrangThaiHD");
+
+                        String hang = rs.getString("HangGhe");
+                        int so = rs.getInt("SoGhe");
+                        ve.setTenGhe((hang != null ? hang : "") + (so > 0 ? so : ""));
+                        ve.setTenPhim(rs.getString("TenPhim"));
+                        ve.setTenPhong(rs.getString("TenPhong"));
+
+                        java.sql.Date d = rs.getDate("NgayChieu");
+                        if (d != null) ve.setNgayChieu(d.toString());
+
+                        Time t = rs.getTime("GioBatDau");
+                        if (t != null) ve.setGioChieu(t.toString().substring(0, 5));
+                    }
+                }
+            }
+
+            if (ve == null) {
+                result.put("success", false);
+                result.put("statusCode", "NOT_FOUND");
+                result.put("message", "Không tìm thấy thông tin vé phù hợp trên hệ thống!");
+                return result;
+            }
+
+            result.put("ve", ve);
+
+            // 1. Kiểm tra nếu vé hoặc hóa đơn đã bị hủy
+            if ("Đã hủy".equalsIgnoreCase(trangThaiVe) || "Đã hủy".equalsIgnoreCase(trangThaiHD)) {
+                result.put("success", false);
+                result.put("statusCode", "CANCELLED");
+                result.put("message", "Vé này hoặc đơn đặt vé đã bị HỦY! Không được vào rạp.");
+                return result;
+            }
+
+            // 2. Kiểm tra nếu đơn chưa thanh toán
+            if ("Chờ thanh toán".equalsIgnoreCase(trangThaiHD) || "Chờ thanh toán".equalsIgnoreCase(trangThaiVe)) {
+                result.put("success", false);
+                result.put("statusCode", "NOT_PAID");
+                result.put("message", "Đơn vé đang ở trạng thái 'Chờ thanh toán'! Khách cần thanh toán trước khi vào rạp.");
+                return result;
+            }
+
+            // 3. Kiểm tra nếu vé ĐÃ CHECK-IN trước đó
+            if ("Đã check-in".equalsIgnoreCase(trangThaiVe)) {
+                result.put("success", false);
+                result.put("statusCode", "ALREADY_CHECKED_IN");
+                result.put("message", "CẢNH BÁO: Vé này ĐÃ ĐƯỢC SOÁT VÉ (CHECK-IN) trước đó rồi!");
+                return result;
+            }
+
+            // 4. Hợp lệ -> Cập nhật trạng thái vé thành "Đã check-in"
+            String sqlUpdate = "UPDATE Ve SET TrangThai = N'Đã check-in' WHERE MaVe = ?";
+            try (PreparedStatement psUp = conn.prepareStatement(sqlUpdate)) {
+                psUp.setInt(1, ve.getMaVe());
+                psUp.executeUpdate();
+            }
+
+            ve.setTrangThai("Đã check-in");
+            result.put("success", true);
+            result.put("statusCode", "SUCCESS");
+            result.put("message", "Check-in thành công! Mời quý khách vào phòng chiếu.");
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            result.put("success", false);
+            result.put("statusCode", "ERROR");
+            result.put("message", "Lỗi hệ thống khi soát vé: " + e.getMessage());
+            return result;
+        }
+    }
+
+    /**
+     * Lấy 15 vé vừa check-in gần nhất để làm nhật ký soát vé
+     */
+    public List<Ve> getLichSuCheckIn() {
+        List<Ve> list = new ArrayList<>();
+        String sql = "SELECT TOP 15 v.MaVe, v.MaDatVe, v.MaSuat, v.MaGhe, v.GiaVe, v.MaQR, v.TrangThai, " +
+                "g.HangGhe, g.SoGhe, " +
+                "p.TenPhim, pc.TenPhong, sc.NgayChieu, sc.GioBatDau " +
+                "FROM Ve v " +
+                "LEFT JOIN Ghe g ON v.MaGhe = g.MaGhe " +
+                "LEFT JOIN SuatChieu sc ON v.MaSuat = sc.MaSuat " +
+                "LEFT JOIN Phim p ON sc.MaPhim = p.MaPhim " +
+                "LEFT JOIN PhongChieu pc ON sc.MaPhong = pc.MaPhong " +
+                "WHERE v.TrangThai = N'Đã check-in' " +
+                "ORDER BY v.MaVe DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Ve ve = new Ve();
+                ve.setMaVe(rs.getInt("MaVe"));
+                ve.setMaDatVe(rs.getInt("MaDatVe"));
+                ve.setMaSuat(rs.getInt("MaSuat"));
+                ve.setMaGhe(rs.getInt("MaGhe"));
+                ve.setGiaVe(rs.getBigDecimal("GiaVe"));
+                ve.setMaQR(rs.getString("MaQR"));
+                ve.setTrangThai(rs.getString("TrangThai"));
+
+                String hang = rs.getString("HangGhe");
+                int so = rs.getInt("SoGhe");
+                ve.setTenGhe((hang != null ? hang : "") + (so > 0 ? so : ""));
+                ve.setTenPhim(rs.getString("TenPhim"));
+                ve.setTenPhong(rs.getString("TenPhong"));
+
+                java.sql.Date d = rs.getDate("NgayChieu");
+                if (d != null) ve.setNgayChieu(d.toString());
+
+                Time t = rs.getTime("GioBatDau");
+                if (t != null) ve.setGioChieu(t.toString().substring(0, 5));
+
+                list.add(ve);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }

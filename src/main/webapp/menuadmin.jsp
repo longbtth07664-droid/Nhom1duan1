@@ -38,6 +38,10 @@
                 <span>Bán vé tại quầy (POS)</span>
             </a>
 
+            <a href="${pageContext.request.contextPath}/check-in" class="nav-item">
+                <span>Soát vé (Check-in)</span>
+            </a>
+
             <div class="nav-group">
                 <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
                     <span>Quản lí phim</span>

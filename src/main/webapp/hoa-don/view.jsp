@@ -342,6 +342,16 @@
                     </select>
                 </div>
 
+                <div class="filter-item">
+                    <label>Trạng thái</label>
+                    <select name="trangThai" class="filter-input">
+                        <option value="">-- Tất cả --</option>
+                        <option value="Đã hoàn tất" ${trangThai == 'Đã hoàn tất' ? 'selected' : ''}>Đã hoàn tất</option>
+                        <option value="Chờ thanh toán" ${trangThai == 'Chờ thanh toán' ? 'selected' : ''}>Chờ thanh toán</option>
+                        <option value="Đã hủy" ${trangThai == 'Đã hủy' ? 'selected' : ''}>Đã hủy</option>
+                    </select>
+                </div>
+
                 <div style="display:flex; gap:8px;">
                     <button type="submit" class="btn btn-pink" style="height:38px;">
                         <i class="fa-solid fa-filter" style="margin-right:6px;"></i> Lọc
@@ -364,7 +374,7 @@
                     <th>Phương thức</th>
                     <th>Tổng tiền</th>
                     <th>Trạng thái</th>
-                    <th style="text-align:center; width:140px;">Thao tác</th>
+                    <th style="text-align:center; width:220px;">Thao tác</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -407,15 +417,41 @@
                                     <strong style="color:#0f172a; font-size:14px;">${hd.tongTienFormatted}</strong>
                                 </td>
                                 <td>
-                                    <span style="background:#dcfce7; color:#15803d; font-size:11px; padding:3px 8px; border-radius:12px; font-weight:600;">
-                                        ● ${hd.trangThai}
-                                    </span>
+                                    <c:choose>
+                                        <c:when test="${hd.trangThai == 'Chờ thanh toán'}">
+                                            <span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:11px; padding:3px 8px; border-radius:12px; font-weight:700;">
+                                                ⏳ Chờ thanh toán
+                                            </span>
+                                        </c:when>
+                                        <c:when test="${hd.trangThai == 'Đã hủy'}">
+                                            <span style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; font-size:11px; padding:3px 8px; border-radius:12px; font-weight:600;">
+                                                ✖ Đã hủy
+                                            </span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:11px; padding:3px 8px; border-radius:12px; font-weight:600;">
+                                                ● <c:out value="${not empty hd.trangThai ? hd.trangThai : 'Đã hoàn tất'}"/>
+                                            </span>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </td>
                                 <td style="text-align:center;">
-                                    <button type="button" class="btn btn-outline btn-sm"
-                                            onclick="viewInvoiceDetail(${hd.maDatVe})" title="Xem chi tiết & In phiếu">
-                                        <i class="fa-solid fa-receipt" style="margin-right:4px;"></i> Chi tiết
-                                    </button>
+                                    <div style="display:inline-flex; gap:6px; align-items:center;">
+                                        <c:if test="${hd.trangThai == 'Chờ thanh toán'}">
+                                            <button type="button" class="btn btn-sm" style="background:#16a34a; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:600;"
+                                                    onclick="openPayModal(${hd.maDatVe}, '${hd.tongTienFormatted}')" title="Thu tiền khách hàng & In hóa đơn">
+                                                <i class="fa-solid fa-money-bill-wave"></i> Thu tiền
+                                            </button>
+                                            <button type="button" class="btn btn-sm" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:600;"
+                                                    onclick="cancelInvoice(${hd.maDatVe})" title="Hủy hóa đơn này">
+                                                <i class="fa-solid fa-xmark"></i> Hủy
+                                            </button>
+                                        </c:if>
+                                        <button type="button" class="btn btn-outline btn-sm" style="padding:4px 8px; border-radius:6px; font-size:12px;"
+                                                onclick="viewInvoiceDetail(${hd.maDatVe})" title="Xem chi tiết & In phiếu">
+                                            <i class="fa-solid fa-receipt" style="margin-right:4px;"></i> Chi tiết
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </c:forEach>
@@ -505,6 +541,48 @@
     </div>
 </div>
 
+<!-- MODAL THU TIỀN CHO HÓA ĐƠN CHỜ THANH TOÁN -->
+<div class="modal-overlay" id="payModal">
+    <div style="background:#ffffff; border-radius:16px; width:100%; max-width:440px; padding:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15);">
+        <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-top:0; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-money-bill-wave" style="color:#16a34a;"></i> Thu tiền hóa đơn <span id="payModalTitleCode" style="color:#e11d48;"></span>
+        </h3>
+        <p style="font-size:13px; color:#64748b; margin-bottom:16px;">
+            Vui lòng chọn hình thức khách thanh toán và xác nhận đã nhận đủ tiền:
+        </p>
+
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; font-weight:600; color:#475569;">Tổng tiền cần thu:</span>
+            <span id="payModalAmount" style="font-size:18px; font-weight:800; color:#e11d48;">0 đ</span>
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:8px;">PHƯƠNG THỨC THANH TOÁN:</label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <label style="display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">
+                    <input type="radio" name="payModalMethod" value="Tiền mặt" checked style="accent-color:#e11d48;">
+                    <span><i class="fa-solid fa-money-bill-wave" style="color:#16a34a; margin-right:6px;"></i> Tiền mặt</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">
+                    <input type="radio" name="payModalMethod" value="Chuyển khoản (VietQR)" style="accent-color:#e11d48;">
+                    <span><i class="fa-solid fa-qrcode" style="color:#0284c7; margin-right:6px;"></i> Chuyển khoản (VietQR)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">
+                    <input type="radio" name="payModalMethod" value="Thẻ ngân hàng" style="accent-color:#e11d48;">
+                    <span><i class="fa-solid fa-credit-card" style="color:#9333ea; margin-right:6px;"></i> Thẻ ngân hàng (POS)</span>
+                </label>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button type="button" class="btn btn-ghost" onclick="closePayModal()">Đóng</button>
+            <button type="button" class="btn btn-pink" id="btnConfirmPay" onclick="submitPayNow()">
+                <i class="fa-solid fa-check" style="margin-right:6px;"></i> Xác nhận đã thu tiền
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     function viewInvoiceDetail(id) {
         fetch('${pageContext.request.contextPath}/hoa-don?action=detail&id=' + id)
@@ -576,6 +654,84 @@
 
     function closeReceiptModal() {
         document.getElementById('receiptModal').classList.remove('active');
+        // Nếu vừa in xong đơn vừa thu tiền thì reload để cập nhật bảng
+        if (window.needsReloadAfterPrint) {
+            window.location.reload();
+        }
+    }
+
+    let currentPayingId = null;
+
+    function openPayModal(maDatVe, tongTienFormatted) {
+        currentPayingId = maDatVe;
+        document.getElementById('payModalTitleCode').textContent = '#HD' + maDatVe;
+        document.getElementById('payModalAmount').textContent = tongTienFormatted;
+        document.getElementById('payModal').classList.add('active');
+    }
+
+    function closePayModal() {
+        document.getElementById('payModal').classList.remove('active');
+        currentPayingId = null;
+    }
+
+    function submitPayNow() {
+        if (!currentPayingId) return;
+
+        const radios = document.getElementsByName('payModalMethod');
+        let selectedMethod = 'Tiền mặt';
+        for (let r of radios) {
+            if (r.checked) {
+                selectedMethod = r.value;
+                break;
+            }
+        }
+
+        const btn = document.getElementById('btnConfirmPay');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+
+        fetch('${pageContext.request.contextPath}/hoa-don?action=payNow&id=' + currentPayingId + '&phuongThuc=' + encodeURIComponent(selectedMethod))
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.needsReloadAfterPrint = true;
+                    closePayModal();
+                    alert(data.message || 'Đã thu tiền và hoàn tất hóa đơn thành công!');
+                    // Mở modal in vé ngay lập tức
+                    viewInvoiceDetail(data.maDatVe);
+                } else {
+                    alert(data.message || 'Không thể cập nhật thu tiền!');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-check" style="margin-right:6px;"></i> Xác nhận đã thu tiền';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Lỗi kết nối tới máy chủ!');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check" style="margin-right:6px;"></i> Xác nhận đã thu tiền';
+            });
+    }
+
+    function cancelInvoice(maDatVe) {
+        if (!confirm('Bạn có chắc chắn muốn HỦY hóa đơn #HD' + maDatVe + ' không?\nCác ghế đã giữ sẽ được giải phóng lại cho phòng chiếu.')) {
+            return;
+        }
+
+        fetch('${pageContext.request.contextPath}/hoa-don?action=cancel&id=' + maDatVe)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || 'Đã hủy hóa đơn thành công!');
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Không thể hủy hóa đơn!');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Lỗi kết nối tới máy chủ khi hủy hóa đơn!');
+            });
     }
 
     // Đóng khi click ngoài modal

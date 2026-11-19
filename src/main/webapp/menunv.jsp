@@ -26,6 +26,10 @@
                 <span>Bán Hàng</span>
             </a>
 
+            <a href="${pageContext.request.contextPath}/check-in" class="nav-item">
+                <span>Soát vé (Check-in)</span>
+            </a>
+
             <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item">
                 <span>Quản lí hóa đơn</span>
             </a>
