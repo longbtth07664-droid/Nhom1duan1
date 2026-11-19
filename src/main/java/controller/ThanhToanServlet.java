@@ -189,6 +189,11 @@ public class ThanhToanServlet extends HttpServlet {
         System.out.println(">>> ThanhToanServlet doPost: combosData=" + combosData);
         System.out.println(">>> ThanhToanServlet doPost: listCombo.size=" + listCombo.size());
 
+        if (listVe == null || listVe.isEmpty()) {
+            resp.getWriter().write("{\"success\":false,\"message\":\"Chưa có thông tin vé ghế để thanh toán! Vui lòng chọn ghế trước khi thanh toán.\"}");
+            return;
+        }
+
         // Gọi Repository tạo hóa đơn và thanh toán
         int maDatVe = hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, tongTien, tienGiam, phuongThuc, listVe, listCombo);
 

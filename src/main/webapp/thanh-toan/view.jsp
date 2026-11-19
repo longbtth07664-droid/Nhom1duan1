@@ -278,6 +278,7 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             display: flex;
             flex-direction: column;
+            position: relative;
         }
         .receipt-body {
             padding: 24px 28px;
@@ -346,11 +347,23 @@
                 left: 0;
                 top: 0;
                 width: 80mm;
-                padding: 5mm;
+                padding: 4mm;
                 margin: 0;
                 box-shadow: none;
             }
-            .modal-actions, .app-shell, .checkout-layout, .topbar {
+            .modal-overlay {
+                position: static !important;
+                background: none !important;
+                backdrop-filter: none !important;
+                padding: 0 !important;
+            }
+            .modal-receipt {
+                max-width: 100% !important;
+                max-height: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+            .modal-actions, .app-shell, .checkout-layout, .topbar, .btn-close-modal {
                 display: none !important;
             }
         }
@@ -531,6 +544,15 @@
                                 Nội dung CK: <strong id="txtQrMemo">CINEMAX</strong>
                             </div>
                         </div>
+                        <div style="margin-top:14px; padding:12px 14px; background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; text-align:left;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:700; color:#9f1239;">
+                                <input type="checkbox" id="chkQrReceived" style="width:18px; height:18px; accent-color:#e11d48; cursor:pointer;">
+                                <span>Xác nhận đã nhận đủ tiền chuyển khoản trong tài khoản</span>
+                            </label>
+                            <div style="font-size:11.5px; color:#64748b; margin-top:3px; margin-left:26px;">
+                                Thu ngân vui lòng kiểm tra app/biến động số dư trước khi xác nhận.
+                            </div>
+                        </div>
                     </div>
 
                     <!-- TAB 3: THẺ NGÂN HÀNG -->
@@ -544,6 +566,12 @@
                             <div style="font-size:11px; color:#64748b; margin-top:6px;">
                                 Vui lòng quẹt thẻ khách trên thiết bị POS của ngân hàng trước khi xác nhận.
                             </div>
+                        </div>
+                        <div style="margin-top:14px; padding:12px 14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; text-align:left;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:700; color:#1e40af;">
+                                <input type="checkbox" id="chkCardReceived" style="width:18px; height:18px; accent-color:#2563eb; cursor:pointer;">
+                                <span>Xác nhận giao dịch quẹt thẻ trên máy POS đã thành công</span>
+                            </label>
                         </div>
                     </div>
 
@@ -578,8 +606,10 @@
 </div>
 
 <!-- MODAL HÓA ĐƠN K80 HOÀN TẤT -->
-<div class="modal-overlay <c:if test='${isCompleted}'>active</c:if>' id="completedReceiptModal">
+<div class="modal-overlay <c:if test="${isCompleted}">active</c:if>" id="completedReceiptModal">
     <div class="modal-receipt">
+        <button type="button" class="btn-close-modal" onclick="closeReceiptModal()" 
+                style="position:absolute; top:14px; right:14px; border:none; background:#f1f5f9; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px; font-weight:700; color:#64748b; display:flex; align-items:center; justify-content:center; z-index:10;" title="Đóng">✕</button>
         <div class="receipt-body" id="printableReceipt">
             <div class="receipt-cinema-name">CINEMAX CINEMA</div>
             <div class="receipt-sub">Tầng 5, TTTM Vincom Center • Hotline: 1900 6868</div>
@@ -626,7 +656,7 @@
             </div>
 
             <!-- DANH SÁCH COMBO -->
-            <c:if test="${not empty hoaDon.danhSachChiTiet}">
+            <div id="k80ComboWrapper" <c:if test="${empty hoaDon.danhSachChiTiet}">style="display:none;"</c:if>>
                 <div style="font-weight:700; margin-top:10px; margin-bottom:6px; font-size:12px; text-transform:uppercase;">
                     🍿 COMBO BẮP NƯỚC (F&B)
                 </div>
@@ -638,7 +668,7 @@
                         </div>
                     </c:forEach>
                 </div>
-            </c:if>
+            </div>
 
             <div class="receipt-divider"></div>
 
@@ -664,8 +694,11 @@
             <a href="${pageContext.request.contextPath}/ban-ve" class="btn btn-ghost" onclick="clearCartSession()">
                 + Bán đơn mới
             </a>
+            <a href="${pageContext.request.contextPath}/hoa-don" class="btn btn-outline" style="text-decoration:none;">
+                <i class="fa-solid fa-receipt" style="margin-right:6px;"></i> Quản lý hóa đơn
+            </a>
             <button type="button" class="btn btn-pink" onclick="window.print()">
-                <i class="fa-solid fa-print" style="margin-right:6px;"></i> In Vé (K80)
+                <i class="fa-solid fa-print" style="margin-right:6px;"></i> In Hóa Đơn (K80)
             </button>
         </div>
     </div>
@@ -688,6 +721,22 @@
         loadDataFromSession();
         updateTotals();
         updateVietQr();
+
+        // Đóng modal khi bấm ra ngoài vùng xám
+        const modal = document.getElementById('completedReceiptModal');
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeReceiptModal();
+                }
+            });
+        }
+
+        <c:if test="${isCompleted}">
+        setTimeout(function() {
+            window.print();
+        }, 500);
+        </c:if>
 
         // Phím tắt F9 để thanh toán
         document.addEventListener('keydown', function (e) {
@@ -802,10 +851,15 @@
             discountRow.style.display = 'none';
         }
 
-        if (!document.getElementById('inputCashGiven').value) {
-            setExactCash();
-        } else {
+        const cashInput = document.getElementById('inputCashGiven');
+        if (cashInput && cashInput.value && cashInput.value.trim().length > 0) {
             calculateChange();
+        } else {
+            const el = document.getElementById('txtChangeReturn');
+            if (el) {
+                el.textContent = 'Chưa nhập tiền khách đưa';
+                el.style.color = '#64748b';
+            }
         }
         updateVietQr();
     }
@@ -844,11 +898,20 @@
     }
 
     function calculateChange() {
-        const inputVal = document.getElementById('inputCashGiven').value.replace(/[^0-9]/g, '');
+        const cashInput = document.getElementById('inputCashGiven');
+        const el = document.getElementById('txtChangeReturn');
+        if (!cashInput || !el) return;
+
+        const inputVal = cashInput.value.replace(/[^0-9]/g, '');
+        if (!inputVal || inputVal.trim() === '') {
+            el.textContent = 'Chưa nhập tiền khách đưa';
+            el.style.color = '#64748b';
+            return;
+        }
+
         const given = parseFloat(inputVal) || 0;
         const change = given - CHECKOUT_STATE.grandTotal;
 
-        const el = document.getElementById('txtChangeReturn');
         if (change >= 0) {
             el.textContent = formatVND(change);
             el.style.color = '#16a34a';
@@ -917,19 +980,51 @@
             return;
         }
 
-        // Kiểm tra tiền khách đưa nếu là tiền mặt
+        // 1. Kiểm tra tiền khách đưa nếu chọn Tiền mặt
         if (CHECKOUT_STATE.currentMethod === 'Tiền mặt') {
-            const inputVal = document.getElementById('inputCashGiven').value.replace(/[^0-9]/g, '');
-            let given = parseFloat(inputVal) || 0;
-            if (given === 0) {
-                setExactCash();
-                given = CHECKOUT_STATE.grandTotal;
-            }
-            if (given < CHECKOUT_STATE.grandTotal) {
-                alert('Số tiền khách đưa chưa đủ để thanh toán!');
-                document.getElementById('inputCashGiven').focus();
+            const cashInput = document.getElementById('inputCashGiven');
+            const inputVal = cashInput ? cashInput.value.replace(/[^0-9]/g, '') : '';
+            if (!inputVal || inputVal.trim() === '') {
+                alert('Khách hàng chưa thanh toán! Vui lòng nhập số tiền khách đưa (hoặc bấm nút "Đúng số tiền") trước khi xác nhận.');
+                if (cashInput) cashInput.focus();
                 return;
             }
+            const given = parseFloat(inputVal) || 0;
+            if (given < CHECKOUT_STATE.grandTotal) {
+                const missing = CHECKOUT_STATE.grandTotal - given;
+                alert('Số tiền khách đưa chưa đủ để thanh toán! Còn thiếu ' + formatVND(missing) + '. Vui lòng kiểm tra lại!');
+                if (cashInput) cashInput.focus();
+                return;
+            }
+        }
+
+        // 2. Kiểm tra nếu chọn Chuyển khoản VietQR
+        if (CHECKOUT_STATE.currentMethod === 'Chuyển khoản (VietQR)') {
+            const chk = document.getElementById('chkQrReceived');
+            if (!chk || !chk.checked) {
+                alert('Khách hàng chưa thanh toán! Vui lòng kiểm tra tài khoản ngân hàng và tích xác nhận "Đã nhận đủ tiền chuyển khoản" trước khi xuất vé.');
+                if (chk) chk.focus();
+                return;
+            }
+        }
+
+        // 3. Kiểm tra nếu chọn Thẻ ngân hàng
+        if (CHECKOUT_STATE.currentMethod === 'Thẻ ngân hàng') {
+            const chk = document.getElementById('chkCardReceived');
+            if (!chk || !chk.checked) {
+                alert('Chưa hoàn tất thanh toán thẻ! Vui lòng quẹt thẻ khách trên thiết bị POS và tích xác nhận giao dịch thành công trước khi xuất vé.');
+                if (chk) chk.focus();
+                return;
+            }
+        }
+
+        // 4. Hộp thoại xác nhận cuối cùng tránh bấm nhầm
+        const confirmMsg = 'XÁC NHẬN THANH TOÁN:\n' +
+            '• Số tiền cần thu: ' + formatVND(CHECKOUT_STATE.grandTotal) + '\n' +
+            '• Hình thức: ' + CHECKOUT_STATE.currentMethod + '\n\n' +
+            'Bạn có chắc chắn muốn hoàn tất giao dịch và xuất vé in hóa đơn?';
+        if (!confirm(confirmMsg)) {
+            return;
         }
 
         const phone = document.getElementById('memberPhone').value.trim();
@@ -949,7 +1044,7 @@
 
         const btn = document.querySelector('.btn-checkout-submit');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý giao dịch...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý giao dịch & xuất hóa đơn...';
 
         fetch('${pageContext.request.contextPath}/thanh-toan', {
             method: 'POST',
@@ -959,11 +1054,12 @@
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                // Xóa giỏ hàng
+                // Xóa giỏ hàng đã thanh toán xong
                 sessionStorage.removeItem('pos_selected_seats');
                 sessionStorage.removeItem('pos_selected_combos');
-                // Chuyển tới trang xem phiếu in
-                window.location.href = data.redirectUrl;
+
+                // Mở ngay modal in hóa đơn K80 trên màn hình
+                openCompletedReceipt(data.maDatVe);
             } else {
                 alert(data.message || 'Thanh toán thất bại!');
                 btn.disabled = false;
@@ -976,6 +1072,91 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-check"></i> XÁC NHẬN THANH TOÁN & IN VÉ (F9)';
         });
+    }
+
+    function openCompletedReceipt(maDatVe) {
+        fetch('${pageContext.request.contextPath}/hoa-don?action=detail&id=' + maDatVe)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    populateReceiptModal(data);
+                    const modal = document.getElementById('completedReceiptModal');
+                    if (modal) {
+                        modal.classList.add('active');
+                    }
+                    // Tự động kích hoạt in sau 400ms
+                    setTimeout(function() {
+                        window.print();
+                    }, 400);
+                } else {
+                    window.location.href = '${pageContext.request.contextPath}/thanh-toan?completedId=' + maDatVe;
+                }
+            })
+            .catch(err => {
+                window.location.href = '${pageContext.request.contextPath}/thanh-toan?completedId=' + maDatVe;
+            });
+    }
+
+    function populateReceiptModal(data) {
+        document.getElementById('k80Code').textContent = '#' + (data.maHienThi || ('HD' + data.maDatVe));
+        document.getElementById('k80Date').textContent = data.ngayDat;
+        document.getElementById('k80Cashier').textContent = data.tenThuNgan || 'Thu ngân';
+        document.getElementById('k80Method').textContent = data.phuongThuc || CHECKOUT_STATE.currentMethod;
+        document.getElementById('k80Total').textContent = data.tongTienFormatted;
+        document.getElementById('k80BarcodeText').textContent = 'CINEMAX-HD' + data.maDatVe;
+
+        const ticketsCont = document.getElementById('k80TicketsContainer');
+        if (ticketsCont) {
+            ticketsCont.innerHTML = '';
+            if (data.veList && data.veList.length > 0) {
+                data.veList.forEach(v => {
+                    const div = document.createElement('div');
+                    div.style.marginBottom = '8px';
+                    div.style.paddingBottom = '6px';
+                    div.style.borderBottom = '1px dotted #e2e8f0';
+                    div.innerHTML = `
+                        <div style="font-weight:700;">\${v.tenPhim || 'Phim chiếu rạp'}</div>
+                        <div style="font-size:11px; color:#475569;">
+                            Suất: <strong>\${v.gioChieu || ''}</strong> • \${v.ngayChieu || ''} | Phòng: \${v.tenPhong || ''}
+                        </div>
+                        <div class="receipt-row" style="margin-top:2px;">
+                            <span>Ghế: <strong style="font-size:13px; color:#e11d48;">\${v.tenGhe}</strong></span>
+                            <span>\${v.giaVeFormatted}</span>
+                        </div>
+                    `;
+                    ticketsCont.appendChild(div);
+                });
+            } else {
+                ticketsCont.innerHTML = '<div style="font-style:italic; font-size:11px; color:#94a3b8;">Không có thông tin vé</div>';
+            }
+        }
+
+        const combosCont = document.getElementById('k80CombosContainer');
+        const combosWrap = document.getElementById('k80ComboWrapper');
+        if (combosCont) {
+            combosCont.innerHTML = '';
+            if (data.comboList && data.comboList.length > 0) {
+                if (combosWrap) combosWrap.style.display = 'block';
+                data.comboList.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'receipt-row';
+                    div.innerHTML = `
+                        <span><strong>\${c.soLuong}x</strong> \${c.tenCombo}</span>
+                        <span>\${c.thanhTienFormatted}</span>
+                    `;
+                    combosCont.appendChild(div);
+                });
+            } else {
+                if (combosWrap) combosWrap.style.display = 'none';
+            }
+        }
+    }
+
+    function closeReceiptModal() {
+        const modal = document.getElementById('completedReceiptModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
     }
 
     function clearCartSession() {
