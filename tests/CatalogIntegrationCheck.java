@@ -90,19 +90,52 @@ public class CatalogIntegrationCheck {
                     throw new AssertionError("Insufficient stock accepted");
                 } catch (IllegalArgumentException expected) { }
                 check(combos.getAll().size() == 1, "Failed save rolled back");
+                SanPham oldForm = products.getOne(productId);
+                String oldProductVersion = products.fingerprint(oldForm);
+                sql(connection, "UPDATE #catalog_SanPham SET SoLuongTon = 12 WHERE MaSP = " + productId);
+                oldForm.setTenSP("Tên từ form cũ");
+                try {
+                    products.update(oldForm, oldProductVersion);
+                    throw new AssertionError("Stale product edit accepted");
+                } catch (ConcurrentModificationException expected) { }
+                check(products.getOne(productId).getSoLuongTon() == 12, "Stale form did not restore stock");
+                Combo first = combos.getOne(comboId);
+
+                SanPham noStock = products.getOne(productId);
+                String productVersion = products.fingerprint(noStock);
+                noStock.setSoLuongTon(0);
+                noStock.setTrangThai("Ngừng kinh doanh");
+                check(products.update(noStock, productVersion), "Stop selling ingredient");
+                List<ChiTietCombo> recipe = combos.getChiTiet(comboId);
+                String stopVersion = combos.fingerprint(first, recipe);
+                first.setTrangThai("Ngừng bán");
+                check(combos.save(first, details(first.getMaCombo(), product.getMaSP(), 3), -1, false, stopVersion),
+                        "Can stop selling a combo even when ingredients are unavailable");
+                Combo stopped = combos.getOne(comboId);
+                String reopenVersion = combos.fingerprint(stopped, combos.getChiTiet(comboId));
+                stopped.setTrangThai("Đang bán");
+                try {
+                    combos.save(stopped, details(stopped.getMaCombo(), product.getMaSP(), 3), -1, false, reopenVersion);
+                    throw new AssertionError("Unavailable combo reopened");
+                } catch (IllegalArgumentException expected) { }
                 check(products.isSanPhamUsed(productId), "Product used by combo");
                 check(!products.delete(productId) && products.getOne(productId) != null, "Protect referenced product");
-                sql(connection, "INSERT INTO #catalog_ChiTietHoaDon VALUES (NULL," + combo.getMaCombo() + ")");
+                sql(connection, "INSERT INTO #catalog_ChiTietHoaDon (MaCombo) VALUES (" + combo.getMaCombo() + ")");
                 try {
                     combos.delete(comboId);
                     throw new AssertionError("Sold combo deleted");
                 } catch (IllegalArgumentException expected) { }
                 sql(connection, "DELETE FROM #catalog_ChiTietHoaDon");
                 check(combos.delete(comboId) && combos.getChiTiet(comboId).isEmpty(), "Delete unused combo and details");
+                product = products.getOne(productId);
+                String beforeUpdate = products.fingerprint(product);
                 product.setSoLuongTon(12);
-                check(products.update(product) && products.getOne(productId).getSoLuongTon() == 12, "Update product");
+                check(products.update(product, beforeUpdate) && products.getOne(productId).getSoLuongTon() == 12, "Update product");
                 check(products.delete(productId) && products.getOne(productId) == null, "Delete unused product");
-                check(!products.update(product), "Updating deleted product must not insert a new row");
+                try {
+                    products.update(product, products.fingerprint(product));
+                    throw new AssertionError("Updating deleted product accepted");
+                } catch (ConcurrentModificationException expected) { }
                 Combo defaultImage = new Combo(null, "Ảnh mặc định", BigDecimal.ONE, "", "", "Đang bán");
                 SanPham next = new SanPham(null, "Nước thử", "Nước có gas", "Ly", new BigDecimal("35000"), 5, "Đang kinh doanh");
                 check(products.add(next) && next.getMaSP() > 1, "SQL Server keeps assigning identities after delete");

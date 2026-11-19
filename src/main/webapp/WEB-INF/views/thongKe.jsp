@@ -397,7 +397,7 @@
                                     </table>
                                 </div>
                             </section>
-                            <p class="tk-footnote">Số liệu được đọc khi mở báo cáo; nếu đang có giao dịch mới, hãy tải lại trước khi đối chiếu tổng quan với bảng xếp hạng. Báo cáo chưa đối soát hoàn tiền. Phạm vi: ngày lập hóa đơn theo giờ Việt Nam. Chỉ tính hóa đơn “Đã hoàn tất” có thanh toán “Thành công”; vé hợp lệ gồm “Chưa in”, “Đã in”, “Đã soát vé”.</p>
+                            <p class="tk-footnote">Báo cáo tính theo ngày lập hóa đơn tại Việt Nam, với hóa đơn hoàn tất và thanh toán thành công. Số vé gồm vé đã bán, chưa in, đã in, đã soát và đã check-in. Báo cáo chưa đối soát hoàn tiền.</p>
                         </c:otherwise>
                     </c:choose>
                 </main>

@@ -115,10 +115,13 @@
         <main class="content-area">
 
             <c:if test="${param.msg == 'add_ok'}">
-                <div class="alert-success">Thêm sản phẩm thành công! Bạn đã có thể chọn sản phẩm này trong mục Thêm Combo.</div>
+                <div class="alert-success">Thêm sản phẩm thành công!</div>
             </c:if>
             <c:if test="${param.msg == 'update_ok'}">
                 <div class="alert-success">Cập nhật sản phẩm thành công!</div>
+            </c:if>
+            <c:if test="${param.msg == 'stale'}">
+                <div class="alert-error">Sản phẩm đã thay đổi hoặc đã bị xóa. Hãy mở lại form sửa để xem dữ liệu mới nhất.</div>
             </c:if>
             <c:if test="${param.msg == 'delete_ok'}">
                 <div class="alert-success">Đã xóa sản phẩm thành công!</div>
@@ -230,6 +233,7 @@
         </div>
 
         <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post">
+            <input type="hidden" name="token" value="${sessionScope.sanPhamToken}">
             <input type="hidden" name="action" value="add">
             <div class="form-grid">
                 <div class="form-group">
@@ -294,6 +298,8 @@
             </div>
 
             <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post">
+                <input type="hidden" name="token" value="${sessionScope.sanPhamToken}">
+                <input type="hidden" name="version" value="${version}">
                 <input type="hidden" name="action" value="update">
                 <div class="form-grid">
                     <div class="form-group">
@@ -349,6 +355,12 @@
     </div>
 </c:if>
 
+<%-- [SP-XOA] Nút xóa xác nhận rồi gửi mã qua form POST. --%>
+<form id="deleteProductForm" method="post" action="${pageContext.request.contextPath}/quan-ly-san-pham">
+    <input type="hidden" name="action" value="delete">
+    <input type="hidden" name="token" value="${sessionScope.sanPhamToken}">
+    <input type="hidden" name="id">
+</form>
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
 <script>
     // SẢN PHẨM: gợi ý đơn vị theo loại, không đổi các giá trị dữ liệu hiện có.
@@ -360,7 +372,9 @@
         var ma = btn.getAttribute('data-ma');
         var ten = btn.getAttribute('data-ten');
         if (confirm('Bạn có chắc muốn xóa sản phẩm "' + ten + '" (' + ma + ') không?')) {
-            window.location.href = '${pageContext.request.contextPath}/quan-ly-san-pham?action=delete&id=' + encodeURIComponent(ma);
+            var form = document.getElementById('deleteProductForm');
+            form.elements.namedItem('id').value = ma;
+            form.submit();
         }
     }
 </script>

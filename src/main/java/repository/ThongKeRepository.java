@@ -17,7 +17,8 @@ public class ThongKeRepository {
         " FROM HoaDon h WHERE h.NgayDat >= ? AND h.NgayDat < ? "
         + "AND h.TrangThai = N'Đã hoàn tất' "
         + "AND EXISTS (SELECT 1 FROM ThanhToan t WHERE t.MaDatVe=h.MaDatVe AND t.TrangThai=N'Thành công')";
-    private static final String VALID_TICKET = "v.TrangThai IN (N'Chưa in',N'Đã in',N'Đã soát vé')";
+    // [TK-VE-DA-BAN] Thanh toán ghi "Đã bán". Vé cũ vẫn dùng các trạng thái in/soát vé.
+    private static final String VALID_TICKET = "v.TrangThai IN (N'Đã bán',N'Chưa in',N'Đã in',N'Đã soát vé',N'Đã check-in')";
 
     // 2. MỞ KẾT NỐI: dùng cấu hình Hibernate sẵn có của dự án.
     /** [ThongKeRepository-load] Đầu vào là khoảng ngày. Đọc số liệu ngày, xếp hạng phim và mặt hàng, chuẩn bị biểu đồ rồi trả ThongKeReport. */
@@ -129,7 +130,8 @@ public class ThongKeRepository {
     }
     /** [TK-KETNOI] Hibernate gọi execute và đưa vào kết nối đang mở.
      * Lớp này giữ hai ngày lọc thay cho biểu thức lambda.
-     * finally luôn phục hồi mức cô lập, kể cả khi truy vấn báo lỗi.
+     * [TK-GIAO-DICH-DOC] Giữ cùng một giao dịch cho tổng quan và hai bảng xếp hạng.
+     * SERIALIZABLE ngăn hóa đơn mới lọt vào giữa các truy vấn trong cùng báo cáo.
      */
     private class DocBaoCao implements org.hibernate.jdbc.ReturningWork<ThongKeReport> {
         private final LocalDate from;
@@ -143,10 +145,21 @@ public class ThongKeRepository {
         @Override
         public ThongKeReport execute(Connection connection) throws SQLException {
             int mucCu = connection.getTransactionIsolation();
+            boolean autoCommitCu = connection.getAutoCommit();
             try {
-                connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-                return load(connection, from, to);
+                connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+                connection.setAutoCommit(false);
+                ThongKeReport report;
+                try {
+                    report = load(connection, from, to);
+                    connection.commit();
+                } catch (SQLException | RuntimeException e) {
+                    connection.rollback();
+                    throw e;
+                }
+                return report;
             } finally {
+                connection.setAutoCommit(autoCommitCu);
                 connection.setTransactionIsolation(mucCu);
             }
         }

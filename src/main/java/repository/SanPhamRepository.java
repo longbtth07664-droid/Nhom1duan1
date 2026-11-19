@@ -6,6 +6,9 @@ import org.hibernate.Transaction;
 import util.HibernateConfig;
 
 import java.util.List;
+import java.util.ConcurrentModificationException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 public class SanPhamRepository {
     protected Session openSession() {
@@ -91,22 +94,42 @@ public class SanPhamRepository {
 
     // Cập nhật sản phẩm
     /** [SanPhamRepository-update] Tìm và khóa bản hiện có trước khi merge. Ngăn sửa bản đã bị xóa thành một bản mới. */
-    public boolean update(SanPham sp) {
+    public boolean update(SanPham sp, String version) {
         Transaction tx = null;
         try (Session session = openSession()) {
             tx = session.beginTransaction();
             try {
-            SanPham existing = session.find(SanPham.class, sp.getMaSP(), jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-            if (existing == null) throw new IllegalArgumentException("Sản phẩm không còn tồn tại.");
-            session.merge(sp);
-            tx.commit();
-            return true;
+                SanPham existing = session.find(SanPham.class, sp.getMaSP(), jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+                // [SP-CHONG-GHI-DE] So sánh bản lúc mở form với bản mới nhất khi đã khóa dòng.
+                if (existing == null || !fingerprint(existing).equals(version)) {
+                    throw new ConcurrentModificationException("Sản phẩm đã thay đổi hoặc đã bị xóa.");
+                }
+                session.merge(sp);
+                tx.commit();
+                return true;
+            } catch (ConcurrentModificationException e) {
+                if (tx.isActive()) tx.rollback();
+                throw e;
             } catch (RuntimeException e) {
                 if (tx.isActive()) tx.rollback();
                 e.printStackTrace();
                 return false;
             }
         }
+    }
+
+    /** Dấu dữ liệu của form sửa, gồm cả tồn kho để phát hiện bán hàng trong lúc mở form. */
+    public String fingerprint(SanPham sp) {
+        StringBuilder data = new StringBuilder();
+        String[] fields = {sp.getMaSP().toString(), sp.getGiaBan().toPlainString(),
+                String.valueOf(sp.getSoLuongTon()), sp.getTrangThai(), sp.getLoaiSP(),
+                sp.getDonViTinh(), sp.getTenSP()};
+        for (String field : fields) {
+            // Ghi độ dài để hai chuỗi chứa dấu phân cách vẫn không bị nhầm.
+            if (field == null) data.append("-1:");
+            else data.append(field.length()).append(':').append(field);
+        }
+        return Base64.getEncoder().encodeToString(data.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     // Kiểm tra sản phẩm đã nằm trong Combo hoặc Hóa đơn chưa (tránh lỗi khóa ngoại khi xóa)
@@ -122,8 +145,7 @@ public class SanPhamRepository {
             int c2 = (cntHD != null) ? ((Number) cntHD).intValue() : 0;
             return (c1 + c2) > 0;
         } catch (Exception e) {
-            e.printStackTrace();
-            return true;
+            throw new IllegalStateException("Không kiểm tra được sản phẩm đã được sử dụng hay chưa.", e);
         }
     }
 

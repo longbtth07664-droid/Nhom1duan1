@@ -44,6 +44,9 @@ public class WebSmokeCheck {
                     check(html.substring(editBody).matches("(?s).*name=\"ctMaSP\" value=\"1\"[^>]*checked.*"), "Integer-key map preserves selected combo products");
                     check(html.contains("combo_solo.png"), "Sample PNG retained");
                 }
+                if (path.equals("/quan-ly-san-pham?action=edit&id=1")) {
+                    check(page.body().matches("(?s).*name=\"version\" value=\"[^\"]+\".*"), "Product edit carries the original version");
+                }
                 if (path.startsWith("/thong-ke?")) {
                     Files.writeString(Path.of("target/thong-ke-smoke.html"), page.body());
                     check(page.body().matches("(?s).*344[.,\\x{00a0}]000.*"), "Sample revenue rendered");
@@ -58,6 +61,11 @@ public class WebSmokeCheck {
                 }
                 System.out.println("PASS: HTTP 200 " + path);
             }
+            URI productDelete = URI.create(base + "/quan-ly-san-pham?action=delete&id=1");
+            HttpResponse<String> deleteGet = client.send(HttpRequest.newBuilder(productDelete).GET().build(), HttpResponse.BodyHandlers.ofString());
+            check(deleteGet.statusCode() == 405, "Product delete must reject GET");
+            HttpResponse<String> deleteNoToken = client.send(HttpRequest.newBuilder(productDelete).POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
+            check(deleteNoToken.statusCode() == 403, "Product delete must reject a POST without its session token");
             for (String bad : new String[]{"mode=year&startYear=2026&endYear=2025", "mode=year&startYear=2000&endYear=2026", "mode=month&year=abc", "mode=unknown"}) {
                 HttpResponse<String> page = client.send(HttpRequest.newBuilder(URI.create(base + "/thong-ke?" + bad)).GET().build(), HttpResponse.BodyHandlers.ofString());
                 check(page.statusCode() == 400 && page.body().contains("Chưa thể hiển thị báo cáo"), "Invalid filter returns helpful HTTP 400");

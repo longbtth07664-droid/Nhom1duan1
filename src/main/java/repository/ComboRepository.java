@@ -114,7 +114,8 @@ public class ComboRepository {
                     if (!fingerprint(old, previous).equals(expected))
                         throw new IllegalArgumentException("Combo đã được người khác sửa. Hãy tải lại trang.");
                 }
-                java.math.BigDecimal total = kiemTraVaTinhTongGiaLe(session, details);
+                boolean dangBan = "Đang bán".equals(combo.getTrangThai());
+                java.math.BigDecimal total = kiemTraVaTinhTongGiaLe(session, details, dangBan);
                 // Giữ giá cũ khi sửa nếu quản lý chưa chọn tính lại; không cần đổi bảng dữ liệu.
                 if (discount == -1 && !adding) combo.setGiaCombo(old.getGiaCombo());
                 else {
@@ -194,26 +195,25 @@ public class ComboRepository {
             }
         }
     }
-    /** [CB-GIA] Đầu vào: sản phẩm được chọn. Đầu ra: tổng giá lẻ.
-     * Đọc giá và tồn kho thật từ database; chỉ kiểm tra, không trừ kho.
-     * Nếu một món sai thì ném lỗi để save() rollback toàn bộ giao dịch.
+    /** [CB-GIA] Tính tổng giá lẻ. Combo đang bán cần đủ tồn và món còn kinh doanh.
+     * Combo ngừng bán được giữ công thức cũ dù nguyên liệu hết hàng.
      */
-    private java.math.BigDecimal kiemTraVaTinhTongGiaLe(Session session, List<ChiTietCombo> details) {
-                // Kiểm tra tồn kho, trạng thái và lấy giá mới nhất ngay trước khi lưu.
-                if (details.isEmpty()) throw new IllegalArgumentException("Hãy chọn ít nhất một sản phẩm.");
-                java.math.BigDecimal total = java.math.BigDecimal.ZERO;
-                sapXepTheoMaSanPham(details);
-                for (ChiTietCombo detail : details) {
-                    entity.SanPham product = session.find(entity.SanPham.class, detail.getMaSP(),
-                        jakarta.persistence.LockModeType.PESSIMISTIC_READ);
-                    if (product == null) throw new IllegalArgumentException("Sản phẩm không còn tồn tại.");
-                    if (!"Đang kinh doanh".equals(product.getTrangThai()))
-                        throw new IllegalArgumentException(product.getTenSP() + " đã ngừng kinh doanh.");
-                    if (detail.getSoLuong() < 1 || detail.getSoLuong() > product.getSoLuongTon())
-                        throw new IllegalArgumentException(product.getTenSP() + " chỉ còn "
-                            + product.getSoLuongTon() + ". Vui lòng giảm số lượng.");
-                    total = total.add(product.getGiaBan().multiply(java.math.BigDecimal.valueOf(detail.getSoLuong())));
-                }
+    private java.math.BigDecimal kiemTraVaTinhTongGiaLe(Session session, List<ChiTietCombo> details, boolean dangBan) {
+        if (details.isEmpty()) throw new IllegalArgumentException("Hãy chọn ít nhất một sản phẩm.");
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        sapXepTheoMaSanPham(details);
+        for (ChiTietCombo detail : details) {
+            entity.SanPham product = session.find(entity.SanPham.class, detail.getMaSP(),
+                    jakarta.persistence.LockModeType.PESSIMISTIC_READ);
+            if (product == null) throw new IllegalArgumentException("Sản phẩm không còn tồn tại.");
+            if (detail.getSoLuong() < 1) throw new IllegalArgumentException("Số lượng phải từ 1 trở lên.");
+            if (dangBan && !"Đang kinh doanh".equals(product.getTrangThai()))
+                throw new IllegalArgumentException(product.getTenSP() + " đã ngừng kinh doanh.");
+            if (dangBan && detail.getSoLuong() > product.getSoLuongTon())
+                throw new IllegalArgumentException(product.getTenSP() + " chỉ còn "
+                        + product.getSoLuongTon() + ". Vui lòng giảm số lượng.");
+            total = total.add(product.getGiaBan().multiply(java.math.BigDecimal.valueOf(detail.getSoLuong())));
+        }
         return total;
     }
     /** [CB-SAPXEP] Sắp xếp chèn bằng vòng lặp, tăng dần theo mã sản phẩm.

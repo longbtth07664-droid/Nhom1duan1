@@ -10,6 +10,8 @@ import repository.SanPhamRepository;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ConcurrentModificationException;
+import java.util.UUID;
 
 @WebServlet(name = "SanPhamServlet", urlPatterns = {"/quan-ly-san-pham"})
 public class SanPhamServlet extends HttpServlet {
@@ -21,6 +23,9 @@ public class SanPhamServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         try {
+            if (req.getSession().getAttribute("sanPhamToken") == null) {
+                req.getSession().setAttribute("sanPhamToken", UUID.randomUUID().toString());
+            }
             xuLyGet(req, resp);
         } catch (IllegalArgumentException e) {
             resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=invalid_data");
@@ -49,7 +54,7 @@ public class SanPhamServlet extends HttpServlet {
                 moFormSua(req, resp);
                 break;
             case "delete":
-                xoaSanPham(req, resp);
+                resp.sendError(405);
                 break;
             default:
                 hienThiDanhSach(req, resp);
@@ -65,13 +70,23 @@ public class SanPhamServlet extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
         resp.setCharacterEncoding("UTF-8");
 
-        String action = req.getParameter("action");
-        if ("add".equals(action)) {
-            themSanPham(req, resp);
-        } else if ("update".equals(action)) {
-            capNhatSanPham(req, resp);
-        } else {
-            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham");
+        // [SP-POST] Tất cả thao tác ghi đi qua POST và phải có token của phiên quản lý.
+        Object token = req.getSession().getAttribute("sanPhamToken");
+        if (token == null || !token.equals(req.getParameter("token"))) {
+            resp.sendError(403, "Phiên làm việc không hợp lệ. Hãy tải lại trang.");
+            return;
+        }
+        try {
+            String action = req.getParameter("action");
+            if ("add".equals(action)) themSanPham(req, resp);
+            else if ("update".equals(action)) capNhatSanPham(req, resp);
+            else if ("delete".equals(action)) xoaSanPham(req, resp);
+            else resp.sendError(400);
+        } catch (IllegalArgumentException e) {
+            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=invalid_data");
+        } catch (RuntimeException e) {
+            log("Không lưu được sản phẩm", e);
+            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=error");
         }
     }
 
@@ -115,6 +130,7 @@ public class SanPhamServlet extends HttpServlet {
             return;
         }
         req.setAttribute("editSP", product);
+        req.setAttribute("version", sanPhamRepo.fingerprint(product));
         req.setAttribute("dsSanPham", sanPhamRepo.getAll());
         req.getRequestDispatcher("/quanLySanPham.jsp").forward(req, resp);
     }
@@ -128,8 +144,12 @@ public class SanPhamServlet extends HttpServlet {
             return;
         }
 
-        boolean ok = sanPhamRepo.update(sp);
-        resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + (ok ? "update_ok" : "error"));
+        try {
+            boolean ok = sanPhamRepo.update(sp, req.getParameter("version"));
+            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + (ok ? "update_ok" : "error"));
+        } catch (ConcurrentModificationException e) {
+            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=stale");
+        }
     }
 
     private void xoaSanPham(HttpServletRequest req, HttpServletResponse resp)
@@ -156,6 +176,8 @@ public class SanPhamServlet extends HttpServlet {
             String trangThai = "add".equals(req.getParameter("action")) ? "Đang kinh doanh" : req.getParameter("trangThai");
 
             Integer productId = "add".equals(req.getParameter("action")) ? null : util.DatabaseId.parse(maSP);
+            if (productId != null && (tonStr == null || tonStr.isBlank()
+                    || trangThai == null || trangThai.isBlank())) return null;
             if (tenSP == null || tenSP.trim().isEmpty()
                     || loaiSP == null || loaiSP.trim().isEmpty()
                     || donViTinh == null || donViTinh.trim().isEmpty()

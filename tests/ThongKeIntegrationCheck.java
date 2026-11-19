@@ -38,7 +38,7 @@ public class ThongKeIntegrationCheck {
     +"(7,'2026-06-03',5,0,N'Đã hoàn tất');"
     +"INSERT INTO #tk_ThanhToan VALUES (1,N'Thành công'),(1,N'Thành công'),(2,N'Thành công'),"
     +"(3,N'Thành công'),(4,N'Thành công'),(5,N'Thất bại'),(7,N'Thành công');"
-    +"INSERT INTO #tk_Ve VALUES (1,1,50,N'Đã in'),(1,1,50,N'Chưa in'),(1,1,999,N'Đã hủy'),(2,1,70,N'Đã soát vé');"
+    +"INSERT INTO #tk_Ve VALUES (1,1,50,N'Đã bán'),(1,1,50,N'Đã check-in'),(1,1,999,N'Đã hủy'),(2,1,70,N'Đã soát vé');"
     +"INSERT INTO #tk_ChiTietHoaDon VALUES (1,1,NULL,2,30),(1,NULL,1,1,40);"
     +"INSERT INTO #tk_Phim VALUES (1,N'Phim thử'); INSERT INTO #tk_SuatChieu VALUES (1,1);"
     +"INSERT INTO #tk_SanPham VALUES (1,N'Bắp'); INSERT INTO #tk_Combo VALUES (1,N'Combo');");

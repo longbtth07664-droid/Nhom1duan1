@@ -442,7 +442,7 @@
                                     <td><fmt:formatNumber value="${sp.giaBan}" pattern="#,###"/> đ</td>
                                     <td>
                                         <input type="number" name="ctSoLuong_${sp.maSP}"
-                                               value="${isChecked ? ctItem.soLuong : 1}" min="1" max="${sp.soLuongTon}" required
+                                               value="${isChecked ? ctItem.soLuong : 1}" min="1" required
                                                class="form-control" style="padding:6px 8px;"
                                             ${isChecked ? '' : 'disabled'}
                                                onchange="tinhTongGiaLe('edit')">
@@ -561,11 +561,18 @@
     }
     // COMBO: báo chính xác món vượt kho hoặc đã ngừng bán.
     function validateComboForm(mode) {
-        var items=document.querySelectorAll('#'+mode+'PickerBody input[type="checkbox"]:checked');
+        var form = document.getElementById(mode + 'GiaCombo').form;
+        var dangBan = mode === 'add' || form.elements.trangThai.value === 'Đang bán';
+        var items = form.querySelectorAll('input[name="ctMaSP"]:checked');
         if(!items.length) { alert('Hãy chọn ít nhất một sản phẩm.'); return false; }
         for(var cb of items) {
             var qty=Number(cb.closest('tr').querySelector('input[type="number"]').value);
-            if(!Number.isInteger(qty)||qty<1||qty>Number(cb.dataset.stock)||cb.dataset.active!=='true') {
+            if (!Number.isInteger(qty) || qty < 1 || qty > 2147483647) {
+                alert('Số lượng phải là số nguyên dương hợp lệ.');
+                return false;
+            }
+            // [CB-NGUNG-BAN] Được giữ thành phần cũ khi tắt combo đã hết nguyên liệu.
+            if (dangBan && (qty > Number(cb.dataset.stock) || cb.dataset.active !== 'true')) {
                 alert('Sản phẩm '+cb.value+': số lượng phải từ 1 đến '+cb.dataset.stock+' và còn kinh doanh.');
                 return false;
             }
@@ -580,7 +587,10 @@
             var body=document.getElementById(mode+'PickerBody');
             if(!body) return;
             body.addEventListener('invalid',function(e){e.target.closest('tr').hidden=false;},true);
-            body.addEventListener('input',function(){
+            // [CB-GIU-GIA] Chỉ đổi món hoặc số lượng mới tự chuyển sang tính lại giá.
+            body.addEventListener('input',function(event){
+                var type = event.target.type;
+                if (type !== 'checkbox' && type !== 'number') return;
                 var rate=document.getElementById(mode+'GiamGia');
                 if(rate.value==='-1') rate.value='0';
                 tinhTongGiaLe(mode);
@@ -596,6 +606,13 @@
                 var price=document.getElementById(mode+'GiaCombo');
                 if(!price) return;
                 var form=price.form;
+                // Bản nháp chỉ áp dụng cho đúng combo và đúng dữ liệu lúc mở form.
+                if (mode === 'edit') {
+                    var draftId = entries.find(function(e){return e[0] === 'maCombo';});
+                    var draftVersion = entries.find(function(e){return e[0] === 'version';});
+                    if (!draftId || !draftVersion || draftId[1] !== form.elements.maCombo.value
+                            || draftVersion[1] !== form.elements.version.value) return;
+                }
                 form.querySelectorAll('input[type="checkbox"]').forEach(function(el){el.checked=false;toggleProductRow(el,mode);});
                 entries.forEach(function(pair){
                     Array.from(form.elements).filter(function(el){return el.name===pair[0];}).forEach(function(el){

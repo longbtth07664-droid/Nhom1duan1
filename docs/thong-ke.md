@@ -13,14 +13,14 @@ Vào **Menu quản lý → Tổng quan** (`/thong-ke`). Chỉ tài khoản quả
 - `assets/css/thongKe.css`: định dạng riêng của báo cáo.
 - `tests/ThongKeIntegrationCheck.java`: kiểm tra nghiệp vụ trên SQL Server bằng bảng tạm trong phiên kết nối.
 
-Hai file dùng chung chỉ bổ sung tích hợp: `menuadmin.jsp` thêm liên kết, `AuthFilter.java` thêm đường dẫn dành cho quản lý. Không cần cập nhật cấu trúc SQL, giá, tồn kho hay dữ liệu của các chức năng khác.
+Trang dùng `menuadmin.jsp` để điều hướng và `AuthFilter.java` để giới hạn quyền quản lý. Báo cáo dùng cấu trúc SQL hiện có.
 
 ## Quy tắc tính
 
 - Lọc theo **ngày lập hóa đơn**, không phải ngày chiếu hay ngày thanh toán. Mặc định từ đầu tháng đến hôm nay theo giờ Việt Nam. Theo ngày tối đa 366 ngày; theo tháng lấy đủ 12 tháng của một năm; theo năm tối đa 10 năm. Lấy trọn ngày cuối.
 - Chỉ tính hóa đơn `Đã hoàn tất` có ít nhất một thanh toán `Thành công`. Nhiều lần thanh toán không làm nhân doanh thu.
 - Doanh thu sau giảm lấy từ `HoaDon.TongTien`; không trừ `TienGiam` thêm lần nữa.
-- Vé hợp lệ: `Chưa in`, `Đã in`, `Đã soát vé`. Giá trị vé dùng `Ve.GiaVe` đã lưu khi bán.
+- Vé hợp lệ gồm `Đã bán`, `Chưa in`, `Đã in`, `Đã soát vé` và `Đã check-in`. Thu tiền thành công chuyển vé sang `Đã bán`, soát QR chuyển sang `Đã check-in`. Giá trị vé dùng `Ve.GiaVe` đã lưu khi bán.
 - Giá trị sản phẩm/combo dùng `ChiTietHoaDon.SoLuong * DonGia`; không lấy giá hiện tại trong danh mục. Một combo là một đơn vị bán.
 - Xếp hạng theo giá trị bán trước giảm giá hóa đơn. Không tự phân bổ giảm giá giữa phim và sản phẩm.
 - Các bảng chi tiết được tổng hợp riêng trước khi nối; tránh nhân số vé với số món.
@@ -30,9 +30,8 @@ Hai file dùng chung chỉ bổ sung tích hợp: `menuadmin.jsp` thêm liên k�
 
 ## Phạm vi và giao dịch đọc
 
-- Bỏ `SERIALIZABLE` trên kết nối riêng của trang thống kê, dùng `READ_COMMITTED` và khôi phục mức cô lập trước khi trả kết nối. Không dùng `NOLOCK`; không thay đổi cấu hình database dùng chung. Mức này giảm việc giữ khóa nhưng không bảo đảm mọi truy vấn hoàn toàn không chờ nhau.
+- Kết nối riêng của trang chạy cả ba truy vấn trong một giao dịch `SERIALIZABLE` để doanh thu và hai bảng xếp hạng cùng nhất quán. Kết thúc giao dịch trước khi hiển thị JSP và phục hồi chế độ kết nối. Phạm vi lớn có thể khiến giao dịch bán hàng phải chờ khóa đọc.
 - Hàm `load(Connection, ...)` chỉ đọc; không tự commit, rollback, đóng kết nối hay thay đổi cấu hình kết nối do bên gọi cung cấp. Khi có lỗi, bên gọi tự quyết định xử lý giao dịch.
-- Các truy vấn tổng quan và xếp hạng không còn nằm trong một giao dịch SERIALIZABLE. Nếu có giao dịch đồng thời, các phần có thể đọc tại các thời điểm khác nhau; giao diện nhắc tải lại trước khi đối chiếu. Báo cáo này không phải bản chốt sổ tại một thời điểm.
 - Bảng phim được ghi rõ là phân nhóm theo suất chiếu hiện tại. Schema chưa lưu phim tại thời điểm bán vé, nên không thể khôi phục lịch sử sau khi suất chiếu đã đổi phim chỉ bằng code thống kê. Muốn khắc phục triệt để cần nhóm thống nhất lưu phim lúc bán hoặc chặn đổi phim của suất đã có vé. Lần sửa này không sửa module suất chiếu và không tạo trigger hay bảng mới.
 - Chưa có luồng hoàn tiền hoàn chỉnh để xác định số tiền hoàn; không tự suy đoán và khấu trừ doanh thu.
 
