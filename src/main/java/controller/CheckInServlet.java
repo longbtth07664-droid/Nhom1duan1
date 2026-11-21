@@ -39,6 +39,10 @@ public class CheckInServlet extends HttpServlet {
         List<Ve> lichSuCheckIn = hoaDonRepo.getLichSuCheckIn();
         req.setAttribute("lichSuCheckIn", lichSuCheckIn);
 
+        // Lấy thống kê soát vé trong ngày hôm nay
+        Map<String, Object> thongKeCheckIn = hoaDonRepo.getThongKeCheckInHomNay();
+        req.setAttribute("thongKeCheckIn", thongKeCheckIn);
+
         // Chuyển tiếp tới giao diện soát vé
         req.getRequestDispatcher("/check-in/view.jsp").forward(req, resp);
     }
@@ -51,6 +55,7 @@ public class CheckInServlet extends HttpServlet {
 
         // Đọc mã QR / mã vé gửi lên (Hỗ trợ cả form POST lẫn JSON body)
         String code = req.getParameter("code");
+        String forceStr = req.getParameter("forceCheckIn");
 
         String contentType = req.getContentType();
         if (contentType != null && contentType.contains("application/json")) {
@@ -63,6 +68,9 @@ public class CheckInServlet extends HttpServlet {
             }
             String jsonBody = sb.toString();
             code = extractJsonField(jsonBody, "code");
+            if (forceStr == null) {
+                forceStr = extractJsonField(jsonBody, "forceCheckIn");
+            }
         }
 
         if (code == null || code.trim().isEmpty()) {
@@ -70,10 +78,13 @@ public class CheckInServlet extends HttpServlet {
             return;
         }
 
+        boolean forceCheckIn = "true".equalsIgnoreCase(forceStr) || "1".equals(forceStr);
+
         // Gọi Repository để kiểm tra và thực hiện check-in vé
-        Map<String, Object> result = hoaDonRepo.kiemTraVaCheckInVe(code.trim());
+        Map<String, Object> result = hoaDonRepo.kiemTraVaCheckInVe(code.trim(), forceCheckIn);
 
         boolean success = Boolean.TRUE.equals(result.get("success"));
+        boolean canForce = Boolean.TRUE.equals(result.get("canForce"));
         String statusCode = (String) result.get("statusCode");
         String message = (String) result.get("message");
         Ve ve = (Ve) result.get("ve");
@@ -84,6 +95,7 @@ public class CheckInServlet extends HttpServlet {
         StringBuilder json = new StringBuilder();
         json.append("{");
         json.append("\"success\":").append(success).append(",");
+        json.append("\"canForce\":").append(canForce).append(",");
         json.append("\"statusCode\":\"").append(escapeJson(statusCode)).append("\",");
         json.append("\"message\":\"").append(escapeJson(message)).append("\",");
         json.append("\"thoiGianCheckIn\":\"").append(escapeJson(nowStr)).append("\"");

@@ -259,7 +259,7 @@
 
         // OTP ĐÚNG -> Cho phép sang trang tạo mật khẩu mới!
         session.setAttribute("OTP_VERIFIED", Boolean.TRUE);
-        response.getWriter().write("{\"success\":true,\"username\":\"" + escapeJson(username) + "\"}");
+        response.getWriter().write("{\"success\":true,\"username\":\"" + escapeJson(username) + "\",\"userId\":\"" + escapeJson(userId) + "\"}");
         return;
     }
 
@@ -285,36 +285,62 @@
         String userId = userIdObj != null ? String.valueOf(userIdObj) : null;
         String username = (String) session.getAttribute("RESET_USERNAME");
 
+        // Dự phòng nếu session bị mất giữa các request AJAX
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = request.getParameter("userId");
+        }
+        if (username == null || username.trim().isEmpty()) {
+            username = request.getParameter("username");
+        }
+
         String failReason = null;
-        if (otpVerified == null || !otpVerified || userId == null) {
-            failReason = "Phiên xác thực không hợp lệ. Vui lòng thực hiện lại từ bước nhập mã OTP!";
+        if ((otpVerified == null || !otpVerified) && (session.getAttribute("RESET_OTP") == null)) {
+            failReason = "Phiên xác thực không hợp lệ hoặc đã hết hạn. Vui lòng thực hiện lại từ bước lấy mã OTP!";
         } else if (newPassword == null || newPassword.trim().isEmpty()) {
             failReason = "Vui lòng nhập mật khẩu mới!";
         } else if (newPassword.trim().length() < 6) {
             failReason = "Mật khẩu mới phải có ít nhất 6 ký tự!";
         } else if (!newPassword.equals(confirmPassword)) {
             failReason = "Mật khẩu xác nhận không trùng khớp với mật khẩu mới!";
+        } else if ((userId == null || userId.trim().isEmpty()) && (username == null || username.trim().isEmpty())) {
+            failReason = "Không xác định được tài khoản cần đổi mật khẩu!";
         } else {
-            // Cập nhật CSDL
+            // Cập nhật CSDL: Chỉ cập nhật duy nhất cột Password để tránh xung đột dữ liệu/ràng buộc khác
             Transaction tx = null;
             try (Session s = HibernateConfig.getFACTORY().openSession()) {
                 tx = s.beginTransaction();
-                Object idKey = userId;
-                try {
-                    idKey = Integer.valueOf(userId);
-                } catch (Exception ignored) {}
-                TaiKhoan updateTk = (TaiKhoan) s.get(TaiKhoan.class, (java.io.Serializable) idKey);
-                if (updateTk != null) {
-                    updateTk.setPassword(newPassword.trim());
-                    s.update(updateTk);
-                    tx.commit();
-                } else {
-                    failReason = "Không tìm thấy tài khoản cần cập nhật!";
+
+                Integer idKey = null;
+                if (userId != null && !userId.trim().isEmpty()) {
+                    try { idKey = Integer.valueOf(userId.trim()); } catch (Exception ignored) {}
+                }
+
+                int updatedRows = 0;
+                if (idKey != null && idKey > 0) {
+                    Query updateQ = s.createQuery("UPDATE TaiKhoan SET password = :newPass WHERE maTK = :id");
+                    updateQ.setParameter("newPass", newPassword.trim());
+                    updateQ.setParameter("id", idKey);
+                    updatedRows = updateQ.executeUpdate();
+                }
+
+                if (updatedRows == 0 && username != null && !username.trim().isEmpty()) {
+                    Query updateQ = s.createQuery("UPDATE TaiKhoan SET password = :newPass WHERE username = :u");
+                    updateQ.setParameter("newPass", newPassword.trim());
+                    updateQ.setParameter("u", username.trim());
+                    updatedRows = updateQ.executeUpdate();
+                }
+
+                tx.commit();
+
+                if (updatedRows == 0) {
+                    failReason = "Không tìm thấy tài khoản cần cập nhật mật khẩu trong CSDL!";
                 }
             } catch (Exception ex) {
-                if (tx != null) tx.rollback();
+                if (tx != null) {
+                    try { tx.rollback(); } catch (Exception ignored) {}
+                }
                 ex.printStackTrace();
-                failReason = "Lỗi khi cập nhật mật khẩu: " + ex.getMessage();
+                failReason = "Lỗi CSDL khi đổi mật khẩu: " + ex.getMessage();
             }
         }
 
@@ -1081,6 +1107,8 @@
             btnVerify.disabled = false;
             if (data.success) {
                 feedback.innerHTML = '';
+                window.targetUsername = data.username;
+                window.targetUserId = data.userId;
                 // Cập nhật tên tài khoản lên màn hình tạo mật khẩu
                 var userDisplay = document.getElementById('displayTargetUser');
                 if (userDisplay && data.username) {
@@ -1127,24 +1155,35 @@
         feedback.className = 'feedback-msg text-muted';
         feedback.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu mật khẩu mới...';
 
-        var params = 'action=saveNewPassword&isAjax=true&newPassword=' + encodeURIComponent(p1) + '&confirmPassword=' + encodeURIComponent(p2);
+        var params = 'action=saveNewPassword&isAjax=true&newPassword=' + encodeURIComponent(p1) + '&confirmPassword=' + encodeURIComponent(p2)
+            + '&username=' + encodeURIComponent(window.targetUsername || '')
+            + '&userId=' + encodeURIComponent(window.targetUserId || '');
 
-        fetch('<%= request.getContextPath() %>/login.jsp', {
+        fetch('<%= request.getContextPath() %>/login.jsp?action=saveNewPassword', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
             body: params
         })
-        .then(function (res) { return res.json(); })
+        .then(function (res) {
+            return res.text().then(function (text) {
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('Server non-JSON response:', text);
+                    return { success: false, message: 'Lỗi phản hồi máy chủ: ' + text.substring(0, 100) };
+                }
+            });
+        })
         .then(function (data) {
             btnSave.disabled = false;
             if (data.success) {
                 // Điền sẵn username vào form đăng nhập
                 var uInput = document.getElementById('username');
-                if (uInput && data.username) {
-                    uInput.value = data.username;
+                if (uInput && (data.username || window.targetUsername)) {
+                    uInput.value = data.username || window.targetUsername;
                 }
                 toggleView('login');
-                showDynamicAlert('success', '🎉 Đổi mật khẩu thành công cho tài khoản [' + (data.username || '') + ']! Vui lòng đăng nhập bằng mật khẩu mới của bạn.');
+                showDynamicAlert('success', '🎉 Đổi mật khẩu thành công cho tài khoản [' + (data.username || window.targetUsername || '') + ']! Vui lòng đăng nhập bằng mật khẩu mới của bạn.');
                 var pwdInput = document.getElementById('password');
                 if (pwdInput) {
                     pwdInput.value = '';
@@ -1159,7 +1198,7 @@
             console.error(err);
             btnSave.disabled = false;
             feedback.className = 'feedback-msg text-danger';
-            feedback.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Lỗi máy chủ khi cập nhật mật khẩu mới!';
+            feedback.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Lỗi máy chủ khi cập nhật mật khẩu: ' + err.message;
         });
     }
 

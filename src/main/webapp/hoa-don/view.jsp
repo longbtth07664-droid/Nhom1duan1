@@ -9,6 +9,8 @@
     <title>Quản Lý Hóa Đơn & Vé - Rạp Chiếu Phim CINEMAX</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=12">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Thư viện tạo mã vạch chuẩn quốc tế Code 128 (JsBarcode) -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
         .stats-grid {
             display: grid;
@@ -365,7 +367,8 @@
 
         <!-- BẢNG DANH SÁCH HÓA ĐƠN -->
         <div class="table-panel">
-            <table class="custom-table">
+            <div style="overflow-x: auto; width: 100%;">
+                <table class="custom-table" style="min-width: 700px;">
                 <thead>
                 <tr>
                     <th style="width:100px;">Mã HĐ</th>
@@ -459,6 +462,7 @@
                 </c:choose>
                 </tbody>
             </table>
+            </div>
         </div>
     </main>
 </div>
@@ -519,8 +523,11 @@
             <div style="font-size:10px; color:#64748b; font-style:italic; text-align:right;">(Giá đã bao gồm 8% thuế GTGT)</div>
 
             <div class="receipt-barcode">
-                <div class="barcode-stripes" id="rcBarcode">||||||||||||||||||||</div>
-                <div style="font-size:11px; margin-top:4px;" id="rcBarcodeText">CINEMAX-0000</div>
+                <div style="text-align:center; margin:6px 0;">
+                    <!-- Mã vạch Code 128 vẽ bằng SVG vector, máy quét và camera quét phát ăn ngay -->
+                    <svg id="rcBarcodeSvg" style="max-width:100%; height:46px; margin:2px auto; display:block;"></svg>
+                </div>
+                <div style="font-size:11px; margin-top:2px; font-weight:700; color:#334155; font-family:monospace;" id="rcBarcodeText">CINEMAX-HD00</div>
                 <div style="font-size:11px; color:#64748b; margin-top:8px;">
                     Vui lòng xuất trình mã QR/Barcode tại cổng soát vé trước giờ chiếu 10 phút.
                 </div>
@@ -598,7 +605,23 @@
                 document.getElementById('rcCashier').textContent = data.tenThuNgan;
                 document.getElementById('rcPaymentMethod').textContent = data.phuongThuc;
                 document.getElementById('rcTotalAmount').textContent = data.tongTienFormatted;
-                document.getElementById('rcBarcodeText').textContent = 'CINEMAX-HD' + data.maDatVe;
+                const barcodeValue = 'HD' + data.maDatVe;
+                document.getElementById('rcBarcodeText').textContent = 'CINEMAX-' + barcodeValue;
+
+                // Vẽ mã vạch chuẩn Code 128 bằng JsBarcode
+                if (window.JsBarcode) {
+                    try {
+                        JsBarcode("#rcBarcodeSvg", barcodeValue, {
+                            format: "CODE128",
+                            width: 1.8,
+                            height: 42,
+                            displayValue: false,
+                            margin: 2
+                        });
+                    } catch (e) {
+                        console.error("Lỗi vẽ mã vạch JsBarcode:", e);
+                    }
+                }
 
                 // Render vé
                 const ticketsContainer = document.getElementById('rcTicketsContainer');

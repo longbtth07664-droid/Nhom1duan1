@@ -36,40 +36,49 @@ function initSidebarHighlight() {
     if (!sidebar) return;
 
     const currentPath = window.location.pathname.toLowerCase();
-    const navGroup = sidebar.querySelector('.nav-group');
 
+    // Reset toàn bộ active và mở nhóm
     sidebar.querySelectorAll('.nav-item, .nav-subitem').forEach(el => el.classList.remove('active'));
-    if (navGroup) navGroup.classList.remove('open');
+    sidebar.querySelectorAll('.nav-group').forEach(group => group.classList.remove('open'));
 
-    if (currentPath.includes('/the-loai')) {
-        if (navGroup) navGroup.classList.add('open');
-        const item = sidebar.querySelector('a[href*="/the-loai"]');
-        if (item) item.classList.add('active');
+    let matchedItem = null;
+
+    if (currentPath.includes('/check-in')) {
+        matchedItem = sidebar.querySelector('a[href*="/check-in"]');
+    } else if (currentPath.includes('/hoa-don')) {
+        matchedItem = sidebar.querySelector('a[href*="/hoa-don"]');
+    } else if (currentPath.includes('/thanh-toan') || currentPath.includes('/ban-ve')) {
+        matchedItem = sidebar.querySelector('a[href*="/ban-ve"]');
+    } else if (currentPath.includes('/the-loai')) {
+        matchedItem = sidebar.querySelector('a[href*="/the-loai"]');
     } else if (currentPath.includes('/phim')) {
-        if (navGroup) navGroup.classList.add('open');
-        const item = sidebar.querySelector('a[href*="/phim"]');
-        if (item) item.classList.add('active');
+        matchedItem = sidebar.querySelector('a[href*="/phim"]');
     } else if (currentPath.includes('/phong-chieu')) {
-        const item = sidebar.querySelector('a[href*="/phong-chieu"]');
-        if (item) item.classList.add('active');
+        matchedItem = sidebar.querySelector('a[href*="/phong-chieu"]');
+    } else if (currentPath.includes('/ghe')) {
+        matchedItem = sidebar.querySelector('a[href*="/ghe"]');
     } else if (currentPath.includes('/suat-chieu')) {
-        const item = sidebar.querySelector('a[href*="/suat-chieu"]');
-        if (item) item.classList.add('active');
+        matchedItem = sidebar.querySelector('a[href*="/suat-chieu"]');
     } else if (currentPath.includes('/quan-ly-san-pham')) {
-        const item = sidebar.querySelector('a[href*="/quan-ly-san-pham"]');
-        if (item) item.classList.add('active');
+        matchedItem = sidebar.querySelector('a[href*="/quan-ly-san-pham"]');
     } else if (currentPath.includes('/quan-ly-combo')) {
-        const item = sidebar.querySelector('a[href*="/quan-ly-combo"]');
-        if (item) item.classList.add('active');
+        matchedItem = sidebar.querySelector('a[href*="/quan-ly-combo"]');
     } else if (currentPath.includes('/khach-hang')) {
-        const item = sidebar.querySelector('a[href*="/khach-hang"]');
-        if (item) item.classList.add('active');
-    } else if (currentPath.includes('/ban-ve')) {
-        const item = sidebar.querySelector('a[href*="/ban-ve"]');
-        if (item) item.classList.add('active');
-    } else {
-        const tongQuan = sidebar.querySelector('a[href*="menuadmin.jsp"]');
-        if (tongQuan) tongQuan.classList.add('active');
+        matchedItem = sidebar.querySelector('a[href*="/khach-hang"]');
+    } else if (currentPath.includes('/nhan-vien')) {
+        matchedItem = sidebar.querySelector('a[href*="/nhan-vien"]');
+    } else if (currentPath.includes('/tai-khoan')) {
+        matchedItem = sidebar.querySelector('a[href*="/tai-khoan"]');
+    } else if (currentPath.includes('/thong-ke') || currentPath.endsWith('/') || currentPath.endsWith('/menuadmin.jsp')) {
+        matchedItem = sidebar.querySelector('a[href*="/thong-ke"]') || sidebar.querySelector('a[href*="menuadmin.jsp"]');
+    }
+
+    if (matchedItem) {
+        matchedItem.classList.add('active');
+        const parentGroup = matchedItem.closest('.nav-group');
+        if (parentGroup) {
+            parentGroup.classList.add('open');
+        }
     }
 }
 

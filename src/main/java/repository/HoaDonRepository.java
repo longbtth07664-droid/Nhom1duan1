@@ -627,19 +627,33 @@ public class HoaDonRepository {
     }
 
     /**
-     * Soát vé (Check-in) theo mã QR hoặc mã vé
+     * Soát vé (Check-in) theo mã QR hoặc mã vé (mặc định không cưỡng chế)
      */
     public Map<String, Object> kiemTraVaCheckInVe(String code) {
+        return kiemTraVaCheckInVe(code, false);
+    }
+
+    /**
+     * Soát vé (Check-in) thông minh:
+     * - Kiểm tra mã QR / Barcode / Mã Vé / Mã Hóa Đơn
+     * - Kiểm tra trạng thái thanh toán và hủy vé
+     * - Kiểm tra chống gian lận (vé đã check-in trước đó)
+     * - Kiểm tra thời gian suất chiếu (ngày chiếu, khung giờ mở cửa trước 45 phút)
+     * - Hỗ trợ đặc cách cho vào (forceCheckIn = true)
+     */
+    public Map<String, Object> kiemTraVaCheckInVe(String code, boolean forceCheckIn) {
         Map<String, Object> result = new HashMap<>();
         if (code == null || code.trim().isEmpty()) {
             result.put("success", false);
             result.put("statusCode", "INVALID_INPUT");
-            result.put("message", "Vui lòng nhập hoặc quét mã vé / mã QR!");
+            result.put("message", "Vui lòng nhập hoặc quét mã vé / mã vạch / mã QR!");
             return result;
         }
 
         String cleanCode = code.trim();
-        if (cleanCode.startsWith("#")) cleanCode = cleanCode.substring(1);
+        // Chuẩn hóa nếu quét dạng #VE12, VE12, #HD12, HD12
+        String codeWithoutHash = cleanCode.startsWith("#") ? cleanCode.substring(1) : cleanCode;
+        String numberOnly = codeWithoutHash.replaceAll("[^0-9]", "");
 
         String sql = "SELECT v.MaVe, v.MaDatVe, v.MaSuat, v.MaGhe, v.GiaVe, v.MaQR, v.TrangThai AS TrangThaiVe, " +
                 "g.HangGhe, g.SoGhe, " +
@@ -651,17 +665,29 @@ public class HoaDonRepository {
                 "LEFT JOIN Phim p ON sc.MaPhim = p.MaPhim " +
                 "LEFT JOIN PhongChieu pc ON sc.MaPhong = pc.MaPhong " +
                 "LEFT JOIN HoaDon hd ON v.MaDatVe = hd.MaDatVe " +
-                "WHERE v.MaQR = ? OR CAST(v.MaVe AS VARCHAR) = ? OR v.MaQR LIKE ?";
+                "WHERE v.MaQR = ? " +
+                "OR CAST(v.MaVe AS VARCHAR) = ? " +
+                "OR v.MaQR LIKE ? " +
+                (numberOnly.isEmpty() ? "" : "OR v.MaVe = ? OR (v.MaDatVe = ? AND v.TrangThai <> N'Đã hủy') ");
 
         try (Connection conn = getConnection()) {
             Ve ve = null;
             String trangThaiVe = "";
             String trangThaiHD = "";
+            java.sql.Date sqlNgayChieu = null;
+            Time sqlGioBatDau = null;
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, cleanCode);
-                ps.setString(2, cleanCode);
-                ps.setString(3, "%" + cleanCode + "%");
+                int col = 1;
+                ps.setString(col++, cleanCode);
+                ps.setString(col++, codeWithoutHash);
+                ps.setString(col++, "%" + cleanCode + "%");
+                if (!numberOnly.isEmpty()) {
+                    int numVal = Integer.parseInt(numberOnly);
+                    ps.setInt(col++, numVal);
+                    ps.setInt(col++, numVal);
+                }
+
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         ve = new Ve();
@@ -683,11 +709,11 @@ public class HoaDonRepository {
                         ve.setTenPhim(rs.getString("TenPhim"));
                         ve.setTenPhong(rs.getString("TenPhong"));
 
-                        java.sql.Date d = rs.getDate("NgayChieu");
-                        if (d != null) ve.setNgayChieu(d.toString());
+                        sqlNgayChieu = rs.getDate("NgayChieu");
+                        if (sqlNgayChieu != null) ve.setNgayChieu(sqlNgayChieu.toString());
 
-                        Time t = rs.getTime("GioBatDau");
-                        if (t != null) ve.setGioChieu(t.toString().substring(0, 5));
+                        sqlGioBatDau = rs.getTime("GioBatDau");
+                        if (sqlGioBatDau != null) ve.setGioChieu(sqlGioBatDau.toString().substring(0, 5));
                     }
                 }
             }
@@ -695,17 +721,17 @@ public class HoaDonRepository {
             if (ve == null) {
                 result.put("success", false);
                 result.put("statusCode", "NOT_FOUND");
-                result.put("message", "Không tìm thấy thông tin vé phù hợp trên hệ thống!");
+                result.put("message", "Không tìm thấy thông tin vé phù hợp với mã [" + cleanCode + "]!");
                 return result;
             }
 
             result.put("ve", ve);
 
-            // 1. Kiểm tra nếu vé hoặc hóa đơn đã bị hủy
+            // 1. Kiểm tra nếu vé hoặc đơn đặt vé đã bị hủy
             if ("Đã hủy".equalsIgnoreCase(trangThaiVe) || "Đã hủy".equalsIgnoreCase(trangThaiHD)) {
                 result.put("success", false);
                 result.put("statusCode", "CANCELLED");
-                result.put("message", "Vé này hoặc đơn đặt vé đã bị HỦY! Không được vào rạp.");
+                result.put("message", "Vé này hoặc đơn đặt vé đã bị HỦY! Không được phép vào phòng chiếu.");
                 return result;
             }
 
@@ -717,15 +743,54 @@ public class HoaDonRepository {
                 return result;
             }
 
-            // 3. Kiểm tra nếu vé ĐÃ CHECK-IN trước đó
+            // 3. Kiểm tra chống gian lận: Vé ĐÃ CHECK-IN trước đó
             if ("Đã check-in".equalsIgnoreCase(trangThaiVe)) {
                 result.put("success", false);
                 result.put("statusCode", "ALREADY_CHECKED_IN");
-                result.put("message", "CẢNH BÁO: Vé này ĐÃ ĐƯỢC SOÁT VÉ (CHECK-IN) trước đó rồi!");
+                result.put("message", "CẢNH BÁO: Vé này ĐÃ ĐƯỢC SOÁT VÉ (CHECK-IN) trước đó rồi! Không cho phép vào lại.");
                 return result;
             }
 
-            // 4. Hợp lệ -> Cập nhật trạng thái vé thành "Đã check-in"
+            // 4. Kiểm tra Thời gian Suất chiếu thông minh (Nếu không phải duyệt đặc cách)
+            if (!forceCheckIn && sqlNgayChieu != null) {
+                LocalDate today = LocalDate.now();
+                LocalDate showDate = sqlNgayChieu.toLocalDate();
+
+                if (!today.equals(showDate)) {
+                    result.put("success", false);
+                    result.put("statusCode", "WRONG_DATE");
+                    result.put("canForce", true);
+                    result.put("message", "Vé này chiếu ngày " + showDate + " (Hôm nay là " + today + "). Sai ngày chiếu!");
+                    return result;
+                }
+
+                if (sqlGioBatDau != null) {
+                    java.time.LocalTime nowTime = java.time.LocalTime.now();
+                    java.time.LocalTime showTime = sqlGioBatDau.toLocalTime();
+
+                    long minutesDiff = java.time.Duration.between(nowTime, showTime).toMinutes();
+
+                    // Nếu đến quá sớm (trước giờ chiếu trên 45 phút)
+                    if (minutesDiff > 45) {
+                        result.put("success", false);
+                        result.put("statusCode", "TOO_EARLY");
+                        result.put("canForce", true);
+                        result.put("message", "Chưa đến giờ vào rạp! Suất chiếu lúc " + ve.getGioChieu() + " (còn " + minutesDiff + " phút nữa). Rạp chỉ mở cửa trước 45 phút.");
+                        return result;
+                    }
+
+                    // Nếu đến quá muộn (sau khi phim bắt đầu hơn 45 phút)
+                    if (minutesDiff < -45) {
+                        result.put("success", false);
+                        result.put("statusCode", "EXPIRED");
+                        result.put("canForce", true);
+                        result.put("message", "Suất chiếu đã bắt đầu được " + Math.abs(minutesDiff) + " phút. Vé đã quá giờ quy định vào rạp!");
+                        return result;
+                    }
+                }
+            }
+
+            // 5. Hợp lệ -> Cập nhật trạng thái vé thành "Đã check-in"
             String sqlUpdate = "UPDATE Ve SET TrangThai = N'Đã check-in' WHERE MaVe = ?";
             try (PreparedStatement psUp = conn.prepareStatement(sqlUpdate)) {
                 psUp.setInt(1, ve.getMaVe());
@@ -735,7 +800,7 @@ public class HoaDonRepository {
             ve.setTrangThai("Đã check-in");
             result.put("success", true);
             result.put("statusCode", "SUCCESS");
-            result.put("message", "Check-in thành công! Mời quý khách vào phòng chiếu.");
+            result.put("message", "Check-in thành công! Mời quý khách vào phòng chiếu " + (ve.getTenPhong() != null ? ve.getTenPhong() : "") + ".");
             return result;
 
         } catch (Exception e) {
@@ -745,6 +810,42 @@ public class HoaDonRepository {
             result.put("message", "Lỗi hệ thống khi soát vé: " + e.getMessage());
             return result;
         }
+    }
+
+    /**
+     * Thống kê tiến độ soát vé trong ngày hôm nay
+     */
+    public Map<String, Object> getThongKeCheckInHomNay() {
+        Map<String, Object> map = new HashMap<>();
+        int tongVeHomNay = 0;
+        int veDaCheckIn = 0;
+
+        String sql = "SELECT " +
+                "COUNT(CASE WHEN v.TrangThai IN (N'Đã bán', N'Đã check-in') THEN 1 END) AS TongVe, " +
+                "COUNT(CASE WHEN v.TrangThai = N'Đã check-in' THEN 1 END) AS DaCheckIn " +
+                "FROM Ve v " +
+                "JOIN SuatChieu sc ON v.MaSuat = sc.MaSuat " +
+                "WHERE CONVERT(date, sc.NgayChieu) = CONVERT(date, GETDATE())";
+
+        try (Connection conn = getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            if (rs.next()) {
+                tongVeHomNay = rs.getInt("TongVe");
+                veDaCheckIn = rs.getInt("DaCheckIn");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        int veChuaCheckIn = Math.max(0, tongVeHomNay - veDaCheckIn);
+        int tyLe = tongVeHomNay > 0 ? (veDaCheckIn * 100 / tongVeHomNay) : 0;
+
+        map.put("tongVeHomNay", tongVeHomNay);
+        map.put("veDaCheckIn", veDaCheckIn);
+        map.put("veChuaCheckIn", veChuaCheckIn);
+        map.put("tyLe", tyLe);
+        return map;
     }
 
     /**

@@ -9,6 +9,8 @@
     <title>Thanh Toán & Xuất Vé - Rạp Chiếu Phim CINEMAX</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=12">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Thư viện tạo mã vạch chuẩn quốc tế Code 128 (JsBarcode) -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
         .checkout-layout {
             display: grid;
@@ -686,8 +688,11 @@
             <div style="font-size:10px; color:#64748b; font-style:italic; text-align:right;">(Giá đã bao gồm 8% thuế GTGT)</div>
 
             <div class="receipt-barcode">
-                <div class="barcode-stripes">||||||||||||||||||||</div>
-                <div style="font-size:11px; margin-top:4px;" id="k80BarcodeText">CINEMAX-HD${hoaDon != null ? hoaDon.maDatVe : '00'}</div>
+                <div style="text-align:center; margin:6px 0;">
+                    <!-- Mã vạch Code 128 vẽ bằng SVG vector, máy quét và camera quét phát ăn ngay -->
+                    <svg id="k80BarcodeSvg" style="max-width:100%; height:46px; margin:2px auto; display:block;"></svg>
+                </div>
+                <div style="font-size:11px; margin-top:2px; font-weight:700; color:#334155; font-family:monospace;" id="k80BarcodeText">CINEMAX-HD${hoaDon != null ? hoaDon.maDatVe : '00'}</div>
                 <div style="font-size:11px; color:#64748b; margin-top:8px;">
                     Vui lòng xuất trình mã QR/Barcode tại cổng soát vé trước giờ chiếu 10 phút.
                 </div>
@@ -1169,7 +1174,22 @@
         document.getElementById('k80Cashier').textContent = data.tenThuNgan || 'Thu ngân';
         document.getElementById('k80Method').textContent = data.phuongThuc || CHECKOUT_STATE.currentMethod;
         document.getElementById('k80Total').textContent = data.tongTienFormatted;
-        document.getElementById('k80BarcodeText').textContent = 'CINEMAX-HD' + data.maDatVe;
+        const barcodeVal = 'HD' + data.maDatVe;
+        document.getElementById('k80BarcodeText').textContent = 'CINEMAX-' + barcodeVal;
+
+        if (window.JsBarcode) {
+            try {
+                JsBarcode("#k80BarcodeSvg", barcodeVal, {
+                    format: "CODE128",
+                    width: 1.8,
+                    height: 42,
+                    displayValue: false,
+                    margin: 2
+                });
+            } catch (e) {
+                console.error("Lỗi vẽ mã vạch JsBarcode:", e);
+            }
+        }
 
         const ticketsCont = document.getElementById('k80TicketsContainer');
         if (ticketsCont) {
@@ -1233,6 +1253,25 @@
     function formatVND(num) {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
     }
+
+    // Tự động vẽ mã vạch nếu hóa đơn vừa hoàn tất thanh toán
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('completedReceiptModal');
+        if (modal && modal.classList.contains('active')) {
+            const hId = '${hoaDon != null ? hoaDon.maDatVe : ""}';
+            if (hId && window.JsBarcode) {
+                try {
+                    JsBarcode("#k80BarcodeSvg", 'HD' + hId, {
+                        format: "CODE128",
+                        width: 1.8,
+                        height: 42,
+                        displayValue: false,
+                        margin: 2
+                    });
+                } catch(e) {}
+            }
+        }
+    });
 </script>
 </body>
 </html>
