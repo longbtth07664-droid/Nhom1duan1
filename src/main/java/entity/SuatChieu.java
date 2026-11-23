@@ -56,4 +56,16 @@ public class SuatChieu {
         if (maSuat == null) return "SC000";
         return String.format("SC%03d", maSuat);
     }
+
+    // Kiểm tra suất chiếu đã qua giờ chiếu hay chưa (phục vụ chặn bán vé quá giờ)
+    public boolean isQuaGio() {
+        if (ngayChieu == null || gioBatDau == null) return false;
+        LocalDate today = LocalDate.now();
+        if (ngayChieu.isBefore(today)) return true;
+        if (ngayChieu.isEqual(today)) {
+            // Suất chiếu trong ngày hôm nay nếu đã qua giờ bắt đầu thì không cho bán vé nữa
+            return LocalTime.now().isAfter(gioBatDau);
+        }
+        return false;
+    }
 }

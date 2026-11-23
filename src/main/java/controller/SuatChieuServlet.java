@@ -222,6 +222,16 @@ public class SuatChieuServlet extends HttpServlet {
         String gioBatDauStr = trimParam(req, "gioBatDau");
         String giaVeStr = trimParam(req, "giaVeCoBan");
         String trangThai = trimParam(req, "trangThai");
+        String thoiGianDonDepStr = trimParam(req, "thoiGianDonDep");
+        int thoiGianDonDep = 15;
+        if (!thoiGianDonDepStr.isEmpty()) {
+            try {
+                int dd = Integer.parseInt(thoiGianDonDepStr);
+                if (dd >= 0 && dd <= 120) {
+                    thoiGianDonDep = dd;
+                }
+            } catch (NumberFormatException ignored) {}
+        }
 
         if (dinhDang.isEmpty()) dinhDang = "2D";
         if (trangThai.isEmpty()) trangThai = "Đang mở bán";
@@ -287,7 +297,7 @@ public class SuatChieuServlet extends HttpServlet {
         }
 
         if (error == null && phim != null && gioBatDau != null) {
-            int tongPhut = phim.getThoiLuong() + 15; // 15 phut don dep
+            int tongPhut = phim.getThoiLuong() + thoiGianDonDep;
             gioKetThuc = gioBatDau.plusMinutes(tongPhut);
         }
 
@@ -317,6 +327,7 @@ public class SuatChieuServlet extends HttpServlet {
             req.setAttribute("rawMaPhong", maPhong);
             req.setAttribute("rawNgayChieu", ngayChieuStr);
             req.setAttribute("rawGioBatDau", gioBatDauStr);
+            req.setAttribute("rawThoiGianDonDep", thoiGianDonDep);
             req.setAttribute("openModal", isUpdate ? "update" : "add");
             renderView(req, resp);
             return;

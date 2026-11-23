@@ -273,7 +273,7 @@
         .modal-receipt {
             background: #ffffff;
             width: 100%;
-            max-width: 440px;
+            max-width: 480px;
             max-height: 90vh;
             border-radius: 16px;
             overflow-y: auto;
@@ -330,11 +330,27 @@
         }
         .modal-actions {
             background: #f8fafc;
-            padding: 14px 24px;
+            padding: 12px 18px;
             border-top: 1px solid var(--border-subtle);
             display: flex;
-            justify-content: flex-end;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .modal-actions .btn {
+            flex: 1;
+            padding: 10px 6px;
+            font-size: 12.5px;
+            font-weight: 700;
+            text-align: center;
+            justify-content: center;
+            white-space: nowrap;
+            box-sizing: border-box;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
         }
 
         @media print {
@@ -448,38 +464,99 @@
 
                 <!-- KHÁCH HÀNG THÂN THIẾT -->
                 <div class="checkout-card">
-                    <div class="card-heading">
+                    <div class="card-heading" style="display:flex; justify-content:space-between; align-items:center;">
                         <span>👑 Khách hàng thành viên</span>
+                        <button type="button" class="btn btn-sm btn-outline" style="font-size:11.5px; border-color:#fda4af; color:#e11d48; padding:4px 10px;" onclick="toggleQuickCreateCustomer()">
+                            <i class="fa-solid fa-user-plus" style="margin-right:4px;"></i> + Khách mới
+                        </button>
                     </div>
+
+                    <!-- Ô TÌM KIẾM NHANH BẰNG SĐT HOẶC TÊN -->
                     <div class="member-search-wrap">
                         <input type="text" id="memberPhone" class="member-input"
-                               placeholder="Nhập số điện thoại khách hàng (VD: 0912345678)..."
-                               onkeyup="handlePhoneLookup(this.value)">
-                        <button type="button" class="btn btn-outline" onclick="triggerCustomerLookup()">
+                               placeholder="Tìm theo Tên hoặc Số điện thoại (VD: 0912345678)..."
+                               autocomplete="off"
+                               oninput="onCustomerInput(this.value)">
+                        <button type="button" class="btn btn-outline" onclick="triggerCustomerLookup()" title="Kiểm tra thông tin thành viên">
                             <i class="fa-solid fa-magnifying-glass"></i> Kiểm tra
                         </button>
                     </div>
 
-                    <!-- KẾT QUẢ TÌM THẤY -->
-                    <div class="member-result-card" id="memberResultCard">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <!-- DROPDOWN CHỌN KHÁCH HÀNG ĐÃ CÓ TRONG HỆ THỐNG -->
+                    <div style="margin-bottom: 14px;">
+                        <label style="font-size:11.5px; font-weight:700; color:#475569; display:flex; align-items:center; gap:6px; margin-bottom:5px;">
+                            <i class="fa-solid fa-address-book" style="color:#e11d48;"></i> Hoặc chọn từ danh sách khách hàng có sẵn:
+                        </label>
+                        <select id="customerDropdownSelect" class="member-input"
+                                style="width:100%; height:40px; background:#ffffff; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; border:1px solid var(--border-strong); box-sizing:border-box;"
+                                onchange="onCustomerSelectDropdown(this.value)">
+                            <option value="">-- Bấm vào đây để chọn khách hàng thành viên --</option>
+                            <c:forEach items="${danhSachKhachHang}" var="kh">
+                                <option value="${kh.sdt}">
+                                    ${kh.hoTen} • SĐT: ${kh.sdt} • (${kh.diemTichLuy} điểm)
+                                </option>
+                            </c:forEach>
+                        </select>
+                    </div>
+
+                    <!-- FORM TẠO NHANH KHÁCH HÀNG MỚI TẠI QUẦY -->
+                    <div id="quickCustomerBox" style="display:none; background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:12px; margin-bottom:12px;">
+                        <div style="font-weight:700; color:#e11d48; font-size:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fa-solid fa-address-card" style="margin-right:6px;"></i> ĐĂNG KÝ THÀNH VIÊN MỚI TẠI QUẦY</span>
+                            <span style="cursor:pointer; color:#94a3b8; font-size:14px; font-weight:bold;" onclick="toggleQuickCreateCustomer()">✕</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
                             <div>
-                                <strong id="memberFoundName" style="color:#0f172a; font-size:14px;">Nguyễn Văn A</strong>
-                                <div style="font-size:12px; color:#64748b; margin-top:2px;">
-                                    Điểm tích lũy: <strong id="memberFoundPoints" style="color:#16a34a; font-size:14px;">0</strong> điểm
-                                </div>
+                                <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">HỌ VÀ TÊN *</label>
+                                <input type="text" id="quickCustName" class="member-input" style="height:34px; background:#fff; width:100%; box-sizing:border-box;" placeholder="VD: Nguyễn Văn A">
                             </div>
-                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; color:#e11d48;">
-                                <input type="checkbox" id="chkUsePoints" onchange="toggleUsePoints(this.checked)">
-                                Dùng điểm giảm giá
-                            </label>
+                            <div>
+                                <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">SỐ ĐIỆN THOẠI *</label>
+                                <input type="text" id="quickCustPhone" class="member-input" style="height:34px; background:#fff; width:100%; box-sizing:border-box;" placeholder="VD: 0987654321">
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; gap:8px;">
+                            <button type="button" class="btn btn-sm btn-ghost" onclick="toggleQuickCreateCustomer()">Hủy</button>
+                            <button type="button" class="btn btn-sm btn-pink" onclick="submitQuickCreateCustomer()">
+                                <i class="fa-solid fa-check" style="margin-right:4px;"></i> Lưu & Chọn luôn
+                            </button>
                         </div>
                     </div>
 
-                    <!-- NẾU LÀ KHÁCH MỚI -->
-                    <div id="newMemberBox" style="display:none; margin-top:10px;">
-                        <input type="text" id="newMemberName" class="member-input"
-                               placeholder="Khách mới: Nhập Họ tên khách hàng để đăng ký tích điểm...">
+                    <!-- KẾT QUẢ THÀNH VIÊN ĐƯỢC CHỌN -->
+                    <div class="member-result-card" id="memberResultCard">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <strong id="memberFoundName" style="color:#0f172a; font-size:14px;">Nguyễn Văn A</strong>
+                                    <span id="memberFoundPhoneBadge" style="background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px;">0912345678</span>
+                                </div>
+                                <div style="font-size:12px; color:#64748b; margin-top:3px;">
+                                    Điểm tích lũy: <strong id="memberFoundPoints" style="color:#16a34a; font-size:14px;">0</strong> điểm
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; color:#e11d48; font-size:12.5px;">
+                                    <input type="checkbox" id="chkUsePoints" onchange="toggleUsePoints(this.checked)">
+                                    Dùng điểm giảm giá
+                                </label>
+                                <button type="button" onclick="clearSelectedCustomer()" style="border:none; background:none; color:#94a3b8; font-size:11px; cursor:pointer; text-decoration:underline; margin-top:3px;">
+                                    Bỏ chọn (Khách lẻ)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NẾU LÀ KHÁCH CHƯA TỒN TẠI -->
+                    <div id="newMemberBox" style="display:none; margin-top:10px; background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; padding:10px;">
+                        <div style="font-size:12px; color:#d97706; margin-bottom:6px;">
+                            <i class="fa-solid fa-info-circle"></i> Số điện thoại chưa có trên hệ thống! Nhập tên để đăng ký thành viên:
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <input type="text" id="newMemberName" class="member-input" style="background:#fff; height:34px;"
+                                   placeholder="Nhập Họ tên khách hàng...">
+                            <button type="button" class="btn btn-sm btn-pink" onclick="createCustomerFromNewBox()">Lưu</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -703,14 +780,14 @@
         </div>
 
         <div class="modal-actions">
-            <a href="${pageContext.request.contextPath}/ban-ve" class="btn btn-ghost" onclick="clearCartSession()">
-                + Bán đơn mới
+            <a href="${pageContext.request.contextPath}/ban-ve" class="btn btn-ghost" onclick="clearCartSession()" title="Tạo đơn vé mới">
+                <i class="fa-solid fa-plus" style="margin-right:5px;"></i> Bán đơn mới
             </a>
-            <a href="${pageContext.request.contextPath}/hoa-don" class="btn btn-outline" style="text-decoration:none;">
-                <i class="fa-solid fa-receipt" style="margin-right:6px;"></i> Quản lý hóa đơn
+            <a href="${pageContext.request.contextPath}/hoa-don" class="btn btn-outline" style="text-decoration:none;" title="Đi đến danh sách hóa đơn">
+                <i class="fa-solid fa-receipt" style="margin-right:5px;"></i> QL Hóa đơn
             </a>
-            <button type="button" class="btn btn-pink" onclick="window.print()">
-                <i class="fa-solid fa-print" style="margin-right:6px;"></i> In Hóa Đơn (K80)
+            <button type="button" class="btn btn-pink" onclick="window.print()" title="In phiếu K80 ra máy in nhiệt">
+                <i class="fa-solid fa-print" style="margin-right:5px;"></i> In HĐ (K80)
             </button>
         </div>
     </div>
@@ -943,14 +1020,66 @@
         if (memoEl) memoEl.textContent = memo;
     }
 
-    function handlePhoneLookup(phone) {
-        if (phone && phone.trim().length >= 10) {
-            triggerCustomerLookup();
+    function toggleQuickCreateCustomer() {
+        const box = document.getElementById('quickCustomerBox');
+        if (!box) return;
+        if (box.style.display === 'none' || box.style.display === '') {
+            box.style.display = 'block';
+            const curInput = document.getElementById('memberPhone').value.trim();
+            if (curInput && /^[0-9]+$/.test(curInput)) {
+                document.getElementById('quickCustPhone').value = curInput;
+            }
+            document.getElementById('quickCustName').focus();
+        } else {
+            box.style.display = 'none';
         }
     }
 
-    function triggerCustomerLookup() {
-        const phone = document.getElementById('memberPhone').value.trim();
+    function onCustomerSelectDropdown(sdt) {
+        if (!sdt) {
+            clearSelectedCustomer();
+            return;
+        }
+        document.getElementById('memberPhone').value = sdt;
+        triggerCustomerLookup(sdt);
+    }
+
+    function onCustomerInput(val) {
+        if (!val) {
+            clearSelectedCustomer();
+            return;
+        }
+        val = val.trim();
+        // Nếu người dùng gõ đủ 10 số điện thoại
+        if (/^[0-9]{10,11}$/.test(val)) {
+            triggerCustomerLookup(val);
+        }
+    }
+
+    function clearSelectedCustomer() {
+        CHECKOUT_STATE.customer = null;
+        CHECKOUT_STATE.discount = 0;
+        const resCard = document.getElementById('memberResultCard');
+        if (resCard) resCard.style.display = 'none';
+        const newBox = document.getElementById('newMemberBox');
+        if (newBox) newBox.style.display = 'none';
+        const phoneInput = document.getElementById('memberPhone');
+        if (phoneInput) phoneInput.value = '';
+        const dropdown = document.getElementById('customerDropdownSelect');
+        if (dropdown) dropdown.value = '';
+        const chk = document.getElementById('chkUsePoints');
+        if (chk) chk.checked = false;
+        updateTotals();
+    }
+
+    function handlePhoneLookup(phone) {
+        if (phone && phone.trim().length >= 10) {
+            triggerCustomerLookup(phone);
+        }
+    }
+
+    function triggerCustomerLookup(customPhone) {
+        const phone = customPhone || document.getElementById('memberPhone').value.trim();
         if (!phone) return;
 
         fetch('${pageContext.request.contextPath}/thanh-toan?action=checkCustomer&sdt=' + encodeURIComponent(phone))
@@ -963,15 +1092,72 @@
                     CHECKOUT_STATE.customer = data;
                     document.getElementById('memberFoundName').textContent = data.hoTen;
                     document.getElementById('memberFoundPoints').textContent = data.diemTichLuy;
+                    const badge = document.getElementById('memberFoundPhoneBadge');
+                    if (badge) badge.textContent = data.sdt;
                     resCard.style.display = 'block';
                     newBox.style.display = 'none';
+                    document.getElementById('memberPhone').value = data.sdt;
+                    const dropdown = document.getElementById('customerDropdownSelect');
+                    if (dropdown) dropdown.value = data.sdt;
                 } else {
                     CHECKOUT_STATE.customer = null;
                     resCard.style.display = 'none';
                     newBox.style.display = 'block';
+                    const nameInput = document.getElementById('newMemberName');
+                    if (nameInput) nameInput.focus();
                 }
             })
             .catch(console.error);
+    }
+
+    function submitQuickCreateCustomer() {
+        const name = document.getElementById('quickCustName').value.trim();
+        const phone = document.getElementById('quickCustPhone').value.trim();
+        if (!name || !phone) {
+            alert('Vui lòng nhập đầy đủ Họ tên và Số điện thoại!');
+            return;
+        }
+
+        fetch('${pageContext.request.contextPath}/thanh-toan?action=createCustomer&hoTen=' + encodeURIComponent(name) + '&sdt=' + encodeURIComponent(phone))
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || 'Thêm khách hàng thành công!');
+                    const box = document.getElementById('quickCustomerBox');
+                    if (box) box.style.display = 'none';
+                    document.getElementById('memberPhone').value = data.sdt;
+
+                    // Thêm ngay khách hàng mới vào dropdown và chọn luôn
+                    const dropdown = document.getElementById('customerDropdownSelect');
+                    if (dropdown) {
+                        const opt = document.createElement('option');
+                        opt.value = data.sdt;
+                        opt.textContent = data.hoTen + ' • SĐT: ' + data.sdt + ' • (0 điểm)';
+                        dropdown.appendChild(opt);
+                        dropdown.value = data.sdt;
+                    }
+
+                    triggerCustomerLookup(data.sdt);
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra khi lưu khách hàng!');
+                }
+            })
+            .catch(err => {
+                alert('Lỗi kết nối khi tạo khách hàng!');
+                console.error(err);
+            });
+    }
+
+    function createCustomerFromNewBox() {
+        const phone = document.getElementById('memberPhone').value.trim();
+        const name = document.getElementById('newMemberName').value.trim();
+        if (!name || !phone) {
+            alert('Vui lòng nhập Họ tên khách hàng!');
+            return;
+        }
+        document.getElementById('quickCustName').value = name;
+        document.getElementById('quickCustPhone').value = phone;
+        submitQuickCreateCustomer();
     }
 
     function toggleUsePoints(use) {
@@ -1055,8 +1241,13 @@
         };
 
         const btn = document.querySelector('.btn-checkout-submit');
+        const btnPending = document.getElementById('btnSavePending');
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý giao dịch & xuất hóa đơn...';
+        if (btnPending) {
+            btnPending.disabled = true;
+            btnPending.style.display = 'none';
+        }
 
         fetch('${pageContext.request.contextPath}/thanh-toan', {
             method: 'POST',
@@ -1066,16 +1257,37 @@
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                // Xóa giỏ hàng đã thanh toán xong
+                // Đánh dấu đơn hàng đã thanh toán thành công
+                CHECKOUT_STATE.isPaid = true;
+
+                // Khóa vĩnh viễn nút thanh toán và nút lưu chờ của đơn này
+                btn.disabled = true;
+                btn.style.background = '#16a34a';
+                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> ĐÃ THANH TOÁN THÀNH CÔNG (#HD' + data.maDatVe + ')';
+                if (btnPending) {
+                    btnPending.disabled = true;
+                    btnPending.style.display = 'none';
+                }
+
+                // Xóa giỏ hàng trong session và trong bộ nhớ
                 sessionStorage.removeItem('pos_selected_seats');
                 sessionStorage.removeItem('pos_selected_combos');
+                CHECKOUT_STATE.selectedSeats = [];
+                CHECKOUT_STATE.selectedCombos = {};
 
-                // Mở ngay modal in hóa đơn K80 trên màn hình
+                // Thông báo thành công cho thu ngân
+                alert(data.message || ('Thanh toán thành công đơn vé #HD' + data.maDatVe + '! Đang xuất hóa đơn in vé...'));
+
+                // Mở ngay modal in hóa đơn K80 trên màn hình mà KHÔNG reload trang
                 openCompletedReceipt(data.maDatVe);
             } else {
                 alert(data.message || 'Thanh toán thất bại!');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> XÁC NHẬN THANH TOÁN & IN VÉ (F9)';
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> XÁC NHẬN THANH TOÁN (F9)';
+                if (btnPending) {
+                    btnPending.disabled = false;
+                    btnPending.style.display = 'inline-flex';
+                }
             }
         })
         .catch(err => {
@@ -1083,10 +1295,19 @@
             alert('Lỗi kết nối tới máy chủ!');
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-check"></i> XÁC NHẬN THANH TOÁN (F9)';
+            if (btnPending) {
+                btnPending.disabled = false;
+                btnPending.style.display = 'inline-flex';
+            }
         });
     }
 
     function savePendingOrder() {
+        if (CHECKOUT_STATE.isPaid) {
+            alert('Đơn hàng này đã được thanh toán hoàn tất! Không thể lưu chờ thanh toán.');
+            return;
+        }
+
         if (!CHECKOUT_STATE.selectedSeats || CHECKOUT_STATE.selectedSeats.length === 0) {
             alert('Chưa có vé ghế nào được chọn để lưu đơn! Vui lòng chọn ghế trước.');
             return;
@@ -1096,11 +1317,15 @@
             return;
         }
 
+        const phone = (CHECKOUT_STATE.customer && CHECKOUT_STATE.customer.sdt) ? CHECKOUT_STATE.customer.sdt : (document.getElementById('memberPhone') ? document.getElementById('memberPhone').value.trim() : '');
+        const newName = document.getElementById('newMemberName') ? document.getElementById('newMemberName').value.trim() : '';
+        const hoTen = (CHECKOUT_STATE.customer && CHECKOUT_STATE.customer.hoTen) ? CHECKOUT_STATE.customer.hoTen : newName;
+
         const payload = {
             isPending: true,
             maSuat: CHECKOUT_STATE.maSuat,
-            sdt: (CHECKOUT_STATE.currentMember && CHECKOUT_STATE.currentMember.sdt) ? CHECKOUT_STATE.currentMember.sdt : (document.getElementById('inputMemberPhone') ? document.getElementById('inputMemberPhone').value.trim() : ''),
-            hoTen: (CHECKOUT_STATE.currentMember && CHECKOUT_STATE.currentMember.hoTen) ? CHECKOUT_STATE.currentMember.hoTen : (document.getElementById('inputMemberName') ? document.getElementById('inputMemberName').value.trim() : ''),
+            sdt: phone,
+            hoTen: hoTen,
             phuongThuc: CHECKOUT_STATE.currentMethod,
             tongTien: CHECKOUT_STATE.grandTotal,
             tienGiam: CHECKOUT_STATE.discount,
@@ -1109,9 +1334,13 @@
         };
 
         const btnPending = document.getElementById('btnSavePending');
+        const btnCheckout = document.querySelector('.btn-checkout-submit');
         if (btnPending) {
             btnPending.disabled = true;
             btnPending.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu đơn...';
+        }
+        if (btnCheckout) {
+            btnCheckout.disabled = true;
         }
 
         fetch('${pageContext.request.contextPath}/thanh-toan', {
@@ -1122,9 +1351,11 @@
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                // Xóa giỏ hàng phiên làm việc hiện tại
+                // Xóa giỏ hàng phiên làm việc hiện tại và trong bộ nhớ
                 sessionStorage.removeItem('pos_selected_seats');
                 sessionStorage.removeItem('pos_selected_combos');
+                CHECKOUT_STATE.selectedSeats = [];
+                CHECKOUT_STATE.selectedCombos = {};
                 alert(data.message || 'Đã lưu đơn thành công ở trạng thái Chờ thanh toán!');
                 window.location.href = data.redirectUrl || '${pageContext.request.contextPath}/hoa-don';
             } else {
@@ -1132,6 +1363,9 @@
                 if (btnPending) {
                     btnPending.disabled = false;
                     btnPending.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> Lưu chờ thanh toán';
+                }
+                if (btnCheckout) {
+                    btnCheckout.disabled = false;
                 }
             }
         })
@@ -1142,7 +1376,38 @@
                 btnPending.disabled = false;
                 btnPending.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> Lưu chờ thanh toán';
             }
+            if (btnCheckout) {
+                btnCheckout.disabled = false;
+            }
         });
+    }
+
+    function populateReceiptModalFallback(maDatVe) {
+        document.getElementById('k80Code').textContent = '#HD' + maDatVe;
+        const now = new Date();
+        document.getElementById('k80Date').textContent = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('k80Method').textContent = CHECKOUT_STATE.currentMethod || 'Tiền mặt';
+        document.getElementById('k80Total').textContent = formatVND(CHECKOUT_STATE.grandTotal);
+        const barcodeVal = 'HD' + maDatVe;
+        document.getElementById('k80BarcodeText').textContent = 'CINEMAX-' + barcodeVal;
+
+        if (window.JsBarcode) {
+            try {
+                JsBarcode("#k80BarcodeSvg", barcodeVal, {
+                    format: "CODE128",
+                    width: 1.8,
+                    height: 42,
+                    displayValue: false,
+                    margin: 2
+                });
+            } catch (e) {
+                console.error("Lỗi vẽ mã vạch JsBarcode:", e);
+            }
+        }
+
+        const modal = document.getElementById('completedReceiptModal');
+        if (modal) modal.classList.add('active');
+        setTimeout(function() { window.print(); }, 400);
     }
 
     function openCompletedReceipt(maDatVe) {
@@ -1155,16 +1420,16 @@
                     if (modal) {
                         modal.classList.add('active');
                     }
-                    // Tự động kích hoạt in sau 400ms
                     setTimeout(function() {
                         window.print();
                     }, 400);
                 } else {
-                    window.location.href = '${pageContext.request.contextPath}/thanh-toan?completedId=' + maDatVe;
+                    populateReceiptModalFallback(maDatVe);
                 }
             })
             .catch(err => {
-                window.location.href = '${pageContext.request.contextPath}/thanh-toan?completedId=' + maDatVe;
+                console.error("Lỗi lấy chi tiết hóa đơn, hiển thị dữ liệu hiện tại:", err);
+                populateReceiptModalFallback(maDatVe);
             });
     }
 

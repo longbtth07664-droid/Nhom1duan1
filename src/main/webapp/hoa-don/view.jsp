@@ -101,6 +101,62 @@
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
+
+        /* PHÂN TRANG HÓA ĐƠN */
+        .pagination-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: #ffffff;
+            border-top: 1px solid var(--border-subtle);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .pagination-info {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .page-chip {
+            min-width: 34px;
+            height: 34px;
+            padding: 0 8px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .page-chip:hover {
+            border-color: var(--pink);
+            color: var(--pink);
+            background: #fff1f2;
+        }
+        .page-chip.active {
+            background: var(--pink);
+            border-color: var(--pink);
+            color: #ffffff;
+            font-weight: 700;
+            pointer-events: none;
+        }
+        .page-chip.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+            background: #f8fafc;
+        }
         .custom-table {
             width: 100%;
             border-collapse: collapse;
@@ -317,7 +373,9 @@
 
         <!-- BỘ LỌC TÌM KIẾM -->
         <div class="filter-panel">
-            <form action="${pageContext.request.contextPath}/hoa-don" method="get" class="filter-row">
+            <form action="${pageContext.request.contextPath}/hoa-don" method="get" class="filter-row" id="invoiceFilterForm" onsubmit="document.getElementById('pageNumberInput').value = 1;">
+                <input type="hidden" name="page" id="pageNumberInput" value="${currentPage != null ? currentPage : 1}">
+                <input type="hidden" name="pageSize" id="pageSizeInput" value="${pageSize != null ? pageSize : 10}">
                 <div class="filter-item" style="flex:2;">
                     <label>Tìm kiếm từ khóa</label>
                     <input type="text" name="keyword" value="<c:out value='${keyword}'/>"
@@ -463,6 +521,60 @@
                 </tbody>
             </table>
             </div>
+
+            <!-- KHỐI PHÂN TRANG (PAGINATION) -->
+            <c:if test="${totalPages > 0}">
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Hiển thị từ <strong>${fromIndex}</strong> đến <strong>${toIndex}</strong> trong tổng số <strong>${totalItems}</strong> hóa đơn
+                    </div>
+
+                    <div class="pagination-controls">
+                        <div style="display:flex; align-items:center; gap:6px; margin-right:12px;">
+                            <span style="font-size:12px; color:var(--text-secondary);">Hiển thị:</span>
+                            <select onchange="changePageSize(this.value)" style="height:32px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; padding:0 6px;">
+                                <option value="5" ${pageSize == 5 ? 'selected' : ''}>5 / trang</option>
+                                <option value="10" ${pageSize == 10 ? 'selected' : ''}>10 / trang</option>
+                                <option value="20" ${pageSize == 20 ? 'selected' : ''}>20 / trang</option>
+                                <option value="50" ${pageSize == 50 ? 'selected' : ''}>50 / trang</option>
+                            </select>
+                        </div>
+
+                        <!-- Nút trang trước -->
+                        <c:choose>
+                            <c:when test="${currentPage > 1}">
+                                <a href="javascript:void(0)" onclick="changePage(${currentPage - 1})" class="page-chip" title="Trang trước">
+                                    <i class="fa-solid fa-angle-left"></i>
+                                </a>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="page-chip disabled"><i class="fa-solid fa-angle-left"></i></span>
+                            </c:otherwise>
+                        </c:choose>
+
+                        <!-- Danh sách các số trang -->
+                        <c:forEach begin="1" end="${totalPages}" var="p">
+                            <c:if test="${p == 1 || p == totalPages || (p >= currentPage - 2 && p <= currentPage + 2)}">
+                                <a href="javascript:void(0)" onclick="changePage(${p})" class="page-chip ${p == currentPage ? 'active' : ''}">
+                                    ${p}
+                                </a>
+                            </c:if>
+                        </c:forEach>
+
+                        <!-- Nút trang sau -->
+                        <c:choose>
+                            <c:when test="${currentPage < totalPages}">
+                                <a href="javascript:void(0)" onclick="changePage(${currentPage + 1})" class="page-chip" title="Trang sau">
+                                    <i class="fa-solid fa-angle-right"></i>
+                                </a>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="page-chip disabled"><i class="fa-solid fa-angle-right"></i></span>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                </div>
+            </c:if>
         </div>
     </main>
 </div>
@@ -767,6 +879,19 @@
     function toggleSubmenu(button) {
         const parent = button.parentElement;
         parent.classList.toggle('open');
+    }
+
+    // Điều khiển phân trang
+    function changePage(pageNum) {
+        if (!pageNum || pageNum < 1) pageNum = 1;
+        document.getElementById('pageNumberInput').value = pageNum;
+        document.getElementById('invoiceFilterForm').submit();
+    }
+
+    function changePageSize(size) {
+        document.getElementById('pageSizeInput').value = size;
+        document.getElementById('pageNumberInput').value = 1;
+        document.getElementById('invoiceFilterForm').submit();
     }
 </script>
 </body>

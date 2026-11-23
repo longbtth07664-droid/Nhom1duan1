@@ -116,18 +116,30 @@
                                     <c:forEach items="${item.suatChieus}" var="sc">
                                         <c:set var="isSuatActive" value="${not empty selectedSuat && selectedSuat.maSuat == sc.maSuat}"/>
 
-                                        <!-- Dùng thẻ <a> chuẩn HTML thuần, không phụ thuộc vào JS, bấm là chuyển sang bước 2 chọn ghế -->
-                                        <a href="${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${sc.maSuat}&step=2"
-                                           class="showtime-btn-pill ${isSuatActive ? 'active' : ''}"
-                                           title="Phòng: ${sc.phongChieu.tenPhong} - Định dạng: ${sc.dinhDang}">
-                                            <strong>${sc.gioBatDau.toString().substring(0, 5)}</strong>
-                                            <span class="sc-room">
-                                                • <c:choose>
-                                                    <c:when test="${sc.dinhDang == 'IMAX' || sc.phongChieu.maPhong == '4'}">IMAX</c:when>
-                                                    <c:otherwise>P.0<c:out value="${sc.phongChieu.maPhong}"/></c:otherwise>
-                                                </c:choose>
-                                            </span>
-                                        </a>
+                                        <c:choose>
+                                            <%-- Nếu suất chiếu đã qua giờ bắt đầu: không cho phép bán vé nữa --%>
+                                            <c:when test="${sc.quaGio}">
+                                                <span class="showtime-btn-pill" style="opacity: 0.5; background: #f1f5f9; border-color: #cbd5e1; cursor: not-allowed; color: #94a3b8;"
+                                                      title="Suất chiếu đã bắt đầu/qua giờ, hệ thống đã đóng bán vé!">
+                                                    <strong style="text-decoration: line-through;">${sc.gioBatDau.toString().substring(0, 5)}</strong>
+                                                    <span class="sc-room" style="color: #ef4444; font-size: 10px; font-weight: 700;">• Đã chiếu</span>
+                                                </span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <!-- Suất chiếu hợp lệ, bấm vào để chuyển sang bước chọn ghế -->
+                                                <a href="${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${sc.maSuat}&step=2"
+                                                   class="showtime-btn-pill ${isSuatActive ? 'active' : ''}"
+                                                   title="Phòng: ${sc.phongChieu.tenPhong} - Định dạng: ${sc.dinhDang}">
+                                                    <strong>${sc.gioBatDau.toString().substring(0, 5)}</strong>
+                                                    <span class="sc-room">
+                                                        • <c:choose>
+                                                            <c:when test="${sc.dinhDang == 'IMAX' || sc.phongChieu.maPhong == '4'}">IMAX</c:when>
+                                                            <c:otherwise>P.0<c:out value="${sc.phongChieu.maPhong}"/></c:otherwise>
+                                                        </c:choose>
+                                                    </span>
+                                                </a>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </c:forEach>
                                 </div>
                             </div>

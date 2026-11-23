@@ -969,9 +969,63 @@ textarea.form-control {
 }
 
 /* ============================================================================
- * PHẦN 5: TƯƠNG THÍCH MÀN HÌNH NHỎ / ĐIỆN THOẠI (Responsive <= 768px)
- * Dùng cho: tất cả file JSP
+ * PHẦN 5: TƯƠNG THÍCH ĐA MÀN HÌNH & TỰ ĐỘNG CO GIÃN ĐỒNG BỘ
+ * Tối ưu hiển thị cho mọi độ phân giải: Laptop (1366x768, scale 125%/150%), PC, Tablet
  * ============================================================================ */
+
+/* 1. Màn hình Laptop vừa & nhỏ (<= 1280px, zoom 125% - 150%) */
+@media (max-width: 1280px) {
+    :root {
+        --sidebar-width: 235px;
+        --topbar-height: 58px;
+    }
+    .content-area {
+        padding: 18px 20px;
+    }
+    .topbar {
+        padding: 0 20px;
+    }
+    .nav-item {
+        padding: 9px 12px;
+        font-size: 13px;
+    }
+    .card {
+        padding: 16px 18px;
+        margin-bottom: 16px;
+    }
+}
+
+/* 2. Màn hình Laptop thu nhỏ / Màn hình phụ (<= 1050px) */
+@media (max-width: 1050px) {
+    :root {
+        --sidebar-width: 215px;
+        --topbar-height: 56px;
+    }
+    .content-area {
+        padding: 14px 16px;
+    }
+    .topbar {
+        padding: 0 16px;
+    }
+    .nav-item {
+        padding: 8px 10px;
+        font-size: 12.5px;
+        gap: 8px;
+    }
+    .sidebar-brand {
+        padding: 0 14px;
+    }
+    .user-card {
+        padding: 8px;
+    }
+    .user-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 11px;
+    }
+}
+
+/* 3. Màn hình Mobile / Tablet dọc (<= 768px) */
 @media (max-width: 768px) {
     .sidebar {
         position: fixed;
@@ -991,5 +1045,8 @@ textarea.form-control {
     }
     .role-cards {
         grid-template-columns: 1fr;
+    }
+    .content-area {
+        padding: 12px 14px;
     }
 }

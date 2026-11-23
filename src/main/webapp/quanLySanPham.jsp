@@ -32,71 +32,15 @@
 </head>
 <body>
 <div class="app-shell">
-    <!-- MENU BÊN TRÁI -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-text">
-                <h1>Rạp Chiếu Phim CINEMAX</h1>
-                <span>Quản lý</span>
-            </div>
-        </div>
-
-        <nav class="sidebar-menu">
-            <div class="menu-group-label">Menu chức năng</div>
-
-
-            <%-- [Ghi chú - Khánh]: Điều hướng Tổng quan về /thong-ke --%>
-            <a href="${pageContext.request.contextPath}/thong-ke" class="nav-item">
-                <span>Tổng quan</span>
-            </a>
-
-            <div class="nav-group">
-                <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
-                    <span>Quản lí phim</span>
-                    <span class="nav-arrow">▾</span>
-                </button>
-                <div class="nav-submenu">
-                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
-                    <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
-                </div>
-            </div>
-
-            <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-item">
-                <span>Phòng ghế</span>
-            </a>
-
-            <a href="${pageContext.request.contextPath}/suat-chieu/view" class="nav-item">
-                <span>Lịch chiếu bán vé</span>
-            </a>
-
-            <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item active">
-                <span>Quản lí sản phẩm</span>
-            </a>
-
-            <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item">
-                <span>Quản lí combo</span>
-            </a>
-
-            <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
-                <span>Quản lí khách hàng</span>
-            </a>
-
-            <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item">
-                <span>Quản lí hóa đơn</span>
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="user-card">
-                <div class="user-avatar">QL</div>
-                <div class="user-info">
-                    <div class="name"><c:out value="${not empty sessionScope.userName ? sessionScope.userName : 'Quản lý rạp'}"/></div>
-                    <div class="role"><c:out value="${not empty sessionScope.userRole ? sessionScope.userRole : 'QuanLy'}"/></div>
-                </div>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
-        </div>
-    </aside>
+    <!-- MENU BÊN TRÁI HỆ THỐNG (ĐỒNG BỘ ĐẦY ĐỦ 100% CHỨC NĂNG) -->
+    <c:choose>
+        <c:when test="${sessionScope.userRole == 'NhanVien' || sessionScope.userRole == 'Nhân viên'}">
+            <jsp:include page="/menunv.jsp" />
+        </c:when>
+        <c:otherwise>
+            <jsp:include page="/menuadmin.jsp" />
+        </c:otherwise>
+    </c:choose>
 
     <!-- NỘI DUNG CHÍNH -->
     <div class="main-wrapper">

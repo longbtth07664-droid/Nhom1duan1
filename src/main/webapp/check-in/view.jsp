@@ -122,23 +122,25 @@
             flex: 1;
             height: 48px;
             padding: 0 16px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
-            border: 2px solid var(--pink);
+            border: 2px solid #cbd5e1;
             border-radius: 10px;
             outline: none;
-            background: #fff;
+            background: #f8fafc;
             color: #0f172a;
-            box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.08);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             transition: all 0.2s;
         }
         .scan-input:focus {
-            box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.18);
+            border-color: #e11d48;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.12);
         }
         .scan-btn {
             height: 48px;
             padding: 0 20px;
-            font-size: 13px;
+            font-size: 13.5px;
             font-weight: 700;
             background: #e11d48;
             color: #ffffff;
@@ -150,15 +152,17 @@
             gap: 8px;
             transition: all 0.2s;
             white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
         }
         .scan-btn:hover {
             background: #be123c;
+            transform: translateY(-1px);
         }
 
         /* KHUNG HIỂN THỊ KẾT QUẢ SOÁT VÉ */
         .result-box {
             border-radius: 14px;
-            padding: 22px;
+            padding: 24px;
             text-align: center;
             border: 2px dashed #cbd5e1;
             background: #f8fafc;
@@ -171,33 +175,36 @@
         }
         .result-box.state-ready {
             border-color: #cbd5e1;
-            background: #f8fafc;
-            color: #64748b;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #475569;
         }
         .result-box.state-success {
             border-color: #16a34a;
             border-style: solid;
             background: #f0fdf4;
             color: #14532d;
+            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.12);
         }
         .result-box.state-danger {
             border-color: #dc2626;
             border-style: solid;
             background: #fef2f2;
             color: #991b1b;
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.12);
         }
         .result-box.state-amber {
             border-color: #d97706;
             border-style: solid;
             background: #fffbeb;
             color: #92400e;
+            box-shadow: 0 4px 14px rgba(217, 119, 6, 0.12);
         }
 
         .badge-status-lg {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 7px 16px;
+            padding: 8px 20px;
             border-radius: 30px;
             font-size: 14px;
             font-weight: 800;
@@ -211,34 +218,36 @@
 
         .ticket-highlight-card {
             background: #ffffff;
-            border-radius: 12px;
-            padding: 14px 18px;
+            border-radius: 14px;
+            padding: 16px 20px;
             width: 100%;
             text-align: left;
-            margin-top: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0,0,0,0.06);
+            margin-top: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            box-sizing: border-box;
         }
         .highlight-title {
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 800;
             color: #0f172a;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .highlight-meta {
             font-size: 13px;
             color: #475569;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .highlight-seat-badge {
             display: inline-block;
-            font-size: 18px;
-            font-weight: 800;
+            font-size: 24px;
+            font-weight: 900;
             color: #e11d48;
             background: #ffe4e6;
-            padding: 3px 12px;
-            border-radius: 8px;
+            padding: 4px 16px;
+            border-radius: 10px;
             border: 1px solid #fecdd3;
+            letter-spacing: 1px;
         }
 
         /* NÚT DUYỆT ĐẶC CÁCH */
@@ -413,13 +422,19 @@
                     </div>
 
                     <!-- HƯỚNG DẪN THAO TÁC NGHIỆP VỤ -->
-                    <div style="margin-top:16px; padding:12px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; font-size:12px; color:#64748b; line-height:1.6;">
-                        <strong style="color:#334155; display:block; margin-bottom:4px;">
-                            💡 MẸO DÀNH CHO NHÂN VIÊN SOÁT VÉ:
+                    <div style="margin-top:16px; padding:14px 16px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; font-size:12.5px; color:#1e40af; line-height:1.6;">
+                        <strong style="color:#1e3a8a; display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:13px;">
+                            <i class="fa-solid fa-lightbulb" style="color:#3b82f6;"></i> MẸO DÀNH CHO NHÂN VIÊN SOÁT VÉ:
                         </strong>
-                        • <strong>Máy quét USB/Bluetooth</strong>: Bấm tia đỏ vào mã vạch ở vé in hoặc màn hình điện thoại khách, máy sẽ tự động bấm Enter.<br>
-                        • <strong>Nhập tay linh hoạt</strong>: Gõ trực tiếp <strong>Mã vé</strong> (VD: <code>15</code>, <code>#VE15</code>) hoặc <strong>Mã HĐ</strong> (<code>HD12</code>).<br>
-                        • Hệ thống tự động chống gian lận soát vé 2 lần và kiểm tra giờ chiếu của suất phim.
+                        <div style="color:#334155; margin-bottom:4px;">
+                            • <strong>Máy quét tia đỏ / Barcode:</strong> Đưa đầu quét vào mã vạch ở cuống vé hoặc màn hình điện thoại, máy sẽ tự động đọc và kiểm tra.
+                        </div>
+                        <div style="color:#334155; margin-bottom:4px;">
+                            • <strong>Nhập tay linh hoạt:</strong> Có thể gõ trực tiếp <strong>Mã vé</strong> (VD: <code>15</code>, <code>VE15</code>) hoặc <strong>Mã hóa đơn</strong> (<code>HD12</code>).
+                        </div>
+                        <div style="color:#64748b; font-size:11.5px; margin-top:6px; border-top:1px dashed #cbd5e1; padding-top:6px;">
+                            <i class="fa-solid fa-shield-check" style="color:#16a34a;"></i> Tự động kiểm tra suất chiếu, phòng chiếu và ngăn chặn quét trùng 2 lần.
+                        </div>
                     </div>
                 </div>
 
@@ -431,31 +446,39 @@
                     </div>
 
                     <div class="result-box state-ready" id="resultBox">
-                        <div id="resultIcon" style="font-size:44px; margin-bottom:10px; color:#94a3b8;">
-                            <i class="fa-solid fa-ticket"></i>
+                        <div id="resultIcon" style="font-size:52px; margin-bottom:12px; color:#64748b;">
+                            <i class="fa-solid fa-barcode"></i>
                         </div>
                         <div class="badge-status-lg" id="resultBadge" style="display:none;"></div>
-                        <div id="resultMessage" style="font-size:15px; font-weight:700; margin-bottom:4px;">
-                            Sẵn sàng soát vé. Vui lòng đưa vé vào máy quét!
+                        <div id="resultMessage" style="font-size:16px; font-weight:800; color:#1e293b; margin-bottom:6px;">
+                            SẴN SÀNG SOÁT VÉ
                         </div>
-                        <div id="resultSub" style="font-size:12px; color:#64748b;">
-                            Hệ thống sẽ kiểm tra trạng thái thanh toán và ngăn chặn vé dùng lại.
+                        <div id="resultSub" style="font-size:12.5px; color:#64748b; max-width:320px;">
+                            Vui lòng đưa vé in hoặc mã QR trên điện thoại trước máy quét để kiểm tra.
                         </div>
 
                         <!-- THÔNG TIN VÉ CHI TIẾT (KHI QUÉT THÀNH CÔNG HOẶC CẢNH BÁO) -->
                         <div class="ticket-highlight-card" id="ticketCard" style="display:none;">
                             <div class="highlight-title" id="hlMovie">Tên phim chiếu rạp</div>
-                            <div class="highlight-meta">
-                                Suất: <strong id="hlTime">--:--</strong> • <span id="hlDate">--/--/----</span> | Phòng: <strong id="hlRoom">Phòng 1</strong>
+                            <div class="highlight-meta" style="display:flex; flex-wrap:wrap; gap:6px; margin:8px 0;">
+                                <span style="background:#e0f2fe; color:#0369a1; padding:3px 10px; border-radius:6px; font-weight:700; font-size:12px;">
+                                    <i class="fa-solid fa-clock" style="margin-right:4px;"></i> <span id="hlTime">--:--</span>
+                                </span>
+                                <span style="background:#f1f5f9; color:#475569; padding:3px 10px; border-radius:6px; font-weight:600; font-size:12px;">
+                                    <i class="fa-solid fa-calendar-day" style="margin-right:4px;"></i> <span id="hlDate">--/--/----</span>
+                                </span>
+                                <span style="background:#fef3c7; color:#92400e; padding:3px 10px; border-radius:6px; font-weight:700; font-size:12px;">
+                                    <i class="fa-solid fa-door-open" style="margin-right:4px;"></i> <span id="hlRoom">Phòng 1</span>
+                                </span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed #e2e8f0; padding-top:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px dashed #e2e8f0; padding-top:10px;">
                                 <div>
-                                    <span style="font-size:11px; color:#64748b; display:block;">VỊ TRÍ GHẾ:</span>
+                                    <span style="font-size:11px; font-weight:700; color:#64748b; display:block; text-transform:uppercase;">VỊ TRÍ GHẾ NGỒI:</span>
                                     <div class="highlight-seat-badge" id="hlSeat">A0</div>
                                 </div>
                                 <div style="text-align:right;">
-                                    <span style="font-size:11px; color:#64748b; display:block;">MÃ VÉ:</span>
-                                    <strong style="font-size:14px; color:#0f172a;" id="hlTicketId">#00</strong>
+                                    <span style="font-size:11px; font-weight:700; color:#64748b; display:block; text-transform:uppercase;">MÃ VÉ:</span>
+                                    <strong style="font-size:16px; color:#e11d48; font-family:monospace;" id="hlTicketId">#00</strong>
                                 </div>
                             </div>
                         </div>

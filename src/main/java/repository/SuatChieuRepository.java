@@ -29,7 +29,7 @@ public class SuatChieuRepository {
             StringBuilder hql = new StringBuilder("FROM SuatChieu sc WHERE 1=1 ");
 
             Integer pId = parseId(maPhim);
-            Integer pcId = parseId(maPhong);
+            String pcId = (maPhong != null && !maPhong.toString().trim().isEmpty()) ? maPhong.toString().trim() : null;
 
             if (pId != null) {
                 hql.append("AND sc.phim.maPhim = :maPhim ");
@@ -183,14 +183,14 @@ public class SuatChieuRepository {
     }
 
     public boolean checkTrungLich(Object maPhong, LocalDate ngayChieu, LocalTime batDau, LocalTime ketThuc, Integer maSuatIgnore) {
-        Integer pcId = parseId(maPhong);
-        if (pcId == null) return false;
+        if (maPhong == null || ngayChieu == null || batDau == null || ketThuc == null) return false;
+        String pcId = maPhong.toString().trim();
+        if (pcId.isEmpty()) return false;
 
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String hql = "FROM SuatChieu sc WHERE sc.phongChieu.maPhong = :maPhong " +
                     "AND sc.ngayChieu = :ngayChieu " +
-                    "AND sc.trangThai <> 'Đã hủy' " +
-                    "AND (:batDau < sc.gioKetThuc AND :ketThuc > sc.gioBatDau)";
+                    "AND (sc.trangThai IS NULL OR sc.trangThai <> 'Đã hủy')";
 
             if (maSuatIgnore != null) {
                 hql += " AND sc.maSuat <> :maSuatIgnore";
@@ -199,15 +199,24 @@ public class SuatChieuRepository {
             Query<SuatChieu> query = session.createQuery(hql, SuatChieu.class);
             query.setParameter("maPhong", pcId);
             query.setParameter("ngayChieu", ngayChieu);
-            query.setParameter("batDau", batDau);
-            query.setParameter("ketThuc", ketThuc);
 
             if (maSuatIgnore != null) {
                 query.setParameter("maSuatIgnore", maSuatIgnore);
             }
 
             List<SuatChieu> list = query.getResultList();
-            return !list.isEmpty();
+            for (SuatChieu sc : list) {
+                LocalTime sBatDau = sc.getGioBatDau();
+                LocalTime sKetThuc = sc.getGioKetThuc();
+                if (sBatDau != null && sKetThuc != null) {
+                    // Hai khoảng thời gian [batDau, ketThuc] và [sBatDau, sKetThuc] bị giao nhau (xung đột) khi:
+                    // batDau < sKetThuc VÀ ketThuc > sBatDau
+                    if (batDau.isBefore(sKetThuc) && ketThuc.isAfter(sBatDau)) {
+                        return true; // Phát hiện trùng lịch chiếu trong cùng phòng!
+                    }
+                }
+            }
+            return false;
         } catch (Exception e) {
             e.printStackTrace();
             return false;

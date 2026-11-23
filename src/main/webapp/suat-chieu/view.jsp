@@ -308,61 +308,38 @@
         .page-size-select:focus {
             border-color: var(--pink);
         }
+
+        /* Responsive cho Lịch chiếu */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .filter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="app-shell">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-text">
-                <h1>Rạp Chiếu Phim CINEMAX</h1>
-                <span>Quản trị hệ thống</span>
-            </div>
-        </div>
-
-        <nav class="sidebar-menu">
-            <div class="menu-group-label">Menu chức năng</div>
-            <%-- [Ghi chú - Khánh]: Điều hướng Tổng quan về /thong-ke --%>
-            <a href="${pageContext.request.contextPath}/thong-ke" class="nav-item"><span>Tổng quan</span></a>
-
-            <div class="nav-group">
-                <button type="button" class="nav-item nav-parent" onclick="toggleSubmenu(this)">
-                    <span>Quản lí phim</span>
-                    <span class="nav-arrow">▾</span>
-                </button>
-                <div class="nav-submenu">
-                    <a href="${pageContext.request.contextPath}/phim/view" class="nav-subitem">Danh sách phim</a>
-                    <a href="${pageContext.request.contextPath}/the-loai/view" class="nav-subitem">Quản lí thể loại</a>
-                </div>
-            </div>
-
-            <a href="${pageContext.request.contextPath}/phong-chieu/view" class="nav-item">
-                <span>Phòng ghế</span>
-            </a>
-
-            <a href="${pageContext.request.contextPath}/suat-chieu/view" class="nav-item active">
-                <span>Quản lý lịch chiếu</span>
-            </a>
-
-            <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="nav-item"><span>Quản lí sản phẩm</span></a>
-            <a href="${pageContext.request.contextPath}/quan-ly-combo" class="nav-item"><span>Quản lí combo</span></a>
-            <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item"><span>Quản lí khách hàng</span></a>
-            <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item"><span>Quản lí hóa đơn</span></a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="user-card">
-                <div class="user-avatar">${sessionScope.userName != null ? sessionScope.userName.substring(0, 1).toUpperCase() : 'QL'}</div>
-                <div class="user-info">
-                    <div class="name">${sessionScope.userName != null ? sessionScope.userName : 'Quản lý rạp'}</div>
-                    <div class="role">${sessionScope.userRole != null ? sessionScope.userRole : 'QuanLy'}</div>
-                </div>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="role-switch-link" style="color: #ff4757; margin-top: 8px;">Đăng xuất</a>
-        </div>
-    </aside>
+    <!-- MENU BÊN TRÁI ĐỒNG BỘ -->
+    <c:choose>
+        <c:when test="${sessionScope.userRole == 'NhanVien' || sessionScope.userRole == 'Nhân viên'}">
+            <jsp:include page="/menunv.jsp" />
+        </c:when>
+        <c:otherwise>
+            <jsp:include page="/menuadmin.jsp" />
+        </c:otherwise>
+    </c:choose>
 
     <!-- MAIN CONTENT WRAPPER -->
     <div class="main-wrapper" style="flex: 1; padding: 24px; background: #f8fafc; overflow-y: auto;">
@@ -852,11 +829,11 @@
 
                 <div class="form-group">
                     <label>Phòng chiếu <span class="required-star">*</span></label>
-                    <select id="addMaPhong" name="maPhong" class="form-control" required>
+                    <select id="addMaPhong" name="maPhong" class="form-control" required onchange="onPhongChange('add')">
                         <option value="">-- Chọn phòng chiếu --</option>
                         <c:forEach items="${listPhong}" var="pc">
-                            <option value="${pc.maPhong}" ${pc.maPhong == rawMaPhong ? 'selected' : ''}>
-                                ${pc.tenPhong} (${pc.sucChua} ghế)
+                            <option value="${pc.maPhong}" data-loai="${pc.loaiPhong}" ${pc.maPhong == rawMaPhong ? 'selected' : ''}>
+                                ${pc.tenPhong} (${pc.sucChua} ghế - ${pc.loaiPhong})
                             </option>
                         </c:forEach>
                     </select>
@@ -865,16 +842,20 @@
                 <div class="form-group">
                     <label>Định dạng chiếu <span class="required-star">*</span></label>
                     <select id="addDinhDang" name="dinhDang" class="form-control">
-                        <option value="2D" ${formSc.dinhDang == '2D' ? 'selected' : ''}>2D Phụ đề</option>
-                        <option value="2D Lồng tiếng" ${formSc.dinhDang == '2D Lồng tiếng' ? 'selected' : ''}>2D Lồng tiếng</option>
+                        <option value="2D" ${formSc.dinhDang == '2D' ? 'selected' : ''}>2D</option>
                         <option value="3D" ${formSc.dinhDang == '3D' ? 'selected' : ''}>3D</option>
-                        <option value="IMAX" ${formSc.dinhDang == 'IMAX' ? 'selected' : ''}>IMAX Laser</option>
+                        <option value="IMAX" ${formSc.dinhDang == 'IMAX' ? 'selected' : ''}>IMAX</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label>Ngày chiếu <span class="required-star">*</span></label>
                     <input type="date" id="addNgayChieu" name="ngayChieu" class="form-control" value="${rawNgayChieu}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Thời gian dọn dẹp (phút)</label>
+                    <input type="number" id="addThoiGianDonDep" name="thoiGianDonDep" class="form-control" value="${rawThoiGianDonDep != null ? rawThoiGianDonDep : '15'}" min="0" max="60" onchange="calculateEndTime('add')" placeholder="15">
                 </div>
 
                 <div class="form-group">
@@ -965,11 +946,11 @@
 
                 <div class="form-group">
                     <label>Phòng chiếu <span class="required-star">*</span></label>
-                    <select id="editMaPhong" name="maPhong" class="form-control" required>
+                    <select id="editMaPhong" name="maPhong" class="form-control" required onchange="onPhongChange('edit')">
                         <c:set var="curPhongId" value="${scUpdate != null ? scUpdate.phongChieu.maPhong : (formSc != null ? formSc.phongChieu.maPhong : rawMaPhong)}" />
                         <c:forEach items="${listPhong}" var="pc">
-                            <option value="${pc.maPhong}" ${pc.maPhong == curPhongId ? 'selected' : ''}>
-                                ${pc.tenPhong} (${pc.sucChua} ghế)
+                            <option value="${pc.maPhong}" data-loai="${pc.loaiPhong}" ${pc.maPhong == curPhongId ? 'selected' : ''}>
+                                ${pc.tenPhong} (${pc.sucChua} ghế - ${pc.loaiPhong})
                             </option>
                         </c:forEach>
                     </select>
@@ -979,10 +960,9 @@
                     <label>Định dạng chiếu <span class="required-star">*</span></label>
                     <c:set var="curDinhDang" value="${scUpdate != null ? scUpdate.dinhDang : formSc.dinhDang}" />
                     <select id="editDinhDang" name="dinhDang" class="form-control">
-                        <option value="2D" ${curDinhDang == '2D' ? 'selected' : ''}>2D Phụ đề</option>
-                        <option value="2D Lồng tiếng" ${curDinhDang == '2D Lồng tiếng' ? 'selected' : ''}>2D Lồng tiếng</option>
+                        <option value="2D" ${curDinhDang == '2D' ? 'selected' : ''}>2D</option>
                         <option value="3D" ${curDinhDang == '3D' ? 'selected' : ''}>3D</option>
-                        <option value="IMAX" ${curDinhDang == 'IMAX' ? 'selected' : ''}>IMAX Laser</option>
+                        <option value="IMAX" ${curDinhDang == 'IMAX' ? 'selected' : ''}>IMAX</option>
                     </select>
                 </div>
 
@@ -990,6 +970,11 @@
                     <label>Ngày chiếu <span class="required-star">*</span></label>
                     <c:set var="curNgay" value="${scUpdate != null ? scUpdate.ngayChieu : (formSc != null ? formSc.ngayChieu : rawNgayChieu)}" />
                     <input type="date" id="editNgayChieu" name="ngayChieu" class="form-control" value="${curNgay}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Thời gian dọn dẹp (phút)</label>
+                    <input type="number" id="editThoiGianDonDep" name="thoiGianDonDep" class="form-control" value="15" min="0" max="60" onchange="calculateEndTime('edit')" placeholder="15">
                 </div>
 
                 <div class="form-group">
@@ -1104,6 +1089,7 @@
         const err = document.getElementById('addSuatChieuError');
         if (err) err.style.display = 'none';
         document.getElementById('addGioKetThucDisplay').value = "Tự động tính (+15p dọn dẹp)";
+        onPhongChange('add');
         openModal('addSuatChieuModal');
     }
 
@@ -1116,7 +1102,14 @@
         const code = btn.getAttribute('data-code') || '';
         const phim = btn.getAttribute('data-phim') || '';
         const phong = btn.getAttribute('data-phong') || '';
-        const dinhdang = btn.getAttribute('data-dinhdang') || '2D';
+        let dinhdang = btn.getAttribute('data-dinhdang') || '2D';
+        if (dinhdang.toUpperCase().includes('IMAX')) {
+            dinhdang = 'IMAX';
+        } else if (dinhdang.toUpperCase().includes('3D')) {
+            dinhdang = '3D';
+        } else {
+            dinhdang = '2D';
+        }
         const ngay = btn.getAttribute('data-ngay') || '';
         let gio = btn.getAttribute('data-gio') || '';
         if (gio && gio.length > 5) gio = gio.substring(0, 5);
@@ -1178,11 +1171,31 @@
         }
     }
 
-    // Tự tính giờ kết thúc
+    // Tự động chọn định dạng chiếu khi chọn phòng (Phòng 2D ra 2D, 3D ra 3D, IMAX ra IMAX)
+    function onPhongChange(prefix) {
+        const phongSelect = document.getElementById(prefix === 'edit' ? 'editMaPhong' : 'addMaPhong');
+        const dinhDangSelect = document.getElementById(prefix === 'edit' ? 'editDinhDang' : 'addDinhDang');
+        if (!phongSelect || !dinhDangSelect) return;
+
+        const opt = phongSelect.options[phongSelect.selectedIndex];
+        if (!opt || !opt.value) return;
+
+        const loaiPhong = (opt.getAttribute('data-loai') || opt.text || '').toUpperCase();
+        if (loaiPhong.includes('IMAX')) {
+            dinhDangSelect.value = 'IMAX';
+        } else if (loaiPhong.includes('3D')) {
+            dinhDangSelect.value = '3D';
+        } else {
+            dinhDangSelect.value = '2D';
+        }
+    }
+
+    // Tự tính giờ kết thúc dựa trên thời lượng phim + thời gian dọn dẹp do người dùng nhập
     function calculateEndTime(prefix) {
         const isEdit = prefix === 'edit';
         const phimSelect = document.getElementById(isEdit ? 'editMaPhim' : 'addMaPhim');
         const startInput = document.getElementById(isEdit ? 'editGioBatDau' : 'addGioBatDau');
+        const donDepInput = document.getElementById(isEdit ? 'editThoiGianDonDep' : 'addThoiGianDonDep');
         const display = document.getElementById(isEdit ? 'editGioKetThucDisplay' : 'addGioKetThucDisplay');
 
         if (!phimSelect || !startInput || !display) return;
@@ -1190,19 +1203,20 @@
         const opt = phimSelect.options[phimSelect.selectedIndex];
         const duration = opt ? parseInt(opt.getAttribute('data-duration') || 0) : 0;
         const startTime = startInput.value;
+        const donDep = donDepInput ? (parseInt(donDepInput.value) || 0) : 15;
 
         if (!startTime || !duration) {
-            display.value = "Tự động tính (+15p dọn dẹp)";
+            display.value = "Tự động tính (+" + donDep + "p dọn dẹp)";
             return;
         }
 
         const [h, m] = startTime.split(':').map(Number);
-        const totalMinutes = h * 60 + m + duration + 15; // 15 phut don dep phong
+        const totalMinutes = h * 60 + m + duration + donDep;
         const endH = Math.floor(totalMinutes / 60) % 24;
         const endM = totalMinutes % 60;
 
         const formattedEnd = String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0');
-        display.value = formattedEnd + " (Đã gồm 15p dọn dẹp)";
+        display.value = formattedEnd + " (Đã gồm " + donDep + "p dọn dẹp)";
     }
 
     // Phân trang
@@ -1229,6 +1243,7 @@
 
     // Tự động tính toán khi trang load nếu đang mở modal
     window.addEventListener('DOMContentLoaded', () => {
+        onPhongChange('add');
         calculateEndTime('add');
         calculateEndTime('edit');
     });

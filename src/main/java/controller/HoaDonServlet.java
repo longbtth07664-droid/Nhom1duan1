@@ -160,8 +160,44 @@ public class HoaDonServlet extends HttpServlet {
         Map<String, Object> thongKe = hoaDonRepo.getThongKe();
         List<HoaDon> list = hoaDonRepo.getAll(keyword, fromDate, toDate, phuongThuc, trangThai);
 
+        // Phân trang (Pagination) - Mặc định 10 hóa đơn / trang
+        int pageSize = 10;
+        String pageSizeParam = req.getParameter("pageSize");
+        if (pageSizeParam != null && !pageSizeParam.trim().isEmpty()) {
+            try {
+                int ps = Integer.parseInt(pageSizeParam.trim());
+                if (ps > 0 && ps <= 100) pageSize = ps;
+            } catch (NumberFormatException ignored) {}
+        }
+
+        int totalItems = list.size();
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+        if (totalPages <= 0) totalPages = 1;
+
+        int currentPage = 1;
+        String pageParam = req.getParameter("page");
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            try {
+                currentPage = Integer.parseInt(pageParam.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        int fromIndex = (currentPage - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, totalItems);
+        List<HoaDon> pagedList = (totalItems > 0 && fromIndex < totalItems)
+                ? list.subList(fromIndex, toIndex)
+                : java.util.Collections.emptyList();
+
         req.setAttribute("thongKe", thongKe);
-        req.setAttribute("danhSachHoaDon", list);
+        req.setAttribute("danhSachHoaDon", pagedList);
+        req.setAttribute("currentPage", currentPage);
+        req.setAttribute("totalPages", totalPages);
+        req.setAttribute("pageSize", pageSize);
+        req.setAttribute("totalItems", totalItems);
+        req.setAttribute("fromIndex", totalItems > 0 ? (fromIndex + 1) : 0);
+        req.setAttribute("toIndex", toIndex);
         req.setAttribute("keyword", keyword);
         req.setAttribute("fromDate", fromDate);
         req.setAttribute("toDate", toDate);

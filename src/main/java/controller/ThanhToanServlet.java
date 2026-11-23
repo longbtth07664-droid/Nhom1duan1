@@ -25,6 +25,7 @@ public class ThanhToanServlet extends HttpServlet {
     private final HoaDonRepository hoaDonRepo = new HoaDonRepository();
     private final SuatChieuRepository suatChieuRepo = new SuatChieuRepository();
     private final ComboRepository comboRepo = new ComboRepository();
+    private final repository.KhachHangRepository khachHangRepo = new repository.KhachHangRepository();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -57,6 +58,76 @@ public class ThanhToanServlet extends HttpServlet {
             return;
         }
 
+        // 1.1 API tìm kiếm danh sách khách hàng theo tên hoặc số điện thoại
+        if ("searchCustomers".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            String q = req.getParameter("q");
+            List<KhachHang> list = khachHangRepo.search(q, 1, 15);
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < list.size(); i++) {
+                KhachHang k = list.get(i);
+                if (i > 0) sb.append(",");
+                sb.append("{")
+                  .append("\"maKH\":\"").append(escapeJson(k.getMaKH())).append("\",")
+                  .append("\"hoTen\":\"").append(escapeJson(k.getHoTen())).append("\",")
+                  .append("\"sdt\":\"").append(escapeJson(k.getSdt())).append("\",")
+                  .append("\"diemTichLuy\":").append(k.getDiemTichLuy())
+                  .append("}");
+            }
+            sb.append("]");
+            resp.getWriter().write(sb.toString());
+            return;
+        }
+
+        // 1.2 API thêm nhanh khách hàng mới ngay tại quầy thanh toán
+        if ("createCustomer".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            String hoTen = req.getParameter("hoTen");
+            String sdt = req.getParameter("sdt");
+            if (hoTen == null || hoTen.trim().isEmpty() || sdt == null || sdt.trim().isEmpty()) {
+                resp.getWriter().write("{\"success\":false,\"message\":\"Vui lòng nhập đầy đủ Họ tên và Số điện thoại!\"}");
+                return;
+            }
+
+            sdt = sdt.trim();
+            hoTen = hoTen.trim();
+
+            KhachHang existing = hoaDonRepo.timKhachHangTheoSDT(sdt);
+            if (existing != null) {
+                resp.getWriter().write("{\"success\":true,\"isExisting\":true,\"message\":\"Khách hàng đã có trong hệ thống!\",\"maKH\":\""
+                        + escapeJson(existing.getMaKH()) + "\",\"hoTen\":\""
+                        + escapeJson(existing.getHoTen()) + "\",\"sdt\":\""
+                        + escapeJson(existing.getSdt()) + "\",\"diemTichLuy\":"
+                        + existing.getDiemTichLuy() + "}");
+                return;
+            }
+
+            // Sinh mã KH mới
+            int nextIndex = khachHangRepo.count() + 1;
+            String newMa = String.format("KH%03d", nextIndex);
+            while (khachHangRepo.getById(newMa) != null) {
+                nextIndex++;
+                newMa = String.format("KH%03d", nextIndex);
+            }
+
+            KhachHang newKh = new KhachHang();
+            newKh.setMaKH(newMa);
+            newKh.setHoTen(hoTen);
+            newKh.setSdt(sdt);
+            newKh.setDiemTichLuy(0);
+
+            boolean ok = khachHangRepo.add(newKh);
+            if (ok) {
+                resp.getWriter().write("{\"success\":true,\"message\":\"Đăng ký thành viên mới thành công!\",\"maKH\":\""
+                        + escapeJson(newKh.getMaKH()) + "\",\"hoTen\":\""
+                        + escapeJson(newKh.getHoTen()) + "\",\"sdt\":\""
+                        + escapeJson(newKh.getSdt()) + "\",\"diemTichLuy\":0}");
+            } else {
+                resp.getWriter().write("{\"success\":false,\"message\":\"Không thể lưu khách hàng vào hệ thống!\"}");
+            }
+            return;
+        }
+
         // 2. Màn hình hoàn tất thanh toán / Xem in vé & hóa đơn
         String completedIdStr = req.getParameter("completedId");
         if (completedIdStr != null && !completedIdStr.trim().isEmpty()) {
@@ -85,6 +156,8 @@ public class ThanhToanServlet extends HttpServlet {
 
         // Danh sách Combo để tham chiếu
         req.setAttribute("listCombo", comboRepo.getAll());
+        // Danh sách toàn bộ khách hàng có sẵn trong cơ sở dữ liệu để chọn trên dropdown
+        req.setAttribute("danhSachKhachHang", khachHangRepo.getAll());
 
         req.getRequestDispatcher("/thanh-toan/view.jsp").forward(req, resp);
     }
@@ -209,7 +282,7 @@ public class ThanhToanServlet extends HttpServlet {
                 resp.getWriter().write("{\"success\":true,\"isPending\":true,\"maDatVe\":" + maDatVe + ",\"message\":\"Đã tạo và lưu hóa đơn #" + maDatVe + " ở trạng thái Chờ thanh toán!\",\"redirectUrl\":\"" + redirectUrl + "\"}");
             } else {
                 String redirectUrl = req.getContextPath() + "/thanh-toan?completedId=" + maDatVe;
-                resp.getWriter().write("{\"success\":true,\"isPending\":false,\"maDatVe\":" + maDatVe + ",\"redirectUrl\":\"" + redirectUrl + "\"}");
+                resp.getWriter().write("{\"success\":true,\"isPending\":false,\"maDatVe\":" + maDatVe + ",\"message\":\"Thanh toán đơn vé #HD" + maDatVe + " thành công!\",\"redirectUrl\":\"" + redirectUrl + "\"}");
             }
         } else {
             resp.getWriter().write("{\"success\":false,\"message\":\"Không thể lưu hóa đơn vào CSDL. Vui lòng thử lại!\"}");
