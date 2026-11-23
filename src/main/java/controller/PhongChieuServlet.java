@@ -175,7 +175,6 @@ public class PhongChieuServlet extends HttpServlet {
     private void handleAdd(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String maPhong = getParameter(request, "maPhong");
         String tenPhong = getParameter(request, "tenPhong");
         String loaiPhong = getParameter(request, "loaiPhong");
         String sucChuaStr = getParameter(request, "sucChua");
@@ -183,8 +182,7 @@ public class PhongChieuServlet extends HttpServlet {
         Integer sucChua = null;
         String error = null;
 
-        if (maPhong.isEmpty()
-                || tenPhong.isEmpty()
+        if (tenPhong.isEmpty()
                 || loaiPhong.isEmpty()
                 || sucChuaStr.isEmpty()) {
             error = "Vui lòng nhập đầy đủ tất cả các trường bắt buộc!";
@@ -203,15 +201,12 @@ public class PhongChieuServlet extends HttpServlet {
         }
 
         if (error == null) {
-            if (repo.getById(maPhong) != null) {
-                error = "Mã phòng chiếu [" + maPhong + "] đã tồn tại!";
-            } else if (repo.existsByTenPhong(tenPhong, null)) {
+            if (repo.existsByTenPhong(tenPhong, null)) {
                 error = "Tên phòng chiếu [" + tenPhong + "] đã tồn tại!";
             }
         }
 
         PhongChieu pc = new PhongChieu(
-                maPhong,
                 tenPhong,
                 loaiPhong,
                 sucChua
@@ -244,20 +239,29 @@ public class PhongChieuServlet extends HttpServlet {
     private void handleUpdate(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String maPhong = getParameter(request, "maPhong");
+        String maPhongStr = getParameter(request, "maPhong");
         String tenPhong = getParameter(request, "tenPhong");
         String loaiPhong = getParameter(request, "loaiPhong");
         String sucChuaStr = getParameter(request, "sucChua");
 
+        Integer maPhong = null;
         Integer sucChua = null;
         String error = null;
 
         // Kiểm tra dữ liệu rỗng
-        if (maPhong.isEmpty()
+        if (maPhongStr.isEmpty()
                 || tenPhong.isEmpty()
                 || loaiPhong.isEmpty()
                 || sucChuaStr.isEmpty()) {
             error = "Vui lòng nhập đầy đủ tất cả các trường bắt buộc!";
+        }
+
+        if (error == null) {
+            try {
+                maPhong = Integer.parseInt(maPhongStr);
+            } catch (NumberFormatException e) {
+                error = "Mã phòng không hợp lệ!";
+            }
         }
 
         // Kiểm tra sức chứa

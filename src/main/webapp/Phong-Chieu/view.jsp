@@ -154,10 +154,9 @@
         <form action="${pageContext.request.contextPath}/phong-chieu/add" method="post">
             <div class="form-stack">
                 <div class="form-group">
-                    <label for="addMaPhong">Mã phòng<span class="required-star">*</span></label>
+                    <label for="addMaPhong">Mã phòng</label>
                     <input type="text" id="addMaPhong" name="maPhong" class="form-control"
-                           value="${openModal == 'add' ? pc.maPhong : ''}"
-                           placeholder="VD: PC11">
+                           value="Tự động khi lưu" readonly style="background:var(--bg-input); cursor:not-allowed;">
                 </div>
                 <div class="form-group">
                     <label for="addTenPhong">Tên phòng<span class="required-star">*</span></label>
@@ -414,7 +413,7 @@
     function openAddPhongChieu() {
         const err = document.getElementById('addPhongChieuError');
         if (err) err.style.display = 'none';
-        document.getElementById('addMaPhong').value = '';
+        document.getElementById('addMaPhong').value = 'Tự động khi lưu';
         document.getElementById('addTenPhong').value = '';
         document.getElementById('addLoaiPhong').value = '';
         document.getElementById('addSucChua').value = '';

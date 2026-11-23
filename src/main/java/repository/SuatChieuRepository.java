@@ -29,7 +29,7 @@ public class SuatChieuRepository {
             StringBuilder hql = new StringBuilder("FROM SuatChieu sc WHERE 1=1 ");
 
             Integer pId = parseId(maPhim);
-            String pcId = (maPhong != null && !maPhong.toString().trim().isEmpty()) ? maPhong.toString().trim() : null;
+            Integer pcId = parseId(maPhong);
 
             if (pId != null) {
                 hql.append("AND sc.phim.maPhim = :maPhim ");

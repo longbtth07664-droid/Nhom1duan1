@@ -10,7 +10,7 @@
     <!-- Nhúng file CSS giao diện chung của rạp phim CINEMAX -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=8">
     <!-- Nhúng file CSS định dạng riêng cho sơ đồ ghế -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/ghe.css?v=4">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/ghe.css?v=20261123_2">
 </head>
 <body>
 <div class="app-shell">
@@ -51,16 +51,6 @@
             <c:if test="${msg == 'update_ok'}">
                 <div style="background:#ecfdf5; border:1px solid #a7f3d0; color:#047857; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-weight:600;">
                     ✓ Cập nhật thông tin ghế thành công!
-                </div>
-            </c:if>
-            <c:if test="${msg == 'delete_ok'}">
-                <div style="background:#ecfdf5; border:1px solid #a7f3d0; color:#047857; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-weight:600;">
-                    ✓ Đã xóa ghế thành công!
-                </div>
-            </c:if>
-            <c:if test="${msg == 'in_use'}">
-                <div style="background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-weight:600;">
-                    ✕ Không thể xóa ghế này vì đã có vé xem phim được phát hành!
                 </div>
             </c:if>
             <c:if test="${msg == 'duplicate_seat'}">
@@ -182,8 +172,15 @@
 
                                         <!-- Ô ghế ngồi có thể click để mở popup chỉnh sửa -->
                                         <div class="seat-box ${seatClass}"
+                                             data-maghe="${seat.maGhe}"
+                                             data-tenghe="<c:out value='${seat.tenGhe}'/>"
+                                             data-maloai="${seat.loaiGhe != null ? seat.loaiGhe.maLoaiGhe : ''}"
+                                             data-hang="<c:out value='${seat.hangGhe}'/>"
+                                             data-so="${seat.soGhe}"
+                                             data-trangthai="<c:out value='${seat.trangThai}'/>"
+                                             data-gia="${seat.gia}"
                                              title="Ghế ${seat.tenGhe} - ${seat.loaiGhe.tenLoaiGhe} (${seat.trangThai}) - Giá: <fmt:formatNumber value='${seat.gia}' pattern='#,##0'/> đ"
-                                             onclick="openSeatDetailModal('${seat.maGhe}', '${seat.tenGhe}', '${seat.loaiGhe.maLoaiGhe}', '${seat.hangGhe}', '${seat.soGhe}', '${seat.trangThai}', '${seat.gia}')">
+                                             onclick="openSeatDetailModalFromEl(this)">
                                             <c:out value="${seat.tenGhe}"/>
                                         </div>
                                     </c:forEach>
@@ -229,6 +226,7 @@
             <div class="modal-body">
                 <input type="hidden" name="maGhe" id="editMaGhe">
                 <input type="hidden" name="maPhong" value="${selectedPhong.maPhong}">
+                <input type="hidden" id="deleteMaGhe" name="deleteMaGhe">
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
                     <div>
@@ -266,22 +264,13 @@
                     </select>
                 </div>
             </div>
-            <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
-                <button type="button" class="btn btn-outline" style="color:#ef4444; border-color:#fca5a5;" onclick="confirmDeleteSeat()">Xóa ghế này</button>
-                <div style="display:flex; gap:8px;">
-                    <button type="button" class="btn btn-ghost" onclick="closeModalDialog('seatDetailModal')">Đóng</button>
-                    <button type="submit" class="btn btn-pink">Lưu thay đổi</button>
-                </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModalDialog('seatDetailModal')">Đóng</button>
+                <button type="submit" class="btn btn-pink">Lưu thay đổi</button>
             </div>
         </form>
     </div>
 </div>
-
-<!-- Form xóa ghế ẩn để thực hiện xóa khi người dùng bấm xác nhận -->
-<form id="formDeleteSeat" action="${pageContext.request.contextPath}/ghe/delete" method="post" style="display:none;">
-    <input type="hidden" name="maGhe" id="deleteMaGhe">
-    <input type="hidden" name="maPhong" value="${selectedPhong.maPhong}">
-</form>
 
 <!-- ==================== POPUP 2: THÊM GHẾ MỚI ==================== -->
 <div class="modal-backdrop" id="addSeatModal">
@@ -337,7 +326,7 @@
     </div>
 </div>
 
-<!-- ==================== POPUP 3: QUẢN LÝ LOẠI GHẾ (DANH SÁCH, THÊM, SỬA, XÓA) ==================== -->
+<!-- ==================== POPUP 3: QUẢN LÝ LOẠI GHẾ (DANH SÁCH, THÊM, SỬA) ==================== -->
 <div class="modal-backdrop ${openModal == 'loaiGhe' ? 'open' : ''}" id="loaiGheModal">
     <div class="modal-box" style="max-width: 680px; width: 95%;">
         <div class="modal-header">
@@ -463,6 +452,139 @@
 <!-- Nhúng file JavaScript tương tác dùng chung của hệ thống -->
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=8"></script>
 <!-- Nhúng file JavaScript xử lý riêng cho sơ đồ ghế và loại ghế -->
-<script src="${pageContext.request.contextPath}/assets/js/ghe.js?v=4"></script>
+<script src="${pageContext.request.contextPath}/assets/js/ghe.js?v=20261123_2"></script>
+
+<script>
+    // Hàm mở popup chi tiết & sửa ghế từ phần tử DOM (hạn chế lỗi tham số chuỗi)
+    function openSeatDetailModalFromEl(el) {
+        if (!el) return;
+        const maGhe = el.getAttribute('data-maghe') || '';
+        const tenGhe = el.getAttribute('data-tenghe') || '';
+        const maLoai = el.getAttribute('data-maloai') || '';
+        const hang = el.getAttribute('data-hang') || '';
+        const so = el.getAttribute('data-so') || '';
+        const trangThai = el.getAttribute('data-trangthai') || 'Hoạt động';
+        const gia = el.getAttribute('data-gia') || '';
+        openSeatDetailModal(maGhe, tenGhe, maLoai, hang, so, trangThai, gia);
+    }
+
+    // Mở popup chi tiết và sửa ghế với kiểm tra an toàn từng phần tử
+    function openSeatDetailModal(maGhe, tenGhe, maLoai, hang, so, trangThai, gia) {
+        try {
+            const setVal = function(id, val) {
+                const el = document.getElementById(id);
+                if (el) el.value = (val !== undefined && val !== null) ? val : '';
+            };
+            const setText = function(id, txt) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = (txt !== undefined && txt !== null) ? txt : '';
+            };
+
+            setVal('editMaGhe', maGhe);
+            setText('editTenGheTitle', tenGhe);
+            setVal('editHangGhe', hang);
+            setVal('editSoGhe', so);
+            setVal('editMaLoaiGhe', maLoai);
+            setVal('editTrangThai', trangThai);
+            setVal('editGia', gia);
+            setVal('deleteMaGhe', maGhe);
+
+            openModalDialog('seatDetailModal');
+        } catch (err) {
+            console.error('Lỗi khi mở modal chi tiết ghế:', err);
+        }
+    }
+
+    // Mở modal dialog bảo đảm luôn hiển thị
+    function openModalDialog(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('open');
+        }
+    }
+
+    // Đóng modal dialog bảo đảm luôn ẩn
+    function closeModalDialog(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('open');
+        }
+    }
+
+    // Đồng bộ hàm closeModal của cinema-mock.js
+    window.closeModal = function(id) {
+        closeModalDialog(id);
+    };
+
+    // Mở modal thêm ghế mới
+    function openAddSeatModal() {
+        openModalDialog('addSeatModal');
+    }
+
+    // Mở modal quản lý loại ghế
+    function openLoaiGheModal() {
+        openModalDialog('loaiGheModal');
+    }
+
+    // Chuyển phòng chiếu
+    function changeRoomFilter(selectEl) {
+        const maPhong = selectEl.value;
+        if (maPhong) {
+            window.location.href = selectEl.getAttribute('data-context') + '/ghe?maPhong=' + encodeURIComponent(maPhong);
+        }
+    }
+
+    // Đổ dữ liệu sửa loại ghế
+    function startEditLoaiGhe(btn) {
+        const ma = btn.getAttribute('data-ma');
+        const ten = btn.getAttribute('data-ten');
+        const phuthu = btn.getAttribute('data-phuthu');
+
+        document.getElementById('lgMaLoaiGhe').value = ma;
+        document.getElementById('lgTenLoaiGhe').value = ten;
+        document.getElementById('lgPhuThu').value = phuthu;
+
+        document.getElementById('lgFormTitle').innerText = '✎ Cập nhật loại ghế [#' + ma + ' - ' + ten + ']';
+        document.getElementById('lgBtnSubmit').innerText = 'Cập nhật';
+        document.getElementById('lgBtnCancel').style.display = 'inline-block';
+
+        const form = document.getElementById('loaiGheForm');
+        const ctx = form.getAttribute('data-context');
+        form.action = ctx + '/ghe/loai-ghe-update';
+    }
+
+    // Hủy sửa loại ghế
+    function cancelEditLoaiGhe() {
+        document.getElementById('lgMaLoaiGhe').value = '';
+        document.getElementById('lgTenLoaiGhe').value = '';
+        document.getElementById('lgPhuThu').value = '0';
+
+        document.getElementById('lgFormTitle').innerText = '+ Thêm loại ghế mới';
+        document.getElementById('lgBtnSubmit').innerText = 'Thêm';
+        document.getElementById('lgBtnCancel').style.display = 'none';
+
+        const form = document.getElementById('loaiGheForm');
+        const ctx = form.getAttribute('data-context');
+        form.action = ctx + '/ghe/loai-ghe-add';
+    }
+
+    // Đóng khi click ra ngoài backdrop (dùng capture để chạy trước các script khác)
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList && e.target.classList.contains('modal-backdrop')) {
+            closeModalDialog(e.target.id);
+        }
+    }, true);
+
+    // Đóng khi ấn Esc
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            document.querySelectorAll('.modal-backdrop').forEach(function(m) {
+                closeModalDialog(m.id);
+            });
+        }
+    }, true);
+</script>
 </body>
 </html>

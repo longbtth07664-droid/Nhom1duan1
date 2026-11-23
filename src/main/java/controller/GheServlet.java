@@ -24,7 +24,6 @@ import java.util.Map;
         "/ghe/view",
         "/ghe/add",
         "/ghe/update",
-        "/ghe/delete",
         "/ghe/loai-ghe-add",
         "/ghe/loai-ghe-update",
         "/ghe/loai-ghe-delete"
@@ -57,7 +56,7 @@ public class GheServlet extends HttpServlet {
         // Lấy mã phòng chiếu từ tham số hoặc mặc định chọn phòng đầu tiên
         String maPhong = req.getParameter("maPhong");
         if (maPhong == null || maPhong.trim().isEmpty()) {
-            maPhong = listPhong.get(0).getMaPhong();
+            maPhong = String.valueOf(listPhong.get(0).getMaPhong());
         } else {
             maPhong = maPhong.trim();
         }
@@ -65,7 +64,7 @@ public class GheServlet extends HttpServlet {
         PhongChieu selectedPhong = phongChieuRepo.getById(maPhong);
         if (selectedPhong == null) {
             selectedPhong = listPhong.get(0);
-            maPhong = selectedPhong.getMaPhong();
+            maPhong = String.valueOf(selectedPhong.getMaPhong());
         }
 
         // Tải danh sách ghế và nhóm theo từng hàng (A, B, C, D, E...)
@@ -125,8 +124,6 @@ public class GheServlet extends HttpServlet {
             handleAdd(req, resp);
         } else if (path.equals("/ghe/update")) {
             handleUpdate(req, resp);
-        } else if (path.equals("/ghe/delete")) {
-            handleDelete(req, resp);
         } else if (path.equals("/ghe/loai-ghe-add")) {
             handleAddLoaiGhe(req, resp);
         } else if (path.equals("/ghe/loai-ghe-update")) {
@@ -278,27 +275,6 @@ public class GheServlet extends HttpServlet {
 
             boolean ok = gheRepo.update(ghe);
             resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=" + (ok ? "update_ok" : "error"));
-        } catch (Exception e) {
-            e.printStackTrace();
-            resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=error");
-        }
-    }
-
-    // Xóa một ghế ra khỏi phòng chiếu sau khi kiểm tra không có vé nào ràng buộc
-    private void handleDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String maGheStr = trimParam(req, "maGhe");
-        String maPhong = trimParam(req, "maPhong");
-
-        try {
-            int maGhe = Integer.parseInt(maGheStr);
-
-            if (gheRepo.isGheBooked(maGhe)) {
-                resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=in_use");
-                return;
-            }
-
-            boolean ok = gheRepo.delete(maGhe);
-            resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=" + (ok ? "delete_ok" : "error"));
         } catch (Exception e) {
             e.printStackTrace();
             resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=error");

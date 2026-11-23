@@ -11,9 +11,22 @@ import java.util.List;
 
 public class GheRepository {
 
+    private Integer parseId(Object val) {
+        if (val == null) return null;
+        if (val instanceof Number) return ((Number) val).intValue();
+        try {
+            String s = val.toString().trim();
+            if (s.isEmpty()) return null;
+            return Integer.parseInt(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // Lấy toàn bộ danh sách ghế của một phòng chiếu sắp xếp theo hàng và số ghế
-    public List<Ghe> getAllByPhong(String maPhong) {
-        if (maPhong == null || maPhong.trim().isEmpty()) {
+    public List<Ghe> getAllByPhong(Object maPhong) {
+        Integer id = parseId(maPhong);
+        if (id == null) {
             return Collections.emptyList();
         }
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -21,12 +34,16 @@ public class GheRepository {
                          "WHERE g.phongChieu.maPhong = :maPhong " +
                          "ORDER BY g.hangGhe ASC, g.soGhe ASC";
             return session.createQuery(hql, Ghe.class)
-                    .setParameter("maPhong", maPhong.trim())
+                    .setParameter("maPhong", id)
                     .getResultList();
         } catch (Exception e) {
             e.printStackTrace();
             return Collections.emptyList();
         }
+    }
+
+    public List<Ghe> getAllByPhong(String maPhong) {
+        return getAllByPhong((Object) maPhong);
     }
 
     // Tìm kiếm thông tin chi tiết một ghế theo mã ghế
@@ -44,8 +61,9 @@ public class GheRepository {
     }
 
     // Kiểm tra xem vị trí hàng ghế và số ghế đã tồn tại trong phòng chiếu chưa
-    public boolean existsSeat(String maPhong, String hangGhe, Integer soGhe, Integer excludeMaGhe) {
-        if (maPhong == null || hangGhe == null || soGhe == null) return false;
+    public boolean existsSeat(Object maPhong, String hangGhe, Integer soGhe, Integer excludeMaGhe) {
+        Integer id = parseId(maPhong);
+        if (id == null || hangGhe == null || soGhe == null) return false;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String hql = "SELECT COUNT(g.maGhe) FROM Ghe g " +
                          "WHERE g.phongChieu.maPhong = :maPhong " +
@@ -55,7 +73,7 @@ public class GheRepository {
                 hql += " AND g.maGhe <> :exId";
             }
             Query<Long> query = session.createQuery(hql, Long.class);
-            query.setParameter("maPhong", maPhong.trim());
+            query.setParameter("maPhong", id);
             query.setParameter("hang", hangGhe.trim().toUpperCase());
             query.setParameter("so", soGhe);
             if (excludeMaGhe != null) {
@@ -67,6 +85,10 @@ public class GheRepository {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public boolean existsSeat(String maPhong, String hangGhe, Integer soGhe, Integer excludeMaGhe) {
+        return existsSeat((Object) maPhong, hangGhe, soGhe, excludeMaGhe);
     }
 
     // Kiểm tra ghế đã từng xuất hiện trong bảng Vé chưa để ngăn chặn lỗi khóa ngoại khi xóa

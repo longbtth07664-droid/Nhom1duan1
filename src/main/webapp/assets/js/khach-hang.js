@@ -74,17 +74,6 @@ function openDetailModal(btn) {
     openModalDialog('detailKhachHangModal');
 }
 
-// Hiển thị hộp thoại xác nhận trước khi tiến hành xóa một khách hàng
-function confirmDeleteCustomer(btn) {
-    const ma = btn.getAttribute('data-ma');
-    const ten = btn.getAttribute('data-ten');
-    const ctx = btn.getAttribute('data-context');
-
-    if (confirm('Bạn có chắc chắn muốn xóa khách hàng [' + ma + ' - ' + ten + '] khỏi hệ thống không?')) {
-        window.location.href = ctx + '/khach-hang/delete?id=' + encodeURIComponent(ma);
-    }
-}
-
 // Tự động đóng popup khi người dùng click chuột vào vùng nền tối bên ngoài hộp thoại
 window.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal-backdrop') && e.target.classList.contains('open')) {

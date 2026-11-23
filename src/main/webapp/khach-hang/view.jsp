@@ -130,15 +130,6 @@
                                                 data-gioitinh="<c:out value='${item.gioiTinh}'/>"
                                                 data-diem="<c:out value='${item.diemTichLuy}'/>"
                                                 onclick="openEditKhachHangFromBtn(this)">Sửa</button>
-
-                                        <!-- Nút xóa khách hàng kèm xác nhận -->
-                                        <button type="button"
-                                                class="btn btn-sm"
-                                                style="background:#fff1f2; color:#e11d48; border:1px solid #fda4af;"
-                                                data-ma="<c:out value='${item.maKH}'/>"
-                                                data-ten="<c:out value='${item.hoTen}'/>"
-                                                data-context="${pageContext.request.contextPath}"
-                                                onclick="confirmDeleteCustomer(this)">Xóa</button>
                                     </div>
                                 </td>
                             </tr>
@@ -387,17 +378,6 @@
         document.getElementById('detailDiem').innerText = (btn.getAttribute('data-diem') || '0') + ' điểm';
 
         openModalDialog('detailKhachHangModal');
-    }
-
-    // Xác nhận với người dùng trước khi tiến hành xóa khách hàng
-    function confirmDeleteCustomer(btn) {
-        const ma = btn.getAttribute('data-ma');
-        const ten = btn.getAttribute('data-ten');
-        const ctx = btn.getAttribute('data-context');
-
-        if (confirm('Bạn có chắc chắn muốn xóa khách hàng [' + ma + ' - ' + ten + '] không?')) {
-            window.location.href = ctx + '/khach-hang/delete?id=' + encodeURIComponent(ma);
-        }
     }
 
     // Tự động đóng popup khi click ra ngoài vùng nền mờ

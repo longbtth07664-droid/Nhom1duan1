@@ -17,8 +17,7 @@ import java.util.List;
         "/khach-hang/view",
         "/khach-hang/detail",
         "/khach-hang/add",
-        "/khach-hang/update",
-        "/khach-hang/delete"
+        "/khach-hang/update"
 })
 public class KhachHangServlet extends HttpServlet {
 
@@ -26,20 +25,12 @@ public class KhachHangServlet extends HttpServlet {
     private static final String VIEW = "/khach-hang/view.jsp";
     private static final int PAGE_SIZE = 5;
 
-    // Tiếp nhận và xử lý các yêu cầu GET (xem danh sách, tìm kiếm, phân trang và xóa khách hàng)
+    // Tiếp nhận và xử lý các yêu cầu GET (xem danh sách, tìm kiếm, phân trang khách hàng)
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
         resp.setCharacterEncoding("UTF-8");
-
-        String path = req.getServletPath();
-
-        // Xử lý thao tác xóa một khách hàng
-        if (path.equals("/khach-hang/delete")) {
-            handleDelete(req, resp);
-            return;
-        }
 
         // Tải danh sách khách hàng có hỗ trợ tìm kiếm và phân trang
         loadData(req);
@@ -50,8 +41,6 @@ public class KhachHangServlet extends HttpServlet {
             req.setAttribute("successMsg", "Thêm mới khách hàng thành công!");
         } else if ("update_ok".equals(msg)) {
             req.setAttribute("successMsg", "Cập nhật thông tin khách hàng thành công!");
-        } else if ("delete_ok".equals(msg)) {
-            req.setAttribute("successMsg", "Đã xóa khách hàng thành công!");
         } else if ("error".equals(msg)) {
             req.setAttribute("errorMsg", "Có lỗi xảy ra trong quá trình xử lý!");
         }
@@ -181,21 +170,6 @@ public class KhachHangServlet extends HttpServlet {
         }
 
         resp.sendRedirect(req.getContextPath() + "/khach-hang/view?msg=update_ok");
-    }
-
-    // ==================== XỬ LÝ XÓA KHÁCH HÀNG ====================
-
-    // Xóa khách hàng khỏi hệ thống nếu không có ràng buộc dữ liệu
-    private void handleDelete(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException {
-        String id = getParam(req, "id");
-        if (id.isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/khach-hang/view?msg=error");
-            return;
-        }
-
-        boolean ok = repo.delete(id);
-        resp.sendRedirect(req.getContextPath() + "/khach-hang/view?msg=" + (ok ? "delete_ok" : "error"));
     }
 
     // ==================== CÁC HÀM HỖ TRỢ ====================
