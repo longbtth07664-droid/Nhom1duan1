@@ -3,11 +3,63 @@ import java.net.*;
 import java.net.http.*;
 import java.nio.file.*;
 import java.time.Duration;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.lang.reflect.Proxy;
+import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
+import util.AnhDanhMuc;
 
 /** Tomcat riêng, cổng ngẫu nhiên, chỉ đọc dữ liệu nghiệp vụ qua các trang. */
 public class WebSmokeCheck {
     static void check(boolean ok, String reason) {
         if (!ok) throw new AssertionError(reason);
+    }
+
+    static String createUploadFixture() throws Exception {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB), "png", bytes);
+        Part file = (Part) Proxy.newProxyInstance(Part.class.getClassLoader(), new Class<?>[]{Part.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("getSize")) return (long) bytes.size();
+                    if (method.getName().equals("getInputStream")) return new ByteArrayInputStream(bytes.toByteArray());
+                    throw new UnsupportedOperationException(method.getName());
+                });
+        HttpServletRequest request = (HttpServletRequest) Proxy.newProxyInstance(
+                HttpServletRequest.class.getClassLoader(), new Class<?>[]{HttpServletRequest.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("getContentType")) return "multipart/form-data";
+                    if (method.getName().equals("getPart")) return file;
+                    throw new UnsupportedOperationException(method.getName());
+                });
+        return AnhDanhMuc.luu(request);
+    }
+
+    static void rejectFakeUpload(HttpClient client, String base, String path, String html) throws Exception {
+        var token = Pattern.compile("name=\"token\" value=\"([^\"]+)\"").matcher(html);
+        check(token.find(), "Photo upload form has a token");
+        String boundary = "CatalogImageCheck";
+        String[] fields = path.contains("san-pham")
+                ? new String[]{"tenSP", "Ảnh thử", "loaiSP", "Bắp", "donViTinh", "Hộp", "giaBan", "25000", "soLuongTon", "10"}
+                : new String[]{"tenCombo", "Ảnh thử", "ctMaSP", "1", "ctSoLuong_1", "1", "giamGia", "0"};
+        StringBuilder body = new StringBuilder();
+        multipartField(body, boundary, "action", "add");
+        multipartField(body, boundary, "token", token.group(1));
+        for (int i = 0; i < fields.length; i += 2) multipartField(body, boundary, fields[i], fields[i + 1]);
+        body.append("--").append(boundary).append("\r\nContent-Disposition: form-data; name=\"tepAnh\"; filename=\"fake.png\"\r\n")
+                .append("Content-Type: image/png\r\n\r\nFile khong phai anh\r\n--").append(boundary).append("--\r\n");
+        HttpResponse<String> response = client.send(HttpRequest.newBuilder(URI.create(base + path))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build(), HttpResponse.BodyHandlers.ofString());
+        String error = URLDecoder.decode(response.headers().firstValue("location").orElse(""), "UTF-8");
+        check(response.statusCode() == 302 && error.contains("Tệp không phải ảnh"), "Multipart accepts valid fields but rejects fake PNG before SQL save");
+    }
+
+    static void multipartField(StringBuilder body, String boundary, String name, String value) {
+        body.append("--").append(boundary).append("\r\nContent-Disposition: form-data; name=\"").append(name)
+                .append("\"\r\n\r\n").append(value).append("\r\n");
     }
     public static void main(String[] args) throws Exception {
         Tomcat tomcat = new Tomcat();
@@ -15,7 +67,11 @@ public class WebSmokeCheck {
         tomcat.setPort(0);
         tomcat.getConnector().setProperty("address", "127.0.0.1");
         org.apache.catalina.Context webapp = tomcat.addWebapp("/check", Path.of("target/DuAnNhom1-1.0-SNAPSHOT").toAbsolutePath().toString());
+        Path imageDir = Files.createTempDirectory(Path.of("target"), "anh-danh-muc-test-");
+        System.setProperty("cinemax.anh.dir", imageDir.toAbsolutePath().toString());
+        String imageName = null;
         try {
+            imageName = createUploadFixture();
             tomcat.start();
             String base = "http://127.0.0.1:" + tomcat.getConnector().getLocalPort() + "/check";
             CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
@@ -26,6 +82,10 @@ public class WebSmokeCheck {
                 .POST(HttpRequest.BodyPublishers.ofString("username=admin_quan&password=123456"))
                 .timeout(Duration.ofSeconds(30)).build(), HttpResponse.BodyHandlers.ofString());
             check(login.statusCode() == 302 && login.headers().firstValue("location").orElse("").endsWith("/thong-ke"), "Login with SQL sample manager");
+            HttpResponse<byte[]> photo = client.send(HttpRequest.newBuilder(URI.create(base + "/anh-danh-muc?ten=" + imageName))
+                    .GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+            check(photo.statusCode() == 200 && photo.headers().firstValue("content-type").orElse("").equals("image/png")
+                    && ImageIO.read(new ByteArrayInputStream(photo.body())).getWidth() == 8, "Return uploaded PNG from persistent directory");
             String[] paths = {
                 "/quan-ly-san-pham", "/quan-ly-san-pham?action=search&keyword=1",
                 "/quan-ly-san-pham?action=edit&id=1", "/quan-ly-combo",
@@ -37,6 +97,10 @@ public class WebSmokeCheck {
                 HttpResponse<String> page = client.send(HttpRequest.newBuilder(URI.create(base + path))
                     .timeout(Duration.ofSeconds(30)).GET().build(), HttpResponse.BodyHandlers.ofString());
                 check(page.statusCode() == 200, path + " returned " + page.statusCode());
+                if (path.equals("/quan-ly-san-pham") || path.equals("/quan-ly-combo")) {
+                    check(page.body().contains("enctype=\"multipart/form-data\"") && page.body().contains("name=\"tepAnh\""), "File picker rendered");
+                    rejectFakeUpload(client, base, path, page.body());
+                }
                 if (path.equals("/quan-ly-combo?action=edit&id=1")) {
                     String html = page.body();
                     int editBody = html.indexOf("id=\"editPickerBody\"");
@@ -78,6 +142,8 @@ public class WebSmokeCheck {
             }
             tomcat.stop();
             tomcat.destroy();
+            if (imageName != null) Files.deleteIfExists(imageDir.resolve(imageName));
+            Files.deleteIfExists(imageDir);
         }
         System.out.println("PASS: login, product/combo pages, searches, edit selection, detail JSON and sample revenue on Tomcat.");
     }

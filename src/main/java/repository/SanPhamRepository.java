@@ -104,6 +104,8 @@ public class SanPhamRepository {
                 if (existing == null || !fingerprint(existing).equals(version)) {
                     throw new ConcurrentModificationException("Sản phẩm đã thay đổi hoặc đã bị xóa.");
                 }
+                // Form sửa không chọn file mới thì giữ tên ảnh trong bản gốc đã khóa.
+                if (sp.getHinhAnh() == null) sp.setHinhAnh(existing.getHinhAnh());
                 session.merge(sp);
                 tx.commit();
                 return true;
@@ -123,7 +125,7 @@ public class SanPhamRepository {
         StringBuilder data = new StringBuilder();
         String[] fields = {sp.getMaSP().toString(), sp.getGiaBan().toPlainString(),
                 String.valueOf(sp.getSoLuongTon()), sp.getTrangThai(), sp.getLoaiSP(),
-                sp.getDonViTinh(), sp.getTenSP()};
+                sp.getDonViTinh(), sp.getTenSP(), sp.getHinhAnh()};
         for (String field : fields) {
             // Ghi độ dài để hai chuỗi chứa dấu phân cách vẫn không bị nhầm.
             if (field == null) data.append("-1:");

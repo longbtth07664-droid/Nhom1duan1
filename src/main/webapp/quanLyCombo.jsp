@@ -10,6 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lí Combo - Rạp Chiếu Phim CINEMAX</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/anh-danh-muc.css">
     <style>
         .alert-success {
             background: #ECFDF5; border: 1px solid #A7F3D0; color: #047857;
@@ -115,7 +116,6 @@
                 <div class="card-header">
                     <div>
                         <div class="card-title">Danh sách combo</div>
-                        <div class="card-subtitle">Thư mục lưu ảnh: assets/images/combo/ (jpg, jpeg, png, webp)</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="btn btn-outline">Quản lí sản phẩm</a>
@@ -158,15 +158,12 @@
                             <tr>
                                 <td>${st.index + 1}</td>
                                 <td>
-                                        <%-- Tự load ảnh từ assets/images/combo/, nếu chưa có file .jpg thì hiện khung tên file --%>
                                     <c:set var="imgName" value="${not empty cb.hinhAnh ? cb.hinhAnh : cb.maCombo.toString().concat('.jpg')}"/>
+                                    <c:url var="anhCombo" value="/anh-danh-muc"><c:param name="loai" value="combo"/><c:param name="ten" value="${imgName}"/></c:url>
                                     <img class="combo-thumb"
-                                         src="${pageContext.request.contextPath}/assets/images/combo/${imgName}"
-                                         alt="${cb.tenCombo}"
+                                         src="<c:out value='${anhCombo}'/>" alt="Ảnh combo" loading="lazy"
                                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                    <div class="combo-thumb-placeholder" title="Chưa có file ảnh: ${imgName}">
-                                        <c:out value="${imgName}"/>
-                                    </div>
+                                    <div class="combo-thumb-placeholder">Chưa có ảnh</div>
                                 </td>
                                 <td><strong><c:out value="${cb.maCombo}"/></strong></td>
                                 <td><c:out value="${cb.tenCombo}"/></td>
@@ -189,7 +186,7 @@
                                                 data-ten="<c:out value='${cb.tenCombo}'/>"
                                                 data-gia="<fmt:formatNumber value='${cb.giaCombo}' pattern='#,###'/> đ"
                                                 data-mota="<c:out value='${cb.moTa}'/>"
-                                                data-anh="<c:out value='${imgName}'/>"
+                                                data-anh="<c:out value='${anhCombo}'/>"
                                                 data-trangthai="<c:out value='${cb.trangThai}'/>"
                                                 onclick="xemChiTietCombo(this)">Chi tiết</button>
                                         <a href="${pageContext.request.contextPath}/quan-ly-combo?action=edit&id=${cb.maCombo}"
@@ -224,7 +221,7 @@
             <button type="button" class="modal-close" onclick="closeModal('addComboModal')">&times;</button>
         </div>
 
-        <form action="${pageContext.request.contextPath}/quan-ly-combo" method="post" onsubmit="return validateComboForm('add')">
+        <form action="${pageContext.request.contextPath}/quan-ly-combo" method="post" enctype="multipart/form-data" onsubmit="return validateComboForm('add')">
             <input type="hidden" name="token" value="${sessionScope.comboToken}">
 <input type="hidden" name="action" value="add">
             <div class="form-grid">
@@ -244,9 +241,17 @@
                     <label>Trạng thái</label>
                     <%-- Thêm mới luôn đang bán; server cũng kiểm tra. --%><input class="form-control" value="Đang bán" readonly>
                 </div>
+                <%-- [CB-CHON-ANH] Chọn file từ máy, rồi gửi cùng tên và thành phần combo. --%>
                 <div class="form-group">
-                    <label>Tên file hình ảnh (jpg, jpeg, png, webp)</label>
-                    <input type="text" name="hinhAnh" class="form-control" value="" placeholder="VD: combo_couple.jpg">
+                    <label for="addComboAnh">Ảnh combo</label>
+                    <input id="addComboAnh" name="tepAnh" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                           class="form-control" data-anh-preview="addComboPreview" aria-describedby="addComboAnhGoiY">
+                    <div class="anh-danh-muc-chon" data-anh-control hidden>
+                        <button type="button" class="btn btn-outline" aria-controls="addComboAnh" aria-describedby="addComboAnhGoiY">+ Thêm ảnh</button>
+                        <span class="anh-danh-muc-ten" role="status">Chưa chọn tệp</span>
+                    </div>
+                    <small id="addComboAnhGoiY" class="anh-danh-muc-goi-y">JPG hoặc PNG, tối đa 5 MB.</small>
+                    <img id="addComboPreview" class="anh-danh-muc-xem-truoc" alt="Xem trước ảnh combo" hidden>
                 </div>
                 <div class="form-group">
                     <label>Mô tả</label>
@@ -320,7 +325,7 @@
                 <a href="${pageContext.request.contextPath}/quan-ly-combo" class="modal-close">&times;</a>
             </div>
 
-            <form action="${pageContext.request.contextPath}/quan-ly-combo" method="post" onsubmit="return validateComboForm('edit')">
+            <form action="${pageContext.request.contextPath}/quan-ly-combo" method="post" enctype="multipart/form-data" onsubmit="return validateComboForm('edit')">
                 <input type="hidden" name="token" value="${sessionScope.comboToken}">
 <input type="hidden" name="version" value="${version}">
 <input type="hidden" name="action" value="update">
@@ -345,8 +350,18 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Tên file hình ảnh (jpg, jpeg, png, webp)</label>
-                        <input type="text" name="hinhAnh" class="form-control" value="<c:out value='${editCombo.hinhAnh}'/>" placeholder="VD: combo_couple.jpg">
+                        <label for="editComboAnh">Thay ảnh combo</label>
+                        <input id="editComboAnh" name="tepAnh" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                               class="form-control" data-anh-preview="editComboPreview" aria-describedby="editComboAnhGoiY">
+                        <div class="anh-danh-muc-chon" data-anh-control hidden>
+                            <button type="button" class="btn btn-outline" aria-controls="editComboAnh" aria-describedby="editComboAnhGoiY">+ Thêm ảnh</button>
+                            <span class="anh-danh-muc-ten" role="status">Chưa chọn tệp mới</span>
+                        </div>
+                        <small id="editComboAnhGoiY" class="anh-danh-muc-goi-y">Bỏ trống để giữ ảnh hiện tại. JPG hoặc PNG, tối đa 5 MB.</small>
+                        <c:set var="tenAnhSua" value="${not empty editCombo.hinhAnh ? editCombo.hinhAnh : editCombo.maCombo.toString().concat('.jpg')}"/>
+                        <c:url var="anhComboSua" value="/anh-danh-muc"><c:param name="loai" value="combo"/><c:param name="ten" value="${tenAnhSua}"/></c:url>
+                        <img id="editComboPreview" class="anh-danh-muc-xem-truoc" src="<c:out value='${anhComboSua}'/>"
+                             alt="Xem trước ảnh combo" onerror="this.hidden=true;">
                     </div>
                     <div class="form-group">
                         <label>Mô tả</label>
@@ -437,8 +452,10 @@
                 <div class="form-control" style="background:var(--bg-input);" id="dtGiaCombo"></div>
             </div>
             <div class="form-group">
-                <label>File hình ảnh (jpg, jpeg, png, webp)</label>
-                <div class="form-control" style="background:var(--bg-input);" id="dtHinhAnh"></div>
+                <span>Ảnh combo</span>
+                <img class="anh-danh-muc-xem-truoc" id="dtHinhAnh" alt="Ảnh combo" hidden
+                     onerror="this.hidden=true; this.nextElementSibling.hidden=false;">
+                <span id="dtChuaCoAnh">Chưa có ảnh</span>
             </div>
         </div>
         <div class="form-group" style="margin-bottom:14px;">
@@ -467,6 +484,7 @@
 </div>
 
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
+<script src="${pageContext.request.contextPath}/assets/js/anh-danh-muc.js?v=2"></script>
 <script>
     // Bật/tắt ô nhập SL + Ghi chú khi người dùng tích Checkbox chọn sản phẩm
     function toggleProductRow(checkbox, mode) {
@@ -523,7 +541,11 @@
             }
         }
         tinhTongGiaLe(mode);
-        try { sessionStorage.setItem('comboDraft',JSON.stringify(Array.from(new FormData(document.getElementById(mode+'GiaCombo').form).entries()))); } catch(e) {}
+        try {
+            // Trình duyệt yêu cầu chọn lại tệp sau khi trang tải lại. Chỉ giữ các ô văn bản.
+            var fields = Array.from(new FormData(form).entries()).filter(function(pair) { return typeof pair[1] === 'string'; });
+            sessionStorage.setItem('comboDraft', JSON.stringify(fields));
+        } catch(e) {}
         return true;
     }
     // COMBO: đổi thành phần sẽ tính lại giá; giữ bản nhập khi server trả lỗi.
@@ -563,7 +585,7 @@
                     Array.from(form.elements).filter(function(el){return el.name===pair[0];}).forEach(function(el){
                         if(el.type==='checkbox') {
                             if(el.value===pair[1]) {el.checked=true;toggleProductRow(el,mode);}
-                        } else if(!['token','version','maCombo'].includes(el.name)) el.value=pair[1];
+                        } else if(el.type !== 'file' && !['token','version','maCombo'].includes(el.name)) el.value=pair[1];
                     });
                 });
                 tinhTongGiaLe(mode); openModal(mode+'ComboModal');
@@ -579,7 +601,12 @@
         document.getElementById('dtMaCombo').textContent = ma;
         document.getElementById('dtTenCombo').textContent = btn.getAttribute('data-ten') || '';
         document.getElementById('dtGiaCombo').textContent = btn.getAttribute('data-gia') || '';
-        document.getElementById('dtHinhAnh').textContent = btn.getAttribute('data-anh') || '';
+        var anh = document.getElementById('dtHinhAnh');
+        var urlAnh = btn.getAttribute('data-anh');
+        anh.hidden = !urlAnh;
+        document.getElementById('dtChuaCoAnh').hidden = !!urlAnh;
+        if (urlAnh) anh.src = urlAnh;
+        else anh.removeAttribute('src');
         document.getElementById('dtMoTa').textContent = btn.getAttribute('data-mota') || '';
 
         var tbody = document.getElementById('detailComboBody');

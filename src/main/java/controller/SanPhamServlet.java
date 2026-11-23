@@ -3,10 +3,12 @@ package controller;
 import entity.SanPham;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import repository.SanPhamRepository;
+import util.AnhDanhMuc;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -14,6 +16,7 @@ import java.util.ConcurrentModificationException;
 import java.util.UUID;
 
 @WebServlet(name = "SanPhamServlet", urlPatterns = {"/quan-ly-san-pham"})
+@MultipartConfig(maxFileSize = AnhDanhMuc.GIOI_HAN_TEP, maxRequestSize = AnhDanhMuc.GIOI_HAN_YEU_CAU)
 public class SanPhamServlet extends HttpServlet {
 
     private final SanPhamRepository sanPhamRepo = new SanPhamRepository();
@@ -65,10 +68,11 @@ public class SanPhamServlet extends HttpServlet {
     @Override
     /** [SanPhamServlet-doPost] Nhận dữ liệu form gửi lên. Xác định action và gọi chức năng thêm, sửa hoặc xóa. */
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException {
+            throws IOException, ServletException {
 
         req.setCharacterEncoding("UTF-8");
         resp.setCharacterEncoding("UTF-8");
+        if (!AnhDanhMuc.docForm(req, resp)) return;
 
         // [SP-POST] Tất cả thao tác ghi đi qua POST và phải có token của phiên quản lý.
         Object token = req.getSession().getAttribute("sanPhamToken");
@@ -83,7 +87,10 @@ public class SanPhamServlet extends HttpServlet {
             else if ("delete".equals(action)) xoaSanPham(req, resp);
             else resp.sendError(400);
         } catch (IllegalArgumentException e) {
-            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=invalid_data");
+            log("Dữ liệu sản phẩm không hợp lệ", e);
+            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=invalid_data&error="
+                    + java.net.URLEncoder.encode(e.getMessage() == null ? "Dữ liệu không hợp lệ." : e.getMessage(),
+                    java.nio.charset.StandardCharsets.UTF_8));
         } catch (RuntimeException e) {
             log("Không lưu được sản phẩm", e);
             resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=error");
@@ -109,14 +116,14 @@ public class SanPhamServlet extends HttpServlet {
     }
 
     private void themSanPham(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException {
+            throws IOException, ServletException {
         SanPham sp = docThongTinSanPham(req, null);
         if (sp == null) {
             resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=invalid_data");
             return;
         }
 
-        boolean ok = sanPhamRepo.add(sp);
+        boolean ok = luuSanPhamCoAnh(req, sp, true);
         resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + (ok ? "add_ok" : "error"));
     }
 
@@ -136,7 +143,7 @@ public class SanPhamServlet extends HttpServlet {
     }
 
     private void capNhatSanPham(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException {
+            throws IOException, ServletException {
         String maSP = req.getParameter("maSP");
         SanPham sp = docThongTinSanPham(req, maSP);
         if (sp == null) {
@@ -145,10 +152,25 @@ public class SanPhamServlet extends HttpServlet {
         }
 
         try {
-            boolean ok = sanPhamRepo.update(sp, req.getParameter("version"));
+            boolean ok = luuSanPhamCoAnh(req, sp, false);
             resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + (ok ? "update_ok" : "error"));
         } catch (ConcurrentModificationException e) {
             resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=stale");
+        }
+    }
+
+    // [SP-ANH] Dọn tệp mới nếu SQL từ chối lưu, kể cả khi form sửa đã cũ.
+    private boolean luuSanPhamCoAnh(HttpServletRequest req, SanPham sp, boolean themMoi)
+            throws IOException, ServletException {
+        String anhMoi = AnhDanhMuc.luu(req);
+        sp.setHinhAnh(anhMoi);
+        boolean daLuu = false;
+        try {
+            if (themMoi) daLuu = sanPhamRepo.add(sp);
+            else daLuu = sanPhamRepo.update(sp, req.getParameter("version"));
+            return daLuu;
+        } finally {
+            if (!daLuu) AnhDanhMuc.huyTepMoi(anhMoi);
         }
     }
 

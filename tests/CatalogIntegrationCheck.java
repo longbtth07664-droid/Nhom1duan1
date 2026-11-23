@@ -36,7 +36,7 @@ public class CatalogIntegrationCheck {
         try (Connection connection = DriverManager.getConnection(values[0] + "loginTimeout=5;", values[1], values[2])) {
             sql(connection, "CREATE TABLE #catalog_SanPham (MaSP INT IDENTITY(1,1) PRIMARY KEY,"
                 + "TenSP NVARCHAR(100) NOT NULL,LoaiSP NVARCHAR(50) NOT NULL,DonViTinh NVARCHAR(20) NOT NULL,"
-                + "GiaBan DECIMAL(18,0) NOT NULL,SoLuongTon INT NOT NULL,TrangThai NVARCHAR(30));"
+                + "GiaBan DECIMAL(18,0) NOT NULL,SoLuongTon INT NOT NULL,TrangThai NVARCHAR(30),HinhAnh NVARCHAR(255));"
                 + "CREATE TABLE #catalog_Combo (MaCombo INT IDENTITY(1,1) PRIMARY KEY,TenCombo NVARCHAR(100) NOT NULL,"
                 + "GiaCombo DECIMAL(18,0) NOT NULL,MoTa NVARCHAR(255),HinhAnh VARCHAR(255),TrangThai NVARCHAR(30));"
                 + "CREATE TABLE #catalog_ChiTietCombo (MaCombo INT NOT NULL,MaSP INT NOT NULL,SoLuong INT NOT NULL,"
@@ -60,8 +60,10 @@ public class CatalogIntegrationCheck {
                     }
                 };
                 SanPham product = new SanPham(null, "Bắp thử", "Bắp", "Hộp", new BigDecimal("45000"), 20, "Đang kinh doanh");
+                product.setHinhAnh("upload-00000000000000000000000000000001.png");
                 check(products.add(product) && product.getMaSP() == 1, "Product IDENTITY insert");
                 String productId = product.getMaSP().toString();
+                check(product.getHinhAnh().equals(products.getOne(productId).getHinhAnh()), "Product image saved in SQL");
                 check(products.getOne(productId).getGiaBan().intValueExact() == 45000, "Read product by integer key");
                 check(products.search(productId, "Tất cả").size() == 1, "Search integer product key");
                 check(products.search("Bắp", "Đang kinh doanh").size() == 1, "Search Unicode product name");
@@ -105,13 +107,21 @@ public class CatalogIntegrationCheck {
                 String productVersion = products.fingerprint(noStock);
                 noStock.setSoLuongTon(0);
                 noStock.setTrangThai("Ngừng kinh doanh");
+                noStock.setHinhAnh(null); // Form sửa không gửi ảnh mới.
                 check(products.update(noStock, productVersion), "Stop selling ingredient");
+                check(product.getHinhAnh().equals(products.getOne(productId).getHinhAnh()), "Editing without a file preserves product image");
                 List<ChiTietCombo> recipe = combos.getChiTiet(comboId);
                 String stopVersion = combos.fingerprint(first, recipe);
                 first.setTrangThai("Ngừng bán");
+                first.setHinhAnh(null);
                 check(combos.save(first, details(first.getMaCombo(), product.getMaSP(), 3), -1, false, stopVersion),
                         "Can stop selling a combo even when ingredients are unavailable");
                 Combo stopped = combos.getOne(comboId);
+                check("combo_solo.png".equals(stopped.getHinhAnh()), "Editing without a file preserves legacy combo image");
+                String changeImageVersion = combos.fingerprint(stopped, combos.getChiTiet(comboId));
+                stopped.setHinhAnh("upload-00000000000000000000000000000002.jpg");
+                check(combos.save(stopped, details(stopped.getMaCombo(), product.getMaSP(), 3), -1, false, changeImageVersion), "Replace combo image");
+                check(stopped.getHinhAnh().equals(combos.getOne(comboId).getHinhAnh()), "Combo image replacement stored in SQL");
                 String reopenVersion = combos.fingerprint(stopped, combos.getChiTiet(comboId));
                 stopped.setTrangThai("Đang bán");
                 try {
@@ -130,7 +140,9 @@ public class CatalogIntegrationCheck {
                 product = products.getOne(productId);
                 String beforeUpdate = products.fingerprint(product);
                 product.setSoLuongTon(12);
+                product.setHinhAnh("upload-00000000000000000000000000000003.jpg");
                 check(products.update(product, beforeUpdate) && products.getOne(productId).getSoLuongTon() == 12, "Update product");
+                check(product.getHinhAnh().equals(products.getOne(productId).getHinhAnh()), "Product image replacement stored in SQL");
                 check(products.delete(productId) && products.getOne(productId) == null, "Delete unused product");
                 try {
                     products.update(product, products.fingerprint(product));

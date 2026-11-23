@@ -4,19 +4,19 @@ Luồng chung: JSP (form) → Servlet (đọc/kiểm tra request) → Repository
 
 | Mã tìm kiếm | File và dòng | Hàm | Giải thích |
 |---|---|---|---|
-| `ComboServlet-doGet` | [controller/ComboServlet.java:34](../src/main/java/controller/ComboServlet.java#L34) | `doGet` | Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. |
-| `ComboServlet-doPost` | [controller/ComboServlet.java:72](../src/main/java/controller/ComboServlet.java#L72) | `doPost` | Nhận dữ liệu form gửi lên. Xác định action và gọi chức năng thêm, sửa hoặc xóa. |
-| `ComboServlet-hienThiDanhSach` | [controller/ComboServlet.java:104](../src/main/java/controller/ComboServlet.java#L104) | `hienThiDanhSach` | Lấy danh sách từ repository, đặt vào request bằng setAttribute, forward sang JSP. |
-| `ComboServlet-moFormSua` | [controller/ComboServlet.java:126](../src/main/java/controller/ComboServlet.java#L126) | `moFormSua` | Lấy bản hiện có và danh sách cho form; đặt editSP/editCombo vào request để JSP mở hộp sửa. |
-| `ComboServlet-luuCombo` | [controller/ComboServlet.java:166](../src/main/java/controller/ComboServlet.java#L166) | `luuCombo` | Đọc form và mức giảm, gọi repository.save. Chuyển hướng sau lưu để tải lại trang không gửi trùng form. |
-| `ComboServlet-traChiTietJson` | [controller/ComboServlet.java:191](../src/main/java/controller/ComboServlet.java#L191) | `traChiTietJson` | Đọc chi tiết theo mã, tạo JSON trả cho fetch trên giao diện. Escape chuỗi để JSON không hỏng. |
-| `ComboServlet-docThongTinCombo` | [controller/ComboServlet.java:223](../src/main/java/controller/ComboServlet.java#L223) | `docThongTinCombo` | Đọc thông tin chung; kiểm tra mã, tên, trạng thái và tên ảnh. Giá gửi từ trình duyệt không quyết định giá lưu. |
-| `ComboServlet-docDanhSachChiTiet` | [controller/ComboServlet.java:272](../src/main/java/controller/ComboServlet.java#L272) | `docDanhSachChiTiet` | Đọc các checkbox ctMaSP; lấy số lượng và ghi chú theo mã; dùng Map loại mã lặp rồi trả danh sách. |
-| `SanPhamServlet-doGet` | [controller/SanPhamServlet.java:23](../src/main/java/controller/SanPhamServlet.java#L23) | `doGet` | Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. |
-| `SanPhamServlet-doPost` | [controller/SanPhamServlet.java:67](../src/main/java/controller/SanPhamServlet.java#L67) | `doPost` | Nhận dữ liệu form gửi lên. Xác định action và gọi chức năng thêm, sửa hoặc xóa. |
-| `SanPhamServlet-hienThiDanhSach` | [controller/SanPhamServlet.java:94](../src/main/java/controller/SanPhamServlet.java#L94) | `hienThiDanhSach` | Lấy danh sách từ repository, đặt vào request bằng setAttribute, forward sang JSP. |
-| `SanPhamServlet-moFormSua` | [controller/SanPhamServlet.java:124](../src/main/java/controller/SanPhamServlet.java#L124) | `moFormSua` | Lấy bản hiện có và danh sách cho form; đặt editSP/editCombo vào request để JSP mở hộp sửa. |
-| `SanPhamServlet-docThongTinSanPham` | [controller/SanPhamServlet.java:168](../src/main/java/controller/SanPhamServlet.java#L168) | `docThongTinSanPham` | Đọc tên, loại, đơn vị, giá, tồn kho, trạng thái. Kiểm tra bắt buộc, danh mục và giới hạn cột rồi tạo SanPham; sai trả null. |
+| `ComboServlet-doGet` | [controller/ComboServlet.java:37](../src/main/java/controller/ComboServlet.java#L37) | `doGet` | Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. |
+| `ComboServlet-doPost` | [controller/ComboServlet.java:75](../src/main/java/controller/ComboServlet.java#L75) | `doPost` | Nhận dữ liệu form gửi lên. Xác định action và gọi chức năng thêm, sửa hoặc xóa. |
+| `ComboServlet-hienThiDanhSach` | [controller/ComboServlet.java:108](../src/main/java/controller/ComboServlet.java#L108) | `hienThiDanhSach` | Lấy danh sách từ repository, đặt vào request bằng setAttribute, forward sang JSP. |
+| `ComboServlet-moFormSua` | [controller/ComboServlet.java:130](../src/main/java/controller/ComboServlet.java#L130) | `moFormSua` | Lấy bản hiện có và danh sách cho form; đặt editSP/editCombo vào request để JSP mở hộp sửa. |
+| `ComboServlet-luuCombo` | [controller/ComboServlet.java:170](../src/main/java/controller/ComboServlet.java#L170) | `luuCombo` | Đọc form và mức giảm, gọi repository.save. Chuyển hướng sau lưu để tải lại trang không gửi trùng form. |
+| `ComboServlet-traChiTietJson` | [controller/ComboServlet.java:204](../src/main/java/controller/ComboServlet.java#L204) | `traChiTietJson` | Đọc chi tiết theo mã, tạo JSON trả cho fetch trên giao diện. Escape chuỗi để JSON không hỏng. |
+| `ComboServlet-docThongTinCombo` | [controller/ComboServlet.java:236](../src/main/java/controller/ComboServlet.java#L236) | `docThongTinCombo` | Đọc thông tin chung; kiểm tra mã, tên, trạng thái và tên ảnh. Giá gửi từ trình duyệt không quyết định giá lưu. |
+| `ComboServlet-docDanhSachChiTiet` | [controller/ComboServlet.java:285](../src/main/java/controller/ComboServlet.java#L285) | `docDanhSachChiTiet` | Đọc các checkbox ctMaSP; lấy số lượng và ghi chú theo mã; dùng Map loại mã lặp rồi trả danh sách. |
+| `SanPhamServlet-doGet` | [controller/SanPhamServlet.java:26](../src/main/java/controller/SanPhamServlet.java#L26) | `doGet` | Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. |
+| `SanPhamServlet-doPost` | [controller/SanPhamServlet.java:70](../src/main/java/controller/SanPhamServlet.java#L70) | `doPost` | Nhận dữ liệu form gửi lên. Xác định action và gọi chức năng thêm, sửa hoặc xóa. |
+| `SanPhamServlet-hienThiDanhSach` | [controller/SanPhamServlet.java:101](../src/main/java/controller/SanPhamServlet.java#L101) | `hienThiDanhSach` | Lấy danh sách từ repository, đặt vào request bằng setAttribute, forward sang JSP. |
+| `SanPhamServlet-moFormSua` | [controller/SanPhamServlet.java:131](../src/main/java/controller/SanPhamServlet.java#L131) | `moFormSua` | Lấy bản hiện có và danh sách cho form; đặt editSP/editCombo vào request để JSP mở hộp sửa. |
+| `SanPhamServlet-docThongTinSanPham` | [controller/SanPhamServlet.java:190](../src/main/java/controller/SanPhamServlet.java#L190) | `docThongTinSanPham` | Đọc tên, loại, đơn vị, giá, tồn kho, trạng thái. Kiểm tra bắt buộc, danh mục và giới hạn cột rồi tạo SanPham; sai trả null. |
 | `ThongKeServlet-validateRange` | [controller/ThongKeServlet.java:23](../src/main/java/controller/ThongKeServlet.java#L23) | `validateRange` | Chặn ngày đảo ngược, ngoài giới hạn và khoảng dài hơn 366 ngày trước khi truy vấn. |
 | `ThongKeServlet-doGet` | [controller/ThongKeServlet.java:50](../src/main/java/controller/ThongKeServlet.java#L50) | `doGet` | Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. |
 | `ThongKeServlet-setQuickDates` | [controller/ThongKeServlet.java:137](../src/main/java/controller/ThongKeServlet.java#L137) | `setQuickDates` | Tính các mốc ngày cho nút Hôm nay, 7 ngày, tháng, năm theo ngày Việt Nam. |
@@ -25,15 +25,15 @@ Luồng chung: JSP (form) → Servlet (đọc/kiểm tra request) → Repository
 | `ComboRepository-search` | [repository/ComboRepository.java:43](../src/main/java/repository/ComboRepository.java#L43) | `search` | Ghép điều kiện khi có từ khóa/trạng thái. setParameter truyền giá trị riêng để tránh ghép đầu vào vào SQL. |
 | `ComboRepository-getChiTiet` | [repository/ComboRepository.java:80](../src/main/java/repository/ComboRepository.java#L80) | `getChiTiet` | Lấy các dòng ChiTietCombo và tải sẵn SanPham để JSP dùng được sau khi đóng Session. |
 | `ComboRepository-save` | [repository/ComboRepository.java:100](../src/main/java/repository/ComboRepository.java#L100) | `save` | Bắt đầu giao dịch; kiểm tra phiên bản và các món; tính giá; lưu combo rồi lưu chi tiết; commit. Có lỗi thì rollback. |
-| `ComboRepository-fingerprint` | [repository/ComboRepository.java:156](../src/main/java/repository/ComboRepository.java#L156) | `fingerprint` | Ghép nội dung combo và chi tiết theo thứ tự mã rồi băm SHA-256. So với dấu lúc mở form để phát hiện người khác đã sửa. |
-| `ComboRepository-delete` | [repository/ComboRepository.java:175](../src/main/java/repository/ComboRepository.java#L175) | `delete` | Kiểm tra dữ liệu tham chiếu trước khi xóa. Các bước ghi cùng giao dịch để lỗi không để lại dữ liệu dở dang. |
+| `ComboRepository-fingerprint` | [repository/ComboRepository.java:159](../src/main/java/repository/ComboRepository.java#L159) | `fingerprint` | Ghép nội dung combo và chi tiết theo thứ tự mã rồi băm SHA-256. So với dấu lúc mở form để phát hiện người khác đã sửa. |
+| `ComboRepository-delete` | [repository/ComboRepository.java:178](../src/main/java/repository/ComboRepository.java#L178) | `delete` | Kiểm tra dữ liệu tham chiếu trước khi xóa. Các bước ghi cùng giao dịch để lỗi không để lại dữ liệu dở dang. |
 | `SanPhamRepository-getAll` | [repository/SanPhamRepository.java:20](../src/main/java/repository/SanPhamRepository.java#L20) | `getAll` | SELECT toàn bộ danh mục, sắp xếp theo mã. Session tự đóng khi ra khỏi try. |
 | `SanPhamRepository-getOne` | [repository/SanPhamRepository.java:42](../src/main/java/repository/SanPhamRepository.java#L42) | `getOne` | Chuyển mã đầu vào sang số rồi tìm theo khóa chính. Không có bản ghi thì trả null. |
 | `SanPhamRepository-search` | [repository/SanPhamRepository.java:52](../src/main/java/repository/SanPhamRepository.java#L52) | `search` | Ghép điều kiện khi có từ khóa/trạng thái. setParameter truyền giá trị riêng để tránh ghép đầu vào vào SQL. |
 | `SanPhamRepository-add` | [repository/SanPhamRepository.java:78](../src/main/java/repository/SanPhamRepository.java#L78) | `add` | Đặt ID null để SQL Server tự tăng; persist ghi bản mới; commit xác nhận, rollback khi lỗi. |
 | `SanPhamRepository-update` | [repository/SanPhamRepository.java:97](../src/main/java/repository/SanPhamRepository.java#L97) | `update` | Tìm và khóa bản hiện có trước khi merge. Ngăn sửa bản đã bị xóa thành một bản mới. |
-| `SanPhamRepository-isSanPhamUsed` | [repository/SanPhamRepository.java:137](../src/main/java/repository/SanPhamRepository.java#L137) | `isSanPhamUsed` | Đếm tham chiếu trong ChiTietCombo và ChiTietHoaDon. Có ít nhất một tham chiếu thì không cho xóa. |
-| `SanPhamRepository-delete` | [repository/SanPhamRepository.java:154](../src/main/java/repository/SanPhamRepository.java#L154) | `delete` | Kiểm tra dữ liệu tham chiếu trước khi xóa. Các bước ghi cùng giao dịch để lỗi không để lại dữ liệu dở dang. |
+| `SanPhamRepository-isSanPhamUsed` | [repository/SanPhamRepository.java:139](../src/main/java/repository/SanPhamRepository.java#L139) | `isSanPhamUsed` | Đếm tham chiếu trong ChiTietCombo và ChiTietHoaDon. Có ít nhất một tham chiếu thì không cho xóa. |
+| `SanPhamRepository-delete` | [repository/SanPhamRepository.java:156](../src/main/java/repository/SanPhamRepository.java#L156) | `delete` | Kiểm tra dữ liệu tham chiếu trước khi xóa. Các bước ghi cùng giao dịch để lỗi không để lại dữ liệu dở dang. |
 | `ThongKeRepository-load` | [repository/ThongKeRepository.java:25](../src/main/java/repository/ThongKeRepository.java#L25) | `load` | Đầu vào là khoảng ngày. Đọc số liệu ngày, xếp hạng phim và mặt hàng, chuẩn bị biểu đồ rồi trả ThongKeReport. |
 | `ThongKeRepository-load` | [repository/ThongKeRepository.java:34](../src/main/java/repository/ThongKeRepository.java#L34) | `load` | Đầu vào là khoảng ngày. Đọc số liệu ngày, xếp hạng phim và mặt hàng, chuẩn bị biểu đồ rồi trả ThongKeReport. |
 | `ThongKeRepository-query` | [repository/ThongKeRepository.java:46](../src/main/java/repository/ThongKeRepository.java#L46) | `query` | Tạo PreparedStatement; gắn đầu ngày và đầu ngày kế tiếp ngày cuối. Dấu < lấy đủ mọi giờ của ngày kết thúc. |
@@ -79,3 +79,17 @@ Trong IntelliJ, dùng **Ctrl+Shift+F** tìm mã ghi chú dưới đây.
 | `TK-VE-DA-BAN`, `TK-GIAO-DICH-DOC` | [ThongKeRepository.java](../src/main/java/repository/ThongKeRepository.java), `VALID_TICKET` và `DocBaoCao.execute` | Tính cả vé có trạng thái `Đã bán` và `Đã check-in`. Tổng quan, xếp hạng phim và xếp hạng mặt hàng đọc trong cùng giao dịch. |
 
 Các quy tắc của quản lý combo áp dụng khi lưu danh mục. Kiểm tra trạng thái và tồn kho tại quầy thuộc luồng bán vé và thanh toán. Thống kê còn phụ thuộc vào lịch sử liên kết vé với phim và dữ liệu hoàn tiền.
+
+## Chọn ảnh sản phẩm và combo từ thư mục trên máy
+
+Trong form **Thêm** hoặc **Sửa**, bấm **+ Thêm ảnh** rồi chọn file JPG hoặc PNG tối đa 5 MB. Tên file và ảnh xem trước xuất hiện ngay. Bấm **Lưu** để tải ảnh lên. Khi sửa, có thể để trống ô chọn file để giữ ảnh hiện tại.
+
+| Mã tìm trong IDE | File | Đoạn xử lý |
+|---|---|---|
+| `SP-CHON-ANH`, `CB-CHON-ANH` | [quanLySanPham.jsp](../src/main/webapp/quanLySanPham.jsp), [quanLyCombo.jsp](../src/main/webapp/quanLyCombo.jsp) | `input type=file` mở hộp chọn file. `multipart/form-data` gửi cả file và các ô thông tin. |
+| `ANH-MO-THU-MUC`, `ANH-XEM-TRUOC` | [anh-danh-muc.js](../src/main/webapp/assets/js/anh-danh-muc.js) | Nút mở hộp chọn tệp qua `input.click()`. Hiện tên file và tạo URL tạm để xem ảnh ngay. |
+| `SP-ANH`, `CB-ANH` | [SanPhamServlet.java](../src/main/java/controller/SanPhamServlet.java), [ComboServlet.java](../src/main/java/controller/ComboServlet.java) | Đọc file trước khi lưu bản ghi. Dọn tệp mới nếu lưu thất bại. Repository lấy ảnh từ bản ghi gốc khi người dùng sửa và để trống ô ảnh. |
+| `ANH-LUU`, `ANH-HIEN-THI` | [AnhDanhMuc.java](../src/main/java/util/AnhDanhMuc.java), [AnhDanhMucServlet.java](../src/main/java/controller/AnhDanhMucServlet.java) | Java đọc nội dung ảnh, kiểm tra kích thước và đặt tên riêng. Servlet đọc file theo tên. Ảnh combo cũ vẫn đọc được trong `assets/images/combo/`. |
+| `ANH-CSDL` | [database_anh_san_pham.sql](../database_anh_san_pham.sql) | Thêm cột `SanPham.HinhAnh` nullable nếu còn thiếu. `Combo.HinhAnh` tiếp tục dùng cột có sẵn. Hai bảng lưu tên tệp. |
+
+Khi triển khai trên database khác, chạy file SQL trên đúng database trước khi chạy WAR mới. Tomcat mặc định lưu ảnh tại `.cinemax/anh-danh-muc` trong thư mục người dùng chạy dịch vụ. Có thể trỏ sang thư mục khác bằng tuỳ chọn JVM `-Dcinemax.anh.dir=đường_dẫn_thư_mục`. Khi chuyển máy, chép thư mục ảnh cùng database để giữ các ảnh đã tải lên.

@@ -36,6 +36,9 @@ public class SanPham {
     @Column(name = "TrangThai", length = 30)
     private String trangThai;
 
+    @Column(name = "HinhAnh", length = 255)
+    private String hinhAnh;
+
     // Constructor không tham số bắt buộc phải có cho Hibernate
     public SanPham() {
     }
@@ -70,4 +73,7 @@ public class SanPham {
 
     public String getTrangThai() { return trangThai; }
     public void setTrangThai(String trangThai) { this.trangThai = trangThai; }
+
+    public String getHinhAnh() { return hinhAnh; }
+    public void setHinhAnh(String hinhAnh) { this.hinhAnh = hinhAnh; }
 }

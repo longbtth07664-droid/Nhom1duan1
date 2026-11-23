@@ -5,11 +5,13 @@ import entity.Combo;
 import entity.SanPham;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import repository.ComboRepository;
 import repository.SanPhamRepository;
+import util.AnhDanhMuc;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -22,6 +24,7 @@ import java.util.Map;
 // URL: /quan-ly-combo
 // Chức năng: Xem danh sách, Tìm kiếm, Thêm, Sửa, Xóa, Xem chi tiết JSON
 @WebServlet(name = "ComboServlet", urlPatterns = {"/quan-ly-combo"})
+@MultipartConfig(maxFileSize = AnhDanhMuc.GIOI_HAN_TEP, maxRequestSize = AnhDanhMuc.GIOI_HAN_YEU_CAU)
 public class ComboServlet extends HttpServlet {
 
     private final ComboRepository comboRepo = new ComboRepository();
@@ -70,10 +73,11 @@ public class ComboServlet extends HttpServlet {
     @Override
     /** [ComboServlet-doPost] Nhận dữ liệu form gửi lên. Xác định action và gọi chức năng thêm, sửa hoặc xóa. */
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException {
+            throws IOException, ServletException {
 
         req.setCharacterEncoding("UTF-8");
         resp.setCharacterEncoding("UTF-8");
+        if (!AnhDanhMuc.docForm(req, resp)) return;
 
         try {
             // Token bảo vệ thao tác thay đổi dữ liệu combo.
@@ -163,7 +167,8 @@ public class ComboServlet extends HttpServlet {
 
     // THÊM / SỬA: đọc form, báo lỗi cụ thể và để repository tính giá từ dữ liệu thật.
     /** [ComboServlet-luuCombo] Đọc form và mức giảm, gọi repository.save. Chuyển hướng sau lưu để tải lại trang không gửi trùng form. */
-    private void luuCombo(HttpServletRequest req, HttpServletResponse resp, boolean adding) throws IOException {
+    private void luuCombo(HttpServletRequest req, HttpServletResponse resp, boolean adding)
+            throws IOException, ServletException {
         String id = adding ? null : req.getParameter("maCombo");
         Combo combo = docThongTinCombo(req, id);
         if (combo == null) throw new IllegalArgumentException("Kiểm tra mã, tên, mô tả, trạng thái và tên ảnh (jpg, jpeg, png, webp).");
@@ -173,7 +178,15 @@ public class ComboServlet extends HttpServlet {
         int discount;
         try { discount = Integer.parseInt(rate); }
         catch (Exception e) { throw new IllegalArgumentException("Hãy chọn mức giảm giá."); }
-        comboRepo.save(combo, details, discount, adding, req.getParameter("version"));
+        // [CB-ANH] Tên upload mới thay ảnh cũ. Nếu không chọn ảnh thì repository giữ ảnh gốc.
+        String anhMoi = AnhDanhMuc.luu(req);
+        if (anhMoi != null) combo.setHinhAnh(anhMoi);
+        boolean daLuu = false;
+        try {
+            daLuu = comboRepo.save(combo, details, discount, adding, req.getParameter("version"));
+        } finally {
+            if (!daLuu) AnhDanhMuc.huyTepMoi(anhMoi);
+        }
         resp.sendRedirect(req.getContextPath() + "/quan-ly-combo?msg=" + (adding ? "add_ok" : "update_ok"));
     }
 
@@ -242,10 +255,10 @@ public class ComboServlet extends HttpServlet {
                 trangThai = "Đang bán";
             }
 
-            // Chuẩn hóa tên file ảnh: nếu trống → lấy "[maCombo].jpg", nếu thiếu đuôi → thêm ".jpg"
+            // Tên ảnh tĩnh do form cũ gửi lên vẫn được hỗ trợ. Form mới gửi file tepAnh.
             String tenAnh = (hinhAnh != null) ? hinhAnh.trim() : "";
             if (tenAnh.isEmpty()) {
-                tenAnh = comboId == null ? "" : comboId + ".jpg";
+                tenAnh = "";
             } else if (!tenAnh.contains(".")) {
                 tenAnh = tenAnh + ".jpg";
             }
@@ -254,7 +267,7 @@ public class ComboServlet extends HttpServlet {
             if (tenCombo.trim().length() > 100
                     || (moTa != null && moTa.trim().length() > 255)
                     || (!tenAnh.isEmpty() && !tenAnh.toLowerCase(java.util.Locale.ROOT).matches(".+\\.(jpg|jpeg|png|webp)"))
-                    || tenAnh.length() > 255 || tenAnh.contains("/") || tenAnh.contains("\\")
+                    || tenAnh.length() > 255 || tenAnh.contains("/") || tenAnh.contains("\\") || AnhDanhMuc.laAnhDaTai(tenAnh)
                     || !("Đang bán".equals(trangThai.trim()) || "Ngừng bán".equals(trangThai.trim()))) {
                 return null;
             }

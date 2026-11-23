@@ -113,6 +113,9 @@ public class ComboRepository {
                         .setParameter("ma", combo.getMaCombo()).list();
                     if (!fingerprint(old, previous).equals(expected))
                         throw new IllegalArgumentException("Combo đã được người khác sửa. Hãy tải lại trang.");
+                    if (combo.getHinhAnh() == null || combo.getHinhAnh().isEmpty()) {
+                        combo.setHinhAnh(old.getHinhAnh());
+                    }
                 }
                 boolean dangBan = "Đang bán".equals(combo.getTrangThai());
                 java.math.BigDecimal total = kiemTraVaTinhTongGiaLe(session, details, dangBan);
