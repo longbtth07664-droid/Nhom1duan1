@@ -6,8 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 // Thực thể ánh xạ bảng Ghế ngồi vật lý của phòng chiếu trong CSDL
 @Getter
 @Setter
@@ -41,13 +39,9 @@ public class Ghe {
     @Column(name = "SoGhe", nullable = false)
     private Integer soGhe;
 
-    // Trạng thái vận hành của ghế: 'Hoạt động', 'Bảo trì', hoặc 'Hỏng'
+    // Trạng thái vận hành của ghế: 'Hoạt động', 'Bảo trì'
     @Column(name = "TrangThai", length = 30)
     private String trangThai = "Hoạt động";
-
-    // Giá vé định mức cơ bản của chiếc ghế này
-    @Column(name = "Gia")
-    private BigDecimal gia = BigDecimal.valueOf(80000);
 
     // Lấy tên ghế ghép từ hàng và số để hiển thị trực quan trên sơ đồ (VD: A1, B6, E2)
     public String getTenGhe() {

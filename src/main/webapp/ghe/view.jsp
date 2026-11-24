@@ -178,8 +178,7 @@
                                              data-hang="<c:out value='${seat.hangGhe}'/>"
                                              data-so="${seat.soGhe}"
                                              data-trangthai="<c:out value='${seat.trangThai}'/>"
-                                             data-gia="${seat.gia}"
-                                             title="Ghế ${seat.tenGhe} - ${seat.loaiGhe.tenLoaiGhe} (${seat.trangThai}) - Giá: <fmt:formatNumber value='${seat.gia}' pattern='#,##0'/> đ"
+                                                 title="Ghế ${seat.tenGhe} - ${seat.loaiGhe.tenLoaiGhe} (${seat.trangThai})"
                                              onclick="openSeatDetailModalFromEl(this)">
                                             <c:out value="${seat.tenGhe}"/>
                                         </div>
@@ -250,11 +249,6 @@
                     </select>
                 </div>
 
-                <div class="form-group" style="margin-bottom:12px;">
-                    <label class="form-label" style="font-weight:600; font-size:13px;">Giá ghế (VNĐ):</label>
-                    <input type="text" name="gia" id="editGia" class="form-control" placeholder="80000">
-                </div>
-
                 <div class="form-group">
                     <label class="form-label" style="font-weight:600; font-size:13px;">Trạng thái:</label>
                     <select name="trangThai" id="editTrangThai" class="form-control">
@@ -305,17 +299,12 @@
                     </select>
                 </div>
 
-                <div class="form-group" style="margin-bottom:12px;">
-                    <label class="form-label" style="font-weight:600; font-size:13px;">Giá ghế (VNĐ):</label>
-                    <input type="text" name="gia" class="form-control" value="80000">
-                </div>
-
                 <div class="form-group">
                     <label class="form-label" style="font-weight:600; font-size:13px;">Trạng thái:</label>
-                    <select name="trangThai" class="form-control">
-                        <option value="Hoạt động" selected>Hoạt động</option>
-                        <option value="Bảo trì">Bảo trì</option>
-                    </select>
+                    <input type="hidden" name="trangThai" value="Hoạt động">
+                    <div style="padding:8px 12px; background:#f0fdf4; border:1px solid #a7f3d0; border-radius:6px; color:#047857; font-weight:600; font-size:13px;">
+                        ✓ Hoạt động
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -464,12 +453,11 @@
         const hang = el.getAttribute('data-hang') || '';
         const so = el.getAttribute('data-so') || '';
         const trangThai = el.getAttribute('data-trangthai') || 'Hoạt động';
-        const gia = el.getAttribute('data-gia') || '';
-        openSeatDetailModal(maGhe, tenGhe, maLoai, hang, so, trangThai, gia);
+        openSeatDetailModal(maGhe, tenGhe, maLoai, hang, so, trangThai);
     }
 
     // Mở popup chi tiết và sửa ghế với kiểm tra an toàn từng phần tử
-    function openSeatDetailModal(maGhe, tenGhe, maLoai, hang, so, trangThai, gia) {
+    function openSeatDetailModal(maGhe, tenGhe, maLoai, hang, so, trangThai) {
         try {
             const setVal = function(id, val) {
                 const el = document.getElementById(id);
@@ -486,7 +474,6 @@
             setVal('editSoGhe', so);
             setVal('editMaLoaiGhe', maLoai);
             setVal('editTrangThai', trangThai);
-            setVal('editGia', gia);
             setVal('deleteMaGhe', maGhe);
 
             openModalDialog('seatDetailModal');

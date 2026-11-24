@@ -11,6 +11,7 @@ import java.util.List;
 
 public class GheRepository {
 
+    // Chuyển đổi an toàn từ Object/String sang Integer, trả null nếu không hợp lệ.
     private Integer parseId(Object val) {
         if (val == null) return null;
         if (val instanceof Number) return ((Number) val).intValue();
@@ -23,12 +24,10 @@ public class GheRepository {
         }
     }
 
-    // Lấy toàn bộ danh sách ghế của một phòng chiếu sắp xếp theo hàng và số ghế
+    // Lấy tất cả ghế của một phòng, sắp xếp theo hàng và số ghế tăng dần.
     public List<Ghe> getAllByPhong(Object maPhong) {
         Integer id = parseId(maPhong);
-        if (id == null) {
-            return Collections.emptyList();
-        }
+        if (id == null) return Collections.emptyList();
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String hql = "SELECT g FROM Ghe g JOIN FETCH g.loaiGhe JOIN FETCH g.phongChieu " +
                          "WHERE g.phongChieu.maPhong = :maPhong " +
@@ -42,11 +41,12 @@ public class GheRepository {
         }
     }
 
+    // Overload nhận String maPhong, ủy quyền sang getAllByPhong(Object).
     public List<Ghe> getAllByPhong(String maPhong) {
         return getAllByPhong((Object) maPhong);
     }
 
-    // Tìm kiếm thông tin chi tiết một ghế theo mã ghế
+    // Lấy thông tin chi tiết một ghế theo mã ghế, kèm loại ghế và phòng chiếu.
     public Ghe getOne(Integer maGhe) {
         if (maGhe == null) return null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -60,7 +60,7 @@ public class GheRepository {
         }
     }
 
-    // Kiểm tra xem vị trí hàng ghế và số ghế đã tồn tại trong phòng chiếu chưa
+    // Kiểm tra vị trí (hàng + số) đã tồn tại trong phòng chưa; excludeMaGhe để bỏ qua ghế đang sửa.
     public boolean existsSeat(Object maPhong, String hangGhe, Integer soGhe, Integer excludeMaGhe) {
         Integer id = parseId(maPhong);
         if (id == null || hangGhe == null || soGhe == null) return false;
@@ -69,16 +69,14 @@ public class GheRepository {
                          "WHERE g.phongChieu.maPhong = :maPhong " +
                          "AND UPPER(g.hangGhe) = UPPER(:hang) " +
                          "AND g.soGhe = :so";
-            if (excludeMaGhe != null) {
-                hql += " AND g.maGhe <> :exId";
-            }
+            if (excludeMaGhe != null) hql += " AND g.maGhe <> :exId";
+
             Query<Long> query = session.createQuery(hql, Long.class);
             query.setParameter("maPhong", id);
             query.setParameter("hang", hangGhe.trim().toUpperCase());
             query.setParameter("so", soGhe);
-            if (excludeMaGhe != null) {
-                query.setParameter("exId", excludeMaGhe);
-            }
+            if (excludeMaGhe != null) query.setParameter("exId", excludeMaGhe);
+
             Long count = query.uniqueResult();
             return count != null && count > 0;
         } catch (Exception e) {
@@ -87,11 +85,12 @@ public class GheRepository {
         }
     }
 
+    // Overload nhận String maPhong, ủy quyền sang existsSeat(Object,...).
     public boolean existsSeat(String maPhong, String hangGhe, Integer soGhe, Integer excludeMaGhe) {
         return existsSeat((Object) maPhong, hangGhe, soGhe, excludeMaGhe);
     }
 
-    // Kiểm tra ghế đã từng xuất hiện trong bảng Vé chưa để ngăn chặn lỗi khóa ngoại khi xóa
+    // Kiểm tra ghế đã được đặt vé chưa để ngăn xóa khi còn dữ liệu liên quan.
     public boolean isGheBooked(Integer maGhe) {
         if (maGhe == null) return false;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -106,7 +105,7 @@ public class GheRepository {
         }
     }
 
-    // Thêm mới một ghế vào cơ sở dữ liệu
+    // Lưu một ghế mới vào CSDL trong transaction, rollback nếu có lỗi.
     public boolean add(Ghe ghe) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -121,7 +120,7 @@ public class GheRepository {
         }
     }
 
-    // Cập nhật thông tin của ghế (loại ghế, trạng thái, giá)
+    // Cập nhật thông tin ghế (loại ghế, trạng thái) vào CSDL, rollback nếu có lỗi.
     public boolean update(Ghe ghe) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -136,16 +135,14 @@ public class GheRepository {
         }
     }
 
-    // Xóa một ghế theo mã ghế sau khi đã kiểm tra an toàn
+    // Xóa ghế theo mã khỏi CSDL, rollback nếu có lỗi.
     public boolean delete(Integer maGhe) {
         if (maGhe == null) return false;
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             tx = session.beginTransaction();
             Ghe ghe = session.get(Ghe.class, maGhe);
-            if (ghe != null) {
-                session.remove(ghe);
-            }
+            if (ghe != null) session.remove(ghe);
             tx.commit();
             return true;
         } catch (Exception e) {

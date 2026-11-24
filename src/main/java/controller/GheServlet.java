@@ -34,7 +34,7 @@ public class GheServlet extends HttpServlet {
     private final PhongChieuRepository phongChieuRepo = new PhongChieuRepository();
     private final LoaiGheRepository loaiGheRepo = new LoaiGheRepository();
 
-    // Tiếp nhận và hiển thị giao diện sơ đồ ghế trực quan theo phòng chiếu được chọn
+    // Hiển thị sơ đồ ghế của phòng chiếu được chọn, kèm thống kê theo loại ghế.
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
@@ -53,7 +53,7 @@ public class GheServlet extends HttpServlet {
             return;
         }
 
-        // Lấy mã phòng chiếu từ tham số hoặc mặc định chọn phòng đầu tiên
+        // Lấy mã phòng từ tham số URL, mặc định chọn phòng đầu tiên nếu không có.
         String maPhong = req.getParameter("maPhong");
         if (maPhong == null || maPhong.trim().isEmpty()) {
             maPhong = String.valueOf(listPhong.get(0).getMaPhong());
@@ -67,20 +67,15 @@ public class GheServlet extends HttpServlet {
             maPhong = String.valueOf(selectedPhong.getMaPhong());
         }
 
-        // Tải danh sách ghế và nhóm theo từng hàng (A, B, C, D, E...)
+        // Nhóm danh sách ghế theo hàng (A, B, C...) và đếm từng loại để hiển thị thống kê.
         List<Ghe> listGhe = gheRepo.getAllByPhong(maPhong);
         Map<String, List<Ghe>> mapHangGhe = new LinkedHashMap<>();
-        int cntThuong = 0;
-        int cntVip = 0;
-        int cntDoi = 0;
-        int cntBaoTri = 0;
-        int totalChoNgoi = 0;
+        int cntThuong = 0, cntVip = 0, cntDoi = 0, cntBaoTri = 0, totalChoNgoi = 0;
 
         for (Ghe g : listGhe) {
             String hang = g.getHangGhe().toUpperCase();
             mapHangGhe.computeIfAbsent(hang, k -> new ArrayList<>()).add(g);
 
-            // Mỗi ghế đôi (Sweetbox) được tính bằng 2 chỗ ngồi thực tế
             int soCho = g.isGheDoi() ? 2 : 1;
             totalChoNgoi += soCho;
 
@@ -113,7 +108,7 @@ public class GheServlet extends HttpServlet {
         req.getRequestDispatcher("/ghe/view.jsp").forward(req, resp);
     }
 
-    // Tiếp nhận và phân phối các form POST (thêm/sửa/xóa ghế và thêm/sửa loại ghế)
+    // Phân phối POST tới hàm xử lý tương ứng (thêm/sửa ghế, thêm/sửa loại ghế).
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
@@ -135,13 +130,12 @@ public class GheServlet extends HttpServlet {
 
     // ==================== QUẢN LÝ GHẾ ====================
 
-    // Kiểm tra dữ liệu đầu vào và thêm một ghế lẻ vào phòng chiếu
+    // Validate đầu vào, kiểm tra trùng vị trí và sức chứa, rồi thêm ghế mới vào phòng.
     private void handleAdd(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String maPhong = trimParam(req, "maPhong");
         String hangGhe = trimParam(req, "hangGhe").toUpperCase();
         String soGheStr = trimParam(req, "soGhe");
         String maLoaiStr = trimParam(req, "maLoaiGhe");
-        String giaStr = trimParam(req, "gia");
         String trangThai = trimParam(req, "trangThai");
 
         if (maPhong.isEmpty() || hangGhe.isEmpty() || soGheStr.isEmpty() || maLoaiStr.isEmpty()) {
@@ -157,14 +151,10 @@ public class GheServlet extends HttpServlet {
                 return;
             }
 
+            // Chặn trùng vị trí hàng + số ghế trong cùng phòng.
             if (gheRepo.existsSeat(maPhong, hangGhe, soGhe, null)) {
                 resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=duplicate_seat");
                 return;
-            }
-
-            BigDecimal gia = BigDecimal.valueOf(80000);
-            if (!giaStr.isEmpty()) {
-                gia = new BigDecimal(giaStr.replace(".", "").replace(",", "").trim());
             }
 
             PhongChieu pc = phongChieuRepo.getById(maPhong);
@@ -174,19 +164,17 @@ public class GheServlet extends HttpServlet {
                 return;
             }
 
-            // Tính toán tổng số chỗ ngồi hiện có của phòng chiếu (Ghế đôi = 2 chỗ, Ghế đơn = 1 chỗ)
+            // Tính tổng chỗ ngồi hiện tại (ghế đôi = 2 chỗ) rồi kiểm tra không vượt sức chứa.
             List<Ghe> currentSeats = gheRepo.getAllByPhong(maPhong);
             int currentCapacity = 0;
             for (Ghe s : currentSeats) {
                 currentCapacity += s.isGheDoi() ? 2 : 1;
             }
 
-            // Xác định số chỗ ngồi của chiếc ghế chuẩn bị thêm
             boolean isDoi = (lg.getMaLoaiGhe() != null && lg.getMaLoaiGhe() == 3)
                     || (lg.getTenLoaiGhe() != null && (lg.getTenLoaiGhe().toLowerCase().contains("đôi") || lg.getTenLoaiGhe().toLowerCase().contains("sweetbox")));
             int newCho = isDoi ? 2 : 1;
 
-            // Chặn thêm ghế nếu tổng số chỗ vượt quá sức chứa tối đa của phòng chiếu
             int sucChuaToiDa = pc.getSucChua() != null ? pc.getSucChua() : 0;
             if (currentCapacity + newCho > sucChuaToiDa) {
                 resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=full_capacity");
@@ -199,7 +187,6 @@ public class GheServlet extends HttpServlet {
             ghe.setHangGhe(hangGhe);
             ghe.setSoGhe(soGhe);
             ghe.setTrangThai(trangThai.isEmpty() ? "Hoạt động" : trangThai);
-            ghe.setGia(gia);
 
             boolean ok = gheRepo.add(ghe);
             resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=" + (ok ? "add_ok" : "error"));
@@ -209,14 +196,13 @@ public class GheServlet extends HttpServlet {
         }
     }
 
-    // Kiểm tra và cập nhật thông tin loại ghế, trạng thái hoặc giá của ghế
+    // Validate đầu vào, kiểm tra sức chứa khi đổi sang ghế đôi, rồi lưu thay đổi ghế.
     private void handleUpdate(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String maGheStr = trimParam(req, "maGhe");
         String maPhong = trimParam(req, "maPhong");
         String hangGhe = trimParam(req, "hangGhe").toUpperCase();
         String soGheStr = trimParam(req, "soGhe");
         String maLoaiStr = trimParam(req, "maLoaiGhe");
-        String giaStr = trimParam(req, "gia");
         String trangThai = trimParam(req, "trangThai");
 
         try {
@@ -230,14 +216,10 @@ public class GheServlet extends HttpServlet {
                 return;
             }
 
+            // Chặn trùng vị trí với ghế khác (loại trừ chính ghế đang sửa).
             if (gheRepo.existsSeat(maPhong, hangGhe, soGhe, maGhe)) {
                 resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=duplicate_seat");
                 return;
-            }
-
-            BigDecimal gia = ghe.getGia();
-            if (!giaStr.isEmpty()) {
-                gia = new BigDecimal(giaStr.replace(".", "").replace(",", "").trim());
             }
 
             LoaiGhe lg = loaiGheRepo.getOne(maLoai);
@@ -246,7 +228,7 @@ public class GheServlet extends HttpServlet {
                 return;
             }
 
-            // Kiểm tra ràng buộc sức chứa nếu cập nhật từ ghế đơn sang ghế đôi
+            // Kiểm tra sức chứa khi nâng cấp từ ghế đơn lên ghế đôi.
             PhongChieu pc = ghe.getPhongChieu();
             int sucChuaToiDa = (pc != null && pc.getSucChua() != null) ? pc.getSucChua() : 0;
             boolean oldIsDoi = ghe.isGheDoi();
@@ -271,7 +253,6 @@ public class GheServlet extends HttpServlet {
             ghe.setHangGhe(hangGhe);
             ghe.setSoGhe(soGhe);
             ghe.setTrangThai(trangThai.isEmpty() ? "Hoạt động" : trangThai);
-            ghe.setGia(gia);
 
             boolean ok = gheRepo.update(ghe);
             resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&msg=" + (ok ? "update_ok" : "error"));
@@ -281,9 +262,9 @@ public class GheServlet extends HttpServlet {
         }
     }
 
-    // ==================== QUẢN LÝ LOẠI GHẾ (CRUD LOẠI GHẾ) ====================
+    // ==================== QUẢN LÝ LOẠI GHẾ ====================
 
-    // Kiểm tra dữ liệu và thêm mới một loại ghế vào cơ sở dữ liệu
+    // Validate tên, kiểm tra trùng tên, rồi thêm mới một loại ghế.
     private void handleAddLoaiGhe(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String maPhong = trimParam(req, "maPhong");
         String tenLoaiGhe = trimParam(req, "tenLoaiGhe");
@@ -314,7 +295,7 @@ public class GheServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/ghe?maPhong=" + maPhong + "&openModal=loaiGhe&lgMsg=" + (ok ? "add_ok" : "error"));
     }
 
-    // Kiểm tra dữ liệu và cập nhật tên hoặc phụ thu của loại ghế
+    // Validate, kiểm tra trùng tên (loại trừ chính nó), rồi lưu thay đổi loại ghế.
     private void handleUpdateLoaiGhe(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String maPhong = trimParam(req, "maPhong");
         String maLoaiStr = trimParam(req, "maLoaiGhe");
@@ -355,7 +336,7 @@ public class GheServlet extends HttpServlet {
         }
     }
 
-    // Xóa một loại ghế sau khi kiểm tra không có ghế nào trong rạp đang sử dụng
+    // Kiểm tra loại ghế không còn được dùng bởi ghế nào, rồi xóa.
     private void handleDeleteLoaiGhe(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String maPhong = trimParam(req, "maPhong");
         String idStr = trimParam(req, "id");
@@ -380,7 +361,7 @@ public class GheServlet extends HttpServlet {
         }
     }
 
-    // Đọc tham số từ request và cắt bỏ khoảng trắng thừa hai đầu
+    // Đọc tham số request, trả về chuỗi rỗng nếu null, cắt khoảng trắng hai đầu.
     private String trimParam(HttpServletRequest req, String name) {
         String v = req.getParameter(name);
         return v != null ? v.trim() : "";

@@ -1,4 +1,3 @@
-
 package repository;
 
 import entity.PhongChieu;
@@ -12,6 +11,7 @@ import java.util.List;
 
 public class PhongChieuRepository {
 
+    // Chuyển đổi an toàn từ Object/String sang Integer, trả null nếu không hợp lệ.
     private Integer parseId(Object val) {
         if (val == null) return null;
         if (val instanceof Number) return ((Number) val).intValue();
@@ -24,29 +24,21 @@ public class PhongChieuRepository {
         }
     }
 
-    // Lấy toàn bộ danh sách phòng chiếu sắp xếp tăng dần theo mã phòng
+    // Lấy toàn bộ danh sách phòng chiếu, sắp xếp tăng dần theo mã phòng.
     public List<PhongChieu> getAll() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-
-            Query<PhongChieu> query = session.createQuery(
-                    "FROM PhongChieu ORDER BY maPhong ASC",
-                    PhongChieu.class
-            );
-
-            return query.getResultList();
+            return session.createQuery("FROM PhongChieu ORDER BY maPhong ASC", PhongChieu.class)
+                    .getResultList();
         } catch (Exception e) {
             e.printStackTrace();
             return Collections.emptyList();
         }
     }
 
-    // Tìm kiếm thông tin phòng chiếu theo mã phòng
+    // Tìm phòng chiếu theo mã phòng; trả null nếu không tìm thấy.
     public PhongChieu getById(Object maPhong) {
         Integer id = parseId(maPhong);
-        if (id == null) {
-            return null;
-        }
-
+        if (id == null) return null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.get(PhongChieu.class, id);
         } catch (Exception e) {
@@ -55,38 +47,24 @@ public class PhongChieuRepository {
         }
     }
 
+    // Overload nhận String maPhong, ủy quyền sang getById(Object).
     public PhongChieu getById(String maPhong) {
         return getById((Object) maPhong);
     }
 
-    // Kiểm tra tên phòng đã tồn tại chưa (loại trừ mã phòng đang cập nhật)
+    // Kiểm tra tên phòng đã tồn tại chưa; excludeMaPhong để bỏ qua phòng đang sửa.
     public boolean existsByTenPhong(String tenPhong, Object excludeMaPhong) {
-
-        if (tenPhong == null || tenPhong.trim().isEmpty()) {
-            return false;
-        }
-
+        if (tenPhong == null || tenPhong.trim().isEmpty()) return false;
         Integer exId = parseId(excludeMaPhong);
-
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-
-            String hql = "SELECT COUNT(p.maPhong) " +
-                    "FROM PhongChieu p " +
-                    "WHERE LOWER(p.tenPhong) = LOWER(:ten)";
-
-            if (exId != null) {
-                hql += " AND p.maPhong <> :ma";
-            }
+            String hql = "SELECT COUNT(p.maPhong) FROM PhongChieu p WHERE LOWER(p.tenPhong) = LOWER(:ten)";
+            if (exId != null) hql += " AND p.maPhong <> :ma";
 
             Query<Long> query = session.createQuery(hql, Long.class);
             query.setParameter("ten", tenPhong.trim());
-
-            if (exId != null) {
-                query.setParameter("ma", exId);
-            }
+            if (exId != null) query.setParameter("ma", exId);
 
             Long count = query.uniqueResult();
-
             return count != null && count > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -94,59 +72,37 @@ public class PhongChieuRepository {
         }
     }
 
+    // Overload nhận String excludeMaPhong, ủy quyền sang existsByTenPhong(String, Object).
     public boolean existsByTenPhong(String tenPhong, String excludeMaPhong) {
         return existsByTenPhong(tenPhong, (Object) excludeMaPhong);
     }
 
-    // Thêm mới một phòng chiếu vào cơ sở dữ liệu
+    // Lưu phòng chiếu mới vào CSDL (maPhong tự tăng, đặt null trước khi insert).
     public boolean add(PhongChieu pc) {
-
         Transaction transaction = null;
-
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-
             transaction = session.beginTransaction();
-
-            // MaPhong là cột IDENTITY tự tăng, đảm bảo maPhong là null trước khi insert
-            pc.setMaPhong(null);
+            pc.setMaPhong(null); // đảm bảo IDENTITY tự tăng
             session.persist(pc);
-
             transaction.commit();
-
             return true;
-
         } catch (Exception e) {
-
-            if (transaction != null && transaction.isActive()) {
-                transaction.rollback();
-            }
-
+            if (transaction != null && transaction.isActive()) transaction.rollback();
             e.printStackTrace();
             return false;
         }
     }
 
-    // Cập nhật thông tin phòng chiếu đã có
+    // Cập nhật thông tin phòng chiếu đã có vào CSDL, rollback nếu có lỗi.
     public boolean update(PhongChieu pc) {
-
         Transaction transaction = null;
-
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-
             transaction = session.beginTransaction();
-
             session.merge(pc);
-
             transaction.commit();
-
             return true;
-
         } catch (Exception e) {
-
-            if (transaction != null && transaction.isActive()) {
-                transaction.rollback();
-            }
-
+            if (transaction != null && transaction.isActive()) transaction.rollback();
             e.printStackTrace();
             return false;
         }

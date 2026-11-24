@@ -11,7 +11,7 @@ import java.util.List;
 
 public class KhachHangRepository {
 
-    // Lấy toàn bộ danh sách khách hàng trong cơ sở dữ liệu sắp xếp theo mã tăng dần
+    // Lấy toàn bộ danh sách khách hàng, sắp xếp tăng dần theo mã khách hàng.
     public List<KhachHang> getAll() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery("FROM KhachHang ORDER BY maKH ASC", KhachHang.class)
@@ -22,7 +22,7 @@ public class KhachHangRepository {
         }
     }
 
-    // Tìm kiếm khách hàng theo từ khóa họ tên, SĐT hoặc mã kèm phân trang
+    // Tìm kiếm khách hàng theo họ tên, SĐT hoặc mã; hỗ trợ phân trang.
     public List<KhachHang> search(String keyword, int page, int pageSize) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String hql = "FROM KhachHang k ";
@@ -30,6 +30,7 @@ public class KhachHangRepository {
                 hql += "WHERE LOWER(k.hoTen) LIKE :kw OR k.sdt LIKE :kw OR LOWER(k.maKH) LIKE :kw ";
             }
             hql += "ORDER BY k.maKH ASC";
+
             Query<KhachHang> query = session.createQuery(hql, KhachHang.class);
             if (keyword != null && !keyword.trim().isEmpty()) {
                 query.setParameter("kw", "%" + keyword.trim().toLowerCase() + "%");
@@ -43,7 +44,7 @@ public class KhachHangRepository {
         }
     }
 
-    // Đếm tổng số khách hàng thỏa mãn điều kiện từ khóa tìm kiếm
+    // Đếm số khách hàng thỏa điều kiện keyword để tính tổng trang phân trang.
     public int countSearch(String keyword) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String hql = "SELECT COUNT(k) FROM KhachHang k ";
@@ -62,12 +63,12 @@ public class KhachHangRepository {
         }
     }
 
-    // Đếm tổng số lượng tất cả khách hàng hiện có trong hệ thống
+    // Đếm tổng số khách hàng hiện có trong hệ thống (không lọc keyword).
     public int count() {
         return countSearch(null);
     }
 
-    // Tìm kiếm thông tin chi tiết một khách hàng theo mã khách hàng
+    // Tìm thông tin chi tiết một khách hàng theo mã; trả null nếu không tìm thấy.
     public KhachHang getById(String maKH) {
         if (maKH == null || maKH.trim().isEmpty()) return null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -78,14 +79,13 @@ public class KhachHangRepository {
         }
     }
 
-    // Kiểm tra số điện thoại đã tồn tại trong CSDL chưa để tránh đăng ký trùng
+    // Kiểm tra SĐT đã tồn tại chưa; excludeMaKH để bỏ qua khách hàng đang sửa.
     public boolean existsBySdt(String sdt, String excludeMaKH) {
         if (sdt == null || sdt.trim().isEmpty()) return false;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String hql = "SELECT COUNT(k) FROM KhachHang k WHERE k.sdt = :sdt";
-            if (excludeMaKH != null && !excludeMaKH.trim().isEmpty()) {
-                hql += " AND k.maKH <> :ma";
-            }
+            if (excludeMaKH != null && !excludeMaKH.trim().isEmpty()) hql += " AND k.maKH <> :ma";
+
             Query<Long> query = session.createQuery(hql, Long.class);
             query.setParameter("sdt", sdt.trim());
             if (excludeMaKH != null && !excludeMaKH.trim().isEmpty()) {
@@ -99,7 +99,7 @@ public class KhachHangRepository {
         }
     }
 
-    // Thêm mới một khách hàng vào cơ sở dữ liệu
+    // Lưu khách hàng mới vào CSDL trong transaction, rollback nếu có lỗi.
     public boolean add(KhachHang kh) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -114,7 +114,7 @@ public class KhachHangRepository {
         }
     }
 
-    // Cập nhật thông tin khách hàng hiện có trong cơ sở dữ liệu
+    // Cập nhật thông tin khách hàng vào CSDL, rollback nếu có lỗi.
     public boolean update(KhachHang kh) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -129,16 +129,14 @@ public class KhachHangRepository {
         }
     }
 
-    // Xóa một khách hàng khỏi hệ thống theo mã định danh
+    // Xóa khách hàng theo mã khỏi CSDL, rollback nếu có lỗi.
     public boolean delete(String maKH) {
         if (maKH == null || maKH.trim().isEmpty()) return false;
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             tx = session.beginTransaction();
             KhachHang kh = session.get(KhachHang.class, maKH.trim());
-            if (kh != null) {
-                session.remove(kh);
-            }
+            if (kh != null) session.remove(kh);
             tx.commit();
             return true;
         } catch (Exception e) {

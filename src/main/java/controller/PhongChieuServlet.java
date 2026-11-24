@@ -32,7 +32,7 @@ public class PhongChieuServlet extends HttpServlet {
     private static final String VIEW = "/Phong-Chieu/view.jsp";
     private static final String VIEW_UPDATE = "/Phong-Chieu/view-update.jsp";
 
-    // Tiếp nhận và điều hướng các yêu cầu GET (xem danh sách, chi tiết, mở form sửa, xóa loại phòng)
+    // Điều hướng GET: xem danh sách, xem chi tiết, mở form sửa, hoặc xóa loại phòng.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -44,58 +44,46 @@ public class PhongChieuServlet extends HttpServlet {
             return;
         }
 
-        // Hiển thị danh sách phòng chiếu có phân trang (5 phòng / 1 trang)
         if (path.equals("/phong-chieu/view")) {
-
+            // Hiển thị danh sách phòng chiếu có phân trang (5 phòng / trang).
             loadDataPaging(request);
             request.getRequestDispatcher(VIEW).forward(request, response);
 
-        }
-        else if (path.equals("/phong-chieu/detail")) {
-
+        } else if (path.equals("/phong-chieu/detail")) {
+            // Tải chi tiết một phòng và mở modal xem chi tiết.
             String maPhong = getParameter(request, "id");
             PhongChieu pc = repo.getById(maPhong);
 
             if (pc == null) {
-                response.sendError(
-                        HttpServletResponse.SC_NOT_FOUND,
-                        "Không tìm thấy phòng chiếu!"
-                );
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy phòng chiếu!");
                 return;
             }
 
             request.setAttribute("pc", pc);
             request.setAttribute("openModal", "detail");
             loadDataPaging(request);
-
             request.getRequestDispatcher(VIEW).forward(request, response);
 
-        }
-        else if (path.equals("/phong-chieu/view-update")) {
-
+        } else if (path.equals("/phong-chieu/view-update")) {
+            // Tải dữ liệu phòng và chuyển sang form sửa.
             String maPhong = getParameter(request, "id");
             PhongChieu pc = repo.getById(maPhong);
 
             if (pc == null) {
-                response.sendError(
-                        HttpServletResponse.SC_NOT_FOUND,
-                        "Không tìm thấy phòng chiếu cần cập nhật!"
-                );
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy phòng chiếu cần cập nhật!");
                 return;
             }
 
             request.setAttribute("pc", pc);
             loadDataPaging(request);
-
             request.getRequestDispatcher(VIEW_UPDATE).forward(request, response);
 
-        }
-        else {
+        } else {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }
 
-    // Tiếp nhận và phân phối các form POST (thêm/sửa phòng chiếu, thêm/sửa loại phòng)
+    // Phân phối POST tới hàm xử lý tương ứng (thêm/sửa phòng, thêm/sửa loại phòng).
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -105,23 +93,20 @@ public class PhongChieuServlet extends HttpServlet {
 
         if (path.equals("/phong-chieu/add")) {
             handleAdd(request, response);
-        }
-        else if (path.equals("/phong-chieu/update")) {
+        } else if (path.equals("/phong-chieu/update")) {
             handleUpdate(request, response);
-        }
-        else if (path.equals("/phong-chieu/loai-phong-add")) {
+        } else if (path.equals("/phong-chieu/loai-phong-add")) {
             handleAddLoaiPhong(request, response);
-        }
-        else if (path.equals("/phong-chieu/loai-phong-update")) {
+        } else if (path.equals("/phong-chieu/loai-phong-update")) {
             handleUpdateLoaiPhong(request, response);
-        }
-        else {
+        } else {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }
 
-    // ==================== QUẢN LÝ LOẠI PHÒNG (CRUD TRONG PHÒNG CHIẾU) ====================
-    // Xóa một loại phòng sau khi kiểm tra không có phòng chiếu nào đang sử dụng
+    // ==================== QUẢN LÝ LOẠI PHÒNG ====================
+
+    // Kiểm tra loại phòng không còn được dùng bởi phòng nào, rồi xóa.
     private void handleDeleteLoaiPhong(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String id = getParameter(request, "id");
         if (id.isEmpty()) {
@@ -138,7 +123,7 @@ public class PhongChieuServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view?openModal=loaiPhong&lpMsg=" + (ok ? "delete_ok" : "error"));
     }
 
-    // Kiểm tra dữ liệu hợp lệ và thêm mới một loại phòng chiếu
+    // Validate mã và tên, kiểm tra trùng mã, rồi thêm mới loại phòng chiếu.
     private void handleAddLoaiPhong(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String ma = getParameter(request, "maLoaiPhong");
         String ten = getParameter(request, "tenLoaiPhong");
@@ -157,7 +142,7 @@ public class PhongChieuServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view?openModal=loaiPhong&lpMsg=" + (ok ? "add_ok" : "error"));
     }
 
-    // Kiểm tra dữ liệu và cập nhật thông tin loại phòng chiếu
+    // Validate mã và tên, rồi lưu thay đổi tên loại phòng chiếu.
     private void handleUpdateLoaiPhong(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String ma = getParameter(request, "maLoaiPhong");
         String ten = getParameter(request, "tenLoaiPhong");
@@ -171,7 +156,9 @@ public class PhongChieuServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view?openModal=loaiPhong&lpMsg=" + (ok ? "update_ok" : "error"));
     }
 
-    // Kiểm tra dữ liệu đầu vào và thêm mới phòng chiếu vào database
+    // ==================== QUẢN LÝ PHÒNG CHIẾU ====================
+
+    // Validate đầu vào, kiểm tra trùng tên phòng, rồi thêm mới phòng chiếu.
     private void handleAdd(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -182,60 +169,42 @@ public class PhongChieuServlet extends HttpServlet {
         Integer sucChua = null;
         String error = null;
 
-        if (tenPhong.isEmpty()
-                || loaiPhong.isEmpty()
-                || sucChuaStr.isEmpty()) {
+        if (tenPhong.isEmpty() || loaiPhong.isEmpty() || sucChuaStr.isEmpty()) {
             error = "Vui lòng nhập đầy đủ tất cả các trường bắt buộc!";
         }
 
-        // Kiểm tra sức chứa
+        // Parse và kiểm tra sức chứa phải là số nguyên dương.
         if (error == null) {
             try {
                 sucChua = Integer.parseInt(sucChuaStr);
-                if (sucChua <= 0) {
-                    error = "Sức chứa phải là số nguyên lớn hơn 0!";
-                }
+                if (sucChua <= 0) error = "Sức chứa phải là số nguyên lớn hơn 0!";
             } catch (NumberFormatException e) {
                 error = "Sức chứa phải là một số nguyên hợp lệ!";
             }
         }
 
-        if (error == null) {
-            if (repo.existsByTenPhong(tenPhong, null)) {
-                error = "Tên phòng chiếu [" + tenPhong + "] đã tồn tại!";
-            }
+        // Chặn trùng tên phòng trong toàn hệ thống.
+        if (error == null && repo.existsByTenPhong(tenPhong, null)) {
+            error = "Tên phòng chiếu [" + tenPhong + "] đã tồn tại!";
         }
 
-        PhongChieu pc = new PhongChieu(
-                tenPhong,
-                loaiPhong,
-                sucChua
-        );
+        PhongChieu pc = new PhongChieu(tenPhong, loaiPhong, sucChua);
 
         if (error != null) {
             forwardToView(request, response, pc, "add", error);
             return;
         }
 
-        // Thực hiện thêm
         boolean result = repo.add(pc);
-
         if (!result) {
-            forwardToView(
-                    request,
-                    response,
-                    pc,
-                    "add",
-                    "Thêm phòng chiếu thất bại! Vui lòng kiểm tra kết nối cơ sở dữ liệu."
-            );
+            forwardToView(request, response, pc, "add", "Thêm phòng chiếu thất bại! Vui lòng kiểm tra kết nối cơ sở dữ liệu.");
             return;
         }
 
-        // Thêm thành công, quay lại danh sách
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view");
     }
 
-    // Kiểm tra tính hợp lệ của dữ liệu và cập nhật phòng chiếu
+    // Validate đầu vào, kiểm tra tồn tại và trùng tên, rồi lưu thay đổi phòng chiếu.
     private void handleUpdate(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -248,14 +217,11 @@ public class PhongChieuServlet extends HttpServlet {
         Integer sucChua = null;
         String error = null;
 
-        // Kiểm tra dữ liệu rỗng
-        if (maPhongStr.isEmpty()
-                || tenPhong.isEmpty()
-                || loaiPhong.isEmpty()
-                || sucChuaStr.isEmpty()) {
+        if (maPhongStr.isEmpty() || tenPhong.isEmpty() || loaiPhong.isEmpty() || sucChuaStr.isEmpty()) {
             error = "Vui lòng nhập đầy đủ tất cả các trường bắt buộc!";
         }
 
+        // Parse mã phòng.
         if (error == null) {
             try {
                 maPhong = Integer.parseInt(maPhongStr);
@@ -264,67 +230,48 @@ public class PhongChieuServlet extends HttpServlet {
             }
         }
 
-        // Kiểm tra sức chứa
+        // Parse và kiểm tra sức chứa phải là số nguyên dương.
         if (error == null) {
             try {
                 sucChua = Integer.parseInt(sucChuaStr);
-                if (sucChua <= 0) {
-                    error = "Sức chứa phải là số nguyên lớn hơn 0!";
-                }
+                if (sucChua <= 0) error = "Sức chứa phải là số nguyên lớn hơn 0!";
             } catch (NumberFormatException e) {
                 error = "Sức chứa phải là một số nguyên hợp lệ!";
             }
         }
 
-        // Kiểm tra phòng chiếu có tồn tại không
-        if (error == null) {
-            if (repo.getById(maPhong) == null) {
-                error = "Phòng chiếu không tồn tại hoặc đã bị xóa!";
-            }
+        // Kiểm tra phòng chiếu còn tồn tại trong CSDL.
+        if (error == null && repo.getById(maPhong) == null) {
+            error = "Phòng chiếu không tồn tại hoặc đã bị xóa!";
         }
 
-        // Kiểm tra trùng tên phòng, loại trừ chính phòng đang sửa
+        // Chặn trùng tên phòng (loại trừ chính phòng đang sửa).
         if (error == null && repo.existsByTenPhong(tenPhong, maPhong)) {
             error = "Tên phòng chiếu [" + tenPhong + "] đã tồn tại!";
         }
 
-        // Tạo đối tượng phòng chiếu sau khi kiểm tra
-        PhongChieu pc = new PhongChieu(
-                maPhong,
-                tenPhong,
-                loaiPhong,
-                sucChua
-        );
+        PhongChieu pc = new PhongChieu(maPhong, tenPhong, loaiPhong, sucChua);
 
-        // Nếu có lỗi thì mở lại popup cập nhật
         if (error != null) {
             forwardToView(request, response, pc, "update", error);
             return;
         }
 
-        // Thực hiện cập nhật
         boolean result = repo.update(pc);
-
         if (!result) {
-            forwardToView(
-                    request,
-                    response,
-                    pc,
-                    "update",
-                    "Cập nhật phòng chiếu thất bại! Vui lòng kiểm tra cơ sở dữ liệu."
-            );
+            forwardToView(request, response, pc, "update", "Cập nhật phòng chiếu thất bại! Vui lòng kiểm tra cơ sở dữ liệu.");
             return;
         }
 
-        // Cập nhật thành công
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view");
     }
 
-    // ==================== HÀM HỖ TRỢ PHÂN TRANG (5 PHÒNG / 1 TRANG) ====================
-    // Tính toán phân trang và nạp danh sách 5 phòng chiếu cho trang hiện tại
+    // ==================== HÀM HỖ TRỢ ====================
+
+    // Tính phân trang (5 phòng/trang) và nạp dữ liệu danh sách, loại phòng vào request.
     private void loadDataPaging(HttpServletRequest request) {
         int page = 1;
-        int pageSize = 5; // Cố định 5 phòng chiếu trên 1 trang
+        int pageSize = 5;
 
         String pageParam = request.getParameter("page");
         if (pageParam != null && !pageParam.trim().isEmpty()) {
@@ -338,53 +285,40 @@ public class PhongChieuServlet extends HttpServlet {
         List<PhongChieu> allList = repo.getAll();
         int totalItems = allList.size();
 
-        // Tính tổng số trang: ví dụ 12 phòng / 5 = 3 trang
         int totalPages = (int) Math.ceil((double) totalItems / pageSize);
-        if (totalPages <= 0) {
-            totalPages = 1;
-        }
-
+        if (totalPages <= 0) totalPages = 1;
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
 
-        // Cắt lấy 5 phần tử tương ứng với trang hiện tại
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, totalItems);
 
-        List<PhongChieu> pagedList;
-        if (startIndex < totalItems) {
-            pagedList = allList.subList(startIndex, endIndex);
-        } else {
-            pagedList = Collections.emptyList();
-        }
+        List<PhongChieu> pagedList = startIndex < totalItems
+                ? allList.subList(startIndex, endIndex)
+                : Collections.emptyList();
 
         request.setAttribute("listPhongChieu", pagedList);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalItems", totalItems);
-        request.setAttribute("listLoaiPhong", new repository.LoaiPhongRepository().getAll());
+        request.setAttribute("listLoaiPhong", new LoaiPhongRepository().getAll());
     }
 
-    // Đọc tham số từ request và loại bỏ khoảng trắng thừa hai đầu
+    // Đọc tham số request, trả về chuỗi rỗng nếu null, cắt khoảng trắng hai đầu.
     private String getParameter(HttpServletRequest request, String name) {
         String value = request.getParameter(name);
         return value != null ? value.trim() : "";
     }
 
-    // Chuyển tiếp về giao diện JSP kèm thông báo lỗi và giữ lại dữ liệu đang nhập
-    private void forwardToView(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            PhongChieu pc,
-            String openModal,
-            String error
-    ) throws ServletException, IOException {
+    // Forward về JSP kèm thông báo lỗi và mở lại modal tương ứng.
+    private void forwardToView(HttpServletRequest request, HttpServletResponse response,
+                               PhongChieu pc, String openModal, String error)
+            throws ServletException, IOException {
 
         request.setAttribute("pc", pc);
         request.setAttribute("openModal", openModal);
         request.setAttribute("error", error);
         loadDataPaging(request);
-
         request.getRequestDispatcher(VIEW).forward(request, response);
     }
 }

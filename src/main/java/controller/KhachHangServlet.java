@@ -25,17 +25,16 @@ public class KhachHangServlet extends HttpServlet {
     private static final String VIEW = "/khach-hang/view.jsp";
     private static final int PAGE_SIZE = 5;
 
-    // Tiếp nhận và xử lý các yêu cầu GET (xem danh sách, tìm kiếm, phân trang khách hàng)
+    // Tải danh sách khách hàng (có tìm kiếm + phân trang) và hiển thị thông báo kết quả.
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
         resp.setCharacterEncoding("UTF-8");
 
-        // Tải danh sách khách hàng có hỗ trợ tìm kiếm và phân trang
         loadData(req);
 
-        // Hiển thị thông báo kết quả trả về từ URL tham số msg
+        // Dịch mã msg từ URL sang thông báo người dùng thân thiện.
         String msg = req.getParameter("msg");
         if ("add_ok".equals(msg)) {
             req.setAttribute("successMsg", "Thêm mới khách hàng thành công!");
@@ -48,7 +47,7 @@ public class KhachHangServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW).forward(req, resp);
     }
 
-    // Tiếp nhận và phân phối các form POST (thêm mới hoặc cập nhật thông tin khách hàng)
+    // Phân phối POST tới hàm xử lý tương ứng (thêm mới hoặc cập nhật khách hàng).
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -56,7 +55,6 @@ public class KhachHangServlet extends HttpServlet {
         resp.setCharacterEncoding("UTF-8");
 
         String path = req.getServletPath();
-
         if (path.equals("/khach-hang/add")) {
             handleAdd(req, resp);
         } else if (path.equals("/khach-hang/update")) {
@@ -68,7 +66,7 @@ public class KhachHangServlet extends HttpServlet {
 
     // ==================== XỬ LÝ THÊM MỚI KHÁCH HÀNG ====================
 
-    // Kiểm tra dữ liệu đầu vào và thêm mới một khách hàng vào cơ sở dữ liệu
+    // Validate mã, họ tên, SĐT, điểm tích lũy và kiểm tra trùng; rồi thêm mới khách hàng.
     private void handleAdd(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String maKH = getParam(req, "maKH").toUpperCase();
@@ -95,10 +93,12 @@ public class KhachHangServlet extends HttpServlet {
             }
         }
 
+        // Chặn trùng mã khách hàng.
         if (error == null && repo.getById(maKH) != null) {
             error = "Mã khách hàng [" + maKH + "] đã tồn tại trên hệ thống!";
         }
 
+        // Chặn trùng số điện thoại.
         if (error == null && repo.existsBySdt(sdt, null)) {
             error = "Số điện thoại [" + sdt + "] đã được đăng ký bởi khách hàng khác!";
         }
@@ -121,7 +121,7 @@ public class KhachHangServlet extends HttpServlet {
 
     // ==================== XỬ LÝ CẬP NHẬT KHÁCH HÀNG ====================
 
-    // Kiểm tra dữ liệu và cập nhật thông tin họ tên, SĐT, giới tính hoặc điểm tích lũy
+    // Validate họ tên, SĐT, điểm, kiểm tra tồn tại và trùng SĐT; rồi lưu thay đổi.
     private void handleUpdate(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String maKH = getParam(req, "maKH").toUpperCase();
@@ -148,10 +148,12 @@ public class KhachHangServlet extends HttpServlet {
             }
         }
 
+        // Chặn cập nhật nếu khách hàng không còn tồn tại.
         if (error == null && repo.getById(maKH) == null) {
             error = "Khách hàng không tồn tại!";
         }
 
+        // Chặn trùng số điện thoại với khách hàng khác (loại trừ chính khách hàng đang sửa).
         if (error == null && repo.existsBySdt(sdt, maKH)) {
             error = "Số điện thoại [" + sdt + "] đã thuộc về một khách hàng khác!";
         }
@@ -172,9 +174,9 @@ public class KhachHangServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/khach-hang/view?msg=update_ok");
     }
 
-    // ==================== CÁC HÀM HỖ TRỢ ====================
+    // ==================== HÀM HỖ TRỢ ====================
 
-    // Tải và tính toán danh sách khách hàng phân trang kết hợp tìm kiếm theo từ khóa
+    // Tính phân trang, tìm kiếm theo keyword và nạp dữ liệu danh sách vào request.
     private void loadData(HttpServletRequest req) {
         String keyword = getParam(req, "keyword");
 
@@ -204,13 +206,13 @@ public class KhachHangServlet extends HttpServlet {
         req.setAttribute("keyword", keyword);
     }
 
-    // Đọc tham số từ HTTP Request và loại bỏ khoảng trắng hai đầu
+    // Đọc tham số request, trả về chuỗi rỗng nếu null, cắt khoảng trắng hai đầu.
     private String getParam(HttpServletRequest req, String name) {
         String v = req.getParameter(name);
         return v != null ? v.trim() : "";
     }
 
-    // Chuyển hướng về giao diện view kèm đối tượng lỗi và tự động mở lại modal tương ứng
+    // Forward về JSP kèm thông báo lỗi và mở lại modal tương ứng.
     private void forwardWithError(HttpServletRequest req, HttpServletResponse resp,
                                   KhachHang kh, String openModal, String error)
             throws ServletException, IOException {
