@@ -186,6 +186,7 @@ public class SuatChieuServlet extends HttpServlet {
         }
 
         req.setAttribute("listSuatChieu", pagedList);
+        req.setAttribute("allSuatChieu", list);
         req.setAttribute("currentPage", currentPage);
         req.setAttribute("totalPages", totalPages);
         req.setAttribute("pageSize", pageSize);

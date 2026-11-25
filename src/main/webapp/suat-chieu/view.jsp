@@ -309,6 +309,120 @@
             border-color: var(--pink);
         }
 
+        /* TIMELINE LỊCH PHÒNG CHIẾU */
+        .timeline-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #f8fafc;
+        }
+        .timeline-room-card {
+            background: #ffffff;
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            transition: box-shadow 0.2s;
+        }
+        .timeline-room-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .timeline-room-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 18px;
+            background: #ffffff;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .timeline-room-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #e0f2fe;
+            color: #0284c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .timeline-slots-track {
+            padding: 16px 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            background: #fafbfc;
+            min-height: 80px;
+            align-items: center;
+        }
+        .timeline-slot-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 14px;
+            width: 220px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .timeline-slot-card:hover {
+            border-color: #0284c7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.12);
+        }
+        .slot-time-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #0284c7;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .slot-movie-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 6px;
+        }
+        .slot-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .slot-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px dashed #f1f5f9;
+            padding-top: 8px;
+            margin-top: 4px;
+        }
+        .timeline-empty-room {
+            color: #94a3b8;
+            font-size: 13px;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            padding: 10px 4px;
+        }
+        .btn-range {
+            transition: all 0.2s ease;
+        }
+        .btn-range:hover {
+            background: #fff1f2 !important;
+            color: var(--pink) !important;
+        }
+
         /* Responsive cho Lịch chiếu */
         @media (max-width: 1200px) {
             .stats-grid {
@@ -417,8 +531,8 @@
                 <div class="filter-item">
                     <label><i class="fa-regular fa-calendar"></i> Ngày chiếu</label>
                     <div style="display: flex; gap: 6px;">
-                        <input type="date" name="tuNgay" value="${filterTuNgay}" class="filter-input" title="Từ ngày">
-                        <input type="date" name="denNgay" value="${filterDenNgay}" class="filter-input" title="Đến ngày">
+                        <input type="date" name="tuNgay" id="filterTuNgay" value="${filterTuNgay}" class="filter-input" title="Từ ngày">
+                        <input type="date" name="denNgay" id="filterDenNgay" value="${filterDenNgay}" class="filter-input" title="Đến ngày">
                     </div>
                 </div>
 
@@ -487,20 +601,23 @@
             <!-- Tab Header: Danh sách vs Lịch phòng chiếu -->
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border-subtle); background: #fafbfc;">
                 <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn btn-pink btn-sm" style="border-radius: 8px; font-weight: 700;">
+                    <button type="button" id="btnTabList" onclick="switchViewMode('list')" class="btn btn-pink btn-sm" style="border-radius: 8px; font-weight: 700; cursor: pointer;">
                         <i class="fa-solid fa-list-ul"></i> Danh sách
                     </button>
-                    <button type="button" class="btn btn-outline btn-sm" style="border-radius: 8px; background: #fff;">
+                    <button type="button" id="btnTabTimeline" onclick="switchViewMode('timeline')" class="btn btn-outline btn-sm" style="border-radius: 8px; background: #fff; font-weight: 700; cursor: pointer;">
                         <i class="fa-regular fa-calendar-days"></i> Lịch phòng chiếu
                     </button>
                 </div>
 
                 <div style="display: flex; border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden; background: #fff;">
-                    <button type="button" style="border: none; background: var(--pink); color: #fff; padding: 4px 12px; font-size: 11px; font-weight: 700;">Ngày</button>
-                    <button type="button" style="border: none; background: transparent; padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">Tuần</button>
-                    <button type="button" style="border: none; background: transparent; padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">Tháng</button>
+                    <button type="button" id="btnDateToday" onclick="setDateFilter('today')" class="btn-range" style="border: none; background: var(--pink); color: #fff; padding: 5px 14px; font-size: 11px; font-weight: 700; cursor: pointer;">Ngày</button>
+                    <button type="button" id="btnDateWeek" onclick="setDateFilter('week')" class="btn-range" style="border: none; background: transparent; padding: 5px 14px; font-size: 11px; font-weight: 600; color: var(--text-secondary); cursor: pointer;">Tuần</button>
+                    <button type="button" id="btnDateMonth" onclick="setDateFilter('month')" class="btn-range" style="border: none; background: transparent; padding: 5px 14px; font-size: 11px; font-weight: 600; color: var(--text-secondary); cursor: pointer;">Tháng</button>
                 </div>
             </div>
+
+            <!-- 1. GIAO DIỆN DẠNG BẢNG DANH SÁCH -->
+            <div id="viewListContainer">
 
             <!-- Table -->
             <%
@@ -797,6 +914,124 @@
                     </div>
                 </div>
             </div>
+            </div> <!-- /#viewListContainer -->
+
+            <!-- 2. GIAO DIỆN DẠNG LỊCH PHÒNG CHIẾU (TIMELINE THEO PHÒNG) -->
+            <div id="viewTimelineContainer" class="timeline-container" style="display: none;">
+                <c:choose>
+                    <c:when test="${empty listPhong}">
+                        <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                            <i class="fa-solid fa-door-closed" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
+                            Chưa có dữ liệu phòng chiếu trong hệ thống.
+                        </div>
+                    </c:when>
+                    <c:otherwise>
+                        <c:forEach items="${listPhong}" var="pc">
+                            <div class="timeline-room-card">
+                                <div class="timeline-room-header">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div class="timeline-room-icon">
+                                            <i class="fa-solid fa-door-open"></i>
+                                        </div>
+                                        <div>
+                                            <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #0f172a;">
+                                                ${pc.tenPhong}
+                                            </h4>
+                                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 3px;">
+                                                <span style="font-size: 12px; color: #64748b;">
+                                                    <i class="fa-solid fa-chair" style="color: #94a3b8;"></i> ${pc.sucChua} ghế
+                                                </span>
+                                                <span class="format-badge ${pc.loaiPhong == 'IMAX' ? 'format-imax' : (pc.loaiPhong == '3D' ? 'format-3d' : 'format-2d')}" style="font-size: 10.5px; padding: 2px 7px;">
+                                                    ${pc.loaiPhong}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="openAddSuatChieuForRoom('${pc.maPhong}', '${pc.loaiPhong}')" style="font-size: 12px; border-radius: 8px; font-weight: 600;">
+                                            <i class="fa-solid fa-plus" style="margin-right: 4px; color: var(--pink);"></i> Thêm suất chiếu
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Danh sách suất chiếu theo phòng -->
+                                <div class="timeline-slots-track">
+                                    <c:set var="countInRoom" value="0" />
+                                    <c:forEach items="${allSuatChieu != null ? allSuatChieu : listSuatChieu}" var="sc">
+                                        <c:if test="${sc.phongChieu.maPhong == pc.maPhong}">
+                                            <c:set var="countInRoom" value="${countInRoom + 1}" />
+                                            <div class="timeline-slot-card">
+                                                <div class="slot-time-badge">
+                                                    <i class="fa-regular fa-clock"></i>
+                                                    <strong>${sc.gioBatDau.toString().length() > 5 ? sc.gioBatDau.toString().substring(0, 5) : sc.gioBatDau}</strong>
+                                                    <span> - </span>
+                                                    <span>${sc.gioKetThuc.toString().length() > 5 ? sc.gioKetThuc.toString().substring(0, 5) : sc.gioKetThuc}</span>
+                                                </div>
+
+                                                <div class="slot-movie-title" title="${sc.phim.tenPhim}">
+                                                    ${sc.phim.tenPhim}
+                                                </div>
+
+                                                <div class="slot-meta">
+                                                    <span class="format-badge ${sc.dinhDang == 'IMAX' ? 'format-imax' : (sc.dinhDang == '3D' ? 'format-3d' : 'format-2d')}" style="font-size: 10px; padding: 2px 6px;">
+                                                        ${sc.dinhDang}
+                                                    </span>
+                                                    <span style="font-size: 11.5px; color: #64748b; font-weight: 500;">
+                                                        <i class="fa-regular fa-calendar" style="margin-right: 3px;"></i>${sc.ngayChieu}
+                                                    </span>
+                                                </div>
+
+                                                <div class="slot-footer">
+                                                    <span class="status-dot-badge ${sc.trangThai == 'Đang mở bán' ? 'status-active' : (sc.trangThai == 'Đã hủy' ? 'status-cancelled' : 'status-upcoming')}" style="font-size: 10.5px; padding: 2px 7px;">
+                                                        ${sc.trangThai}
+                                                    </span>
+
+                                                    <div style="display: flex; gap: 4px;">
+                                                        <button type="button" class="action-btn action-view" title="Xem chi tiết"
+                                                                data-code="${sc.maSuatFormatted}"
+                                                                data-phim="${sc.phim.tenPhim} (${sc.phim.thoiLuong} phút)"
+                                                                data-phong="${sc.phongChieu.tenPhong} (${sc.phongChieu.sucChua} ghế)"
+                                                                data-dinhdang="${sc.dinhDang}"
+                                                                data-ngay="${sc.ngayChieu}"
+                                                                data-gio="${sc.gioBatDau} - ${sc.gioKetThuc}"
+                                                                data-gia="${sc.giaVeCoBan}"
+                                                                data-trangthai="${sc.trangThai}"
+                                                                data-lydo="${sc.lyDoHuy}"
+                                                                onclick="openDetailSuatChieuFromBtn(this)">
+                                                            <i class="fa-regular fa-eye"></i>
+                                                        </button>
+                                                        <button type="button" class="action-btn action-edit" title="Chỉnh sửa"
+                                                                data-id="${sc.maSuat}"
+                                                                data-code="${sc.maSuatFormatted}"
+                                                                data-phim="${sc.phim.maPhim}"
+                                                                data-phong="${sc.phongChieu.maPhong}"
+                                                                data-dinhdang="${sc.dinhDang}"
+                                                                data-ngay="${sc.ngayChieu}"
+                                                                data-gio="${sc.gioBatDau}"
+                                                                data-gia="${sc.giaVeCoBan}"
+                                                                data-trangthai="${sc.trangThai}"
+                                                                onclick="openEditSuatChieuFromBtn(this)">
+                                                            <i class="fa-solid fa-pen"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </c:if>
+                                    </c:forEach>
+
+                                    <c:if test="${countInRoom == 0}">
+                                        <div class="timeline-empty-room">
+                                            <i class="fa-regular fa-calendar-xmark" style="margin-right: 6px; font-size: 14px;"></i>
+                                            Chưa có suất chiếu nào cho phòng này trong khoảng thời gian đã chọn.
+                                        </div>
+                                    </c:if>
+                                </div>
+                            </div>
+                        </c:forEach>
+                    </c:otherwise>
+                </c:choose>
+            </div> <!-- /#viewTimelineContainer -->
         </div>
     </div>
 </div>
@@ -1241,11 +1476,157 @@
         }
     }
 
+    // Chuyển đổi giữa chế độ Danh sách và Lịch phòng chiếu
+    function switchViewMode(mode) {
+        const btnList = document.getElementById('btnTabList');
+        const btnTimeline = document.getElementById('btnTabTimeline');
+        const viewList = document.getElementById('viewListContainer');
+        const viewTimeline = document.getElementById('viewTimelineContainer');
+
+        if (!btnList || !btnTimeline || !viewList || !viewTimeline) return;
+
+        if (mode === 'timeline') {
+            btnList.className = 'btn btn-outline btn-sm';
+            btnList.style.background = '#fff';
+            btnTimeline.className = 'btn btn-pink btn-sm';
+            btnTimeline.style.background = '';
+            viewList.style.display = 'none';
+            viewTimeline.style.display = 'flex';
+            localStorage.setItem('suatChieuViewMode', 'timeline');
+        } else {
+            btnList.className = 'btn btn-pink btn-sm';
+            btnList.style.background = '';
+            btnTimeline.className = 'btn btn-outline btn-sm';
+            btnTimeline.style.background = '#fff';
+            viewList.style.display = 'block';
+            viewTimeline.style.display = 'none';
+            localStorage.setItem('suatChieuViewMode', 'list');
+        }
+    }
+
+    // Nhanh chóng thêm suất chiếu cho một phòng cụ thể từ màn hình Lịch phòng chiếu
+    function openAddSuatChieuForRoom(maPhong, loaiPhong) {
+        openAddSuatChieu();
+        const selPhong = document.getElementById('addMaPhong');
+        if (selPhong && maPhong) {
+            selPhong.value = maPhong;
+            onPhongChange('add');
+        }
+    }
+
+    // Lọc nhanh theo Ngày, Tuần, Tháng
+    function setDateFilter(type) {
+        const today = new Date();
+        function fmt(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        let tuNgay = '';
+        let denNgay = '';
+
+        if (type === 'today') {
+            tuNgay = fmt(today);
+            denNgay = fmt(today);
+        } else if (type === 'week') {
+            const dayOfWeek = today.getDay(); // 0: CN, 1: T2, ...
+            const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+            const mon = new Date(today);
+            mon.setDate(today.getDate() + diffToMon);
+            const sun = new Date(mon);
+            sun.setDate(mon.getDate() + 6);
+            tuNgay = fmt(mon);
+            denNgay = fmt(sun);
+        } else if (type === 'month') {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            tuNgay = fmt(firstDay);
+            denNgay = fmt(lastDay);
+        }
+
+        const inpTu = document.getElementById('filterTuNgay');
+        const inpDen = document.getElementById('filterDenNgay');
+        if (inpTu) inpTu.value = tuNgay;
+        if (inpDen) inpDen.value = denNgay;
+
+        const pageInput = document.getElementById('pageNumberInput');
+        if (pageInput) pageInput.value = 1;
+
+        const filterForm = document.getElementById('filterForm');
+        if (filterForm) filterForm.submit();
+    }
+
+    // Tự động tô màu nút Ngày/Tuần/Tháng đang kích hoạt
+    function highlightDateRangeBtn() {
+        const inpTu = document.getElementById('filterTuNgay');
+        const inpDen = document.getElementById('filterDenNgay');
+        if (!inpTu || !inpDen) return;
+
+        const tu = inpTu.value;
+        const den = inpDen.value;
+        if (!tu || !den) return;
+
+        const today = new Date();
+        function fmt(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        const todayStr = fmt(today);
+
+        // Tính ngày đầu và cuối tuần
+        const dayOfWeek = today.getDay();
+        const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+        const mon = new Date(today);
+        mon.setDate(today.getDate() + diffToMon);
+        const sun = new Date(mon);
+        sun.setDate(mon.getDate() + 6);
+        const monStr = fmt(mon);
+        const sunStr = fmt(sun);
+
+        // Tính ngày đầu và cuối tháng
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const firstStr = fmt(firstDay);
+        const lastStr = fmt(lastDay);
+
+        let activeId = null;
+        if (tu === todayStr && den === todayStr) {
+            activeId = 'btnDateToday';
+        } else if (tu === monStr && den === sunStr) {
+            activeId = 'btnDateWeek';
+        } else if (tu === firstStr && den === lastStr) {
+            activeId = 'btnDateMonth';
+        }
+
+        if (activeId) {
+            ['btnDateToday', 'btnDateWeek', 'btnDateMonth'].forEach(id => {
+                const b = document.getElementById(id);
+                if (b) {
+                    if (id === activeId) {
+                        b.style.background = 'var(--pink)';
+                        b.style.color = '#fff';
+                        b.style.fontWeight = '700';
+                    } else {
+                        b.style.background = 'transparent';
+                        b.style.color = 'var(--text-secondary)';
+                        b.style.fontWeight = '600';
+                    }
+                }
+            });
+        }
+    }
+
     // Tự động tính toán khi trang load nếu đang mở modal
     window.addEventListener('DOMContentLoaded', () => {
         onPhongChange('add');
         calculateEndTime('add');
         calculateEndTime('edit');
+        highlightDateRangeBtn();
+        const savedMode = localStorage.getItem('suatChieuViewMode');
+        if (savedMode === 'timeline') {
+            switchViewMode('timeline');
+        }
     });
 </script>
 </body>
