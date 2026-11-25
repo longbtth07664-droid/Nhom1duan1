@@ -1,0 +1,27 @@
+/* CSS hỗ trợ upload và xem trước ảnh danh mục Sản phẩm & Combo */
+.anh-danh-muc-chon {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+.anh-danh-muc-ten {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+.anh-danh-muc-goi-y {
+    display: block;
+    font-size: 11.5px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+.anh-danh-muc-xem-truoc {
+    max-width: 120px;
+    max-height: 90px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-top: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
