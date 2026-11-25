@@ -31,6 +31,10 @@ Repository: src/main/java/repository/SanPhamRepository.java
 - isSanPhamUsed: kiểm tra sản phẩm đã nằm trong combo/hóa đơn.
 Giao diện: src/main/webapp/quanLySanPham.jsp
 - Form thêm/sửa; goiYDonVi: gợi ý đơn vị; xoaSP: xác nhận xóa.
+- [SP-THEM-ANH], [SP-SUA-ANH]: chọn tệp tepAnh trong form multipart.
+- [SP-HIEN-ANH]: hiển thị ảnh đã lưu trong bảng danh sách sản phẩm.
+- src/main/webapp/assets/js/san-pham-anh.js: khoiTaoAnhSanPham mở hộp chọn,
+  kiểm tra JPG/PNG tối đa 5 MB, xem trước và trở về ảnh cũ khi bỏ lựa chọn.
 
 3. THỐNG KÊ TRONG TỔNG QUAN
 Controller: src/main/java/controller/ThongKeServlet.java
