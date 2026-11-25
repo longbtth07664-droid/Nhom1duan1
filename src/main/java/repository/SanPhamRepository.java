@@ -10,6 +10,19 @@ import java.util.ConcurrentModificationException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+/* TRA CỨU HÀM: SanPhamRepository
+ * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
+ * Ctrl+F "openSession(" để tìm phần xử lý.
+ * Ctrl+F "getAll(" để tìm phần xử lý.
+ * Ctrl+F "getAllDangKinhDoanh(" để tìm phần xử lý.
+ * Ctrl+F "getOne(" để tìm phần xử lý.
+ * Ctrl+F "search(" để tìm phần xử lý.
+ * Ctrl+F "add(" để tìm phần xử lý.
+ * Ctrl+F "update(" để tìm phần xử lý.
+ * Ctrl+F "fingerprint(" để tìm phần xử lý.
+ * Ctrl+F "isSanPhamUsed(" để tìm phần xử lý.
+ * Ctrl+F "delete(" để tìm phần xử lý.
+ */
 public class SanPhamRepository {
     protected Session openSession() {
         return HibernateConfig.getFACTORY().openSession();
@@ -143,8 +156,18 @@ public class SanPhamRepository {
                     .setParameter("ma", productId).uniqueResult();
             Object cntHD = session.createNativeQuery("SELECT COUNT(*) FROM ChiTietHoaDon WHERE MaSP = :ma")
                     .setParameter("ma", productId).uniqueResult();
-            int c1 = (cntCombo != null) ? ((Number) cntCombo).intValue() : 0;
-            int c2 = (cntHD != null) ? ((Number) cntHD).intValue() : 0;
+            int c1;
+            if ((cntCombo != null)) {
+                c1 = ((Number) cntCombo).intValue();
+            } else {
+                c1 = 0;
+            }
+            int c2;
+            if ((cntHD != null)) {
+                c2 = ((Number) cntHD).intValue();
+            } else {
+                c2 = 0;
+            }
             return (c1 + c2) > 0;
         } catch (Exception e) {
             throw new IllegalStateException("Không kiểm tra được sản phẩm đã được sử dụng hay chưa.", e);

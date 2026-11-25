@@ -10,6 +10,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 // Chỉ đọc dữ liệu bán hàng; không sửa giá, trạng thái hay tồn kho của module khác.
+/* TRA CỨU HÀM: ThongKeRepository
+ * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
+ * Ctrl+F "load(" để tìm phần xử lý.
+ * Ctrl+F "query(" để tìm phần xử lý.
+ * Ctrl+F "readDays(" để tìm phần xử lý.
+ * Ctrl+F "readRanking(" để tìm phần xử lý.
+ */
 public class ThongKeRepository {
     // 1. ĐIỀU KIỆN CHUNG: chỉ lấy hóa đơn hoàn tất đã thanh toán.
     // EXISTS không nhân doanh thu khi hóa đơn có nhiều dòng thanh toán.

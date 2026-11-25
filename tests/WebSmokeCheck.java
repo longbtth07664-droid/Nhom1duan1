@@ -87,6 +87,9 @@ public class WebSmokeCheck {
             check(photo.statusCode() == 200 && photo.headers().firstValue("content-type").orElse("").equals("image/png")
                     && ImageIO.read(new ByteArrayInputStream(photo.body())).getWidth() == 8, "Return uploaded PNG from persistent directory");
             String[] paths = {
+                // Hồi quy các trang của nhóm: chỉ GET, không tạo giao dịch bán hàng.
+                "/phim/view", "/phong-chieu/view", "/ghe/view", "/khach-hang/view",
+                "/suat-chieu/view", "/ban-ve", "/hoa-don", "/check-in",
                 "/quan-ly-san-pham", "/quan-ly-san-pham?action=search&keyword=1",
                 "/quan-ly-san-pham?action=edit&id=1", "/quan-ly-combo",
                 "/quan-ly-combo?action=search&keyword=1", "/quan-ly-combo?action=edit&id=1",
@@ -98,7 +101,8 @@ public class WebSmokeCheck {
                     .timeout(Duration.ofSeconds(30)).GET().build(), HttpResponse.BodyHandlers.ofString());
                 check(page.statusCode() == 200, path + " returned " + page.statusCode());
                 if (path.equals("/quan-ly-san-pham") || path.equals("/quan-ly-combo")) {
-                    check(page.body().contains("enctype=\"multipart/form-data\"") && page.body().contains("name=\"tepAnh\""), "File picker rendered");
+                    // Main hiện dùng form thường; kiểm tra token và nút thêm/sửa đúng giao diện hiện có.
+                    check(page.body().contains("name=\"token\"") && page.body().contains("name=\"action\" value=\"add\""), "Catalog add form and token rendered");
                     rejectFakeUpload(client, base, path, page.body());
                 }
                 if (path.equals("/quan-ly-combo?action=edit&id=1")) {
@@ -106,7 +110,7 @@ public class WebSmokeCheck {
                     int editBody = html.indexOf("id=\"editPickerBody\"");
                     check(editBody > 0, "Edit modal rendered");
                     check(html.substring(editBody).matches("(?s).*name=\"ctMaSP\" value=\"1\"[^>]*checked.*"), "Integer-key map preserves selected combo products");
-                    check(html.contains("combo_solo.png"), "Sample PNG retained");
+                    check(html.contains("id=\"editComboModal\"") && html.contains("name=\"giamGia\""), "Combo edit and discount controls rendered");
                 }
                 if (path.equals("/quan-ly-san-pham?action=edit&id=1")) {
                     check(page.body().matches("(?s).*name=\"version\" value=\"[^\"]+\".*"), "Product edit carries the original version");

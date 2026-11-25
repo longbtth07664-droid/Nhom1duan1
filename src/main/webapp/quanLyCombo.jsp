@@ -502,10 +502,12 @@
     function locSanPham(mode, text) {
         function clean(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d'); }
         var count=0;
-        document.querySelectorAll('#'+mode+'PickerBody tr').forEach(function(row) {
+        var rows = document.querySelectorAll('#'+mode+'PickerBody tr');
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
             row.hidden=!clean(row.textContent).includes(clean(text.trim()));
             if(!row.hidden) count++;
-        });
+        }
         document.getElementById(mode+'Empty').hidden=count>0;
     }
     // COMBO: tính cả những món đang bị bộ lọc ẩn; giá lưu được server tính lại.
@@ -513,14 +515,20 @@
         var body=document.getElementById(mode+'PickerBody');
         if(!body) return;
         var total=0;
-        body.querySelectorAll('input[type="checkbox"]:checked').forEach(function(cb) {
+        var selected = body.querySelectorAll('input[type="checkbox"]:checked');
+        for (var i = 0; i < selected.length; i++) {
+            var cb = selected[i];
             var qty=Number(cb.closest('tr').querySelector('input[type="number"]').value);
             if(Number.isInteger(qty)&&qty>0) total+=Number(cb.dataset.gia)*qty;
-        });
+        }
         document.getElementById(mode+'TongGiaLe').textContent='Tổng giá lẻ: '+total.toLocaleString('vi-VN')+' đ';
         var price=document.getElementById(mode+'GiaCombo');
         var rate=Number(document.getElementById(mode+'GiamGia').value);
-        price.value=rate===-1?price.dataset.original:Math.round(total*(100-rate)/100);
+        if (rate === -1) {
+            price.value = price.dataset.original;
+        } else {
+            price.value = Math.round(total * (100 - rate) / 100);
+        }
     }
     // COMBO: báo chính xác món vượt kho hoặc đã ngừng bán.
     function validateComboForm(mode) {
@@ -543,14 +551,20 @@
         tinhTongGiaLe(mode);
         try {
             // Trình duyệt yêu cầu chọn lại tệp sau khi trang tải lại. Chỉ giữ các ô văn bản.
-            var fields = Array.from(new FormData(form).entries()).filter(function(pair) { return typeof pair[1] === 'string'; });
+            var fields = [];
+            for (var pair of new FormData(form).entries()) {
+                if (typeof pair[1] === 'string') fields.push(pair);
+            }
             sessionStorage.setItem('comboDraft', JSON.stringify(fields));
         } catch(e) {}
         return true;
     }
     // COMBO: đổi thành phần sẽ tính lại giá; giữ bản nhập khi server trả lỗi.
     document.addEventListener('DOMContentLoaded',function() {
-        ['add','edit'].forEach(function(mode) {
+        khoiTaoBangSanPham('add');
+        khoiTaoBangSanPham('edit');
+        // Hàm riêng giữ đúng mode cho sự kiện của từng bảng.
+        function khoiTaoBangSanPham(mode) {
             var body=document.getElementById(mode+'PickerBody');
             if(!body) return;
             body.addEventListener('invalid',function(e){e.target.closest('tr').hidden=false;},true);
@@ -563,36 +577,57 @@
                 tinhTongGiaLe(mode);
             });
             tinhTongGiaLe(mode);
-        });
+        }
         try {
             var params=new URLSearchParams(location.search);
             if(params.get('msg')==='error') {
                 var entries=JSON.parse(sessionStorage.getItem('comboDraft')||'[]');
-                var action=entries.find(function(e){return e[0]==='action';});
+                var action=timTruongBanNhap(entries, 'action');
                 var mode=action&&action[1]==='add'?'add':'edit';
                 var price=document.getElementById(mode+'GiaCombo');
                 if(!price) return;
                 var form=price.form;
                 // Bản nháp chỉ áp dụng cho đúng combo và đúng dữ liệu lúc mở form.
                 if (mode === 'edit') {
-                    var draftId = entries.find(function(e){return e[0] === 'maCombo';});
-                    var draftVersion = entries.find(function(e){return e[0] === 'version';});
+                    var draftId = timTruongBanNhap(entries, 'maCombo');
+                    var draftVersion = timTruongBanNhap(entries, 'version');
                     if (!draftId || !draftVersion || draftId[1] !== form.elements.maCombo.value
                             || draftVersion[1] !== form.elements.version.value) return;
                 }
-                form.querySelectorAll('input[type="checkbox"]').forEach(function(el){el.checked=false;toggleProductRow(el,mode);});
-                entries.forEach(function(pair){
-                    Array.from(form.elements).filter(function(el){return el.name===pair[0];}).forEach(function(el){
-                        if(el.type==='checkbox') {
-                            if(el.value===pair[1]) {el.checked=true;toggleProductRow(el,mode);}
-                        } else if(el.type !== 'file' && !['token','version','maCombo'].includes(el.name)) el.value=pair[1];
-                    });
-                });
+                // Khôi phục từng ô; giữ nguyên token, mã và phiên bản hiện tại.
+                var boxes = form.querySelectorAll('input[type="checkbox"]');
+                for (var i = 0; i < boxes.length; i++) {
+                    boxes[i].checked = false;
+                    toggleProductRow(boxes[i], mode);
+                }
+                for (var i = 0; i < entries.length; i++) {
+                    var pair = entries[i];
+                    for (var j = 0; j < form.elements.length; j++) {
+                        var el = form.elements[j];
+                        if (el.name !== pair[0]) continue;
+                        if (el.type === 'checkbox') {
+                            if (el.value === pair[1]) {
+                                el.checked = true;
+                                toggleProductRow(el, mode);
+                            }
+                        } else if (el.type !== 'file' && el.name !== 'token'
+                                && el.name !== 'version' && el.name !== 'maCombo') {
+                            el.value = pair[1];
+                        }
+                    }
+                }
                 tinhTongGiaLe(mode); openModal(mode+'ComboModal');
             } else if(params.get('msg')) sessionStorage.removeItem('comboDraft');
         } catch(e) { /* Không có bản nháp thì giữ form mặc định. */ }
     });
 
+    // [CB-BAN-NHAP] Duyệt lần lượt và trả trường đầu tiên đúng tên.
+    function timTruongBanNhap(entries, name) {
+        for (var i = 0; i < entries.length; i++) {
+            if (entries[i][0] === name) return entries[i];
+        }
+        return undefined;
+    }
     // Mở modal Chi tiết và đổ dữ liệu an toàn
     var detailRequest=0; // Bỏ phản hồi cũ khi chuyển combo.
     function xemChiTietCombo(btn) {
@@ -622,7 +657,8 @@
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">Chưa có sản phẩm nào trong combo này.</td></tr>';
                     return;
                 }
-                data.forEach(function (ct) {
+                for (var i = 0; i < data.length; i++) {
+                    var ct = data[i];
                     var tr = document.createElement('tr');
                     var cols = [
                         ct.maSP,
@@ -632,13 +668,14 @@
                         Number(ct.giaBan).toLocaleString('vi-VN') + ' đ',
                         ct.ghiChu || ''
                     ];
-                    cols.forEach(function (val) {
+                    for (var j = 0; j < cols.length; j++) {
+                        var val = cols[j];
                         var td = document.createElement('td');
                         td.textContent = val;
                         tr.appendChild(td);
-                    });
+                    }
                     tbody.appendChild(tr);
-                });
+                }
             })
             .catch(function (err) {
                 if(requestId!==detailRequest) return;
@@ -652,9 +689,12 @@
         var ten = btn.getAttribute('data-ten');
         if (confirm('Bạn có chắc muốn xóa combo "' + ten + '" (' + ma + ') không?')) {
             var form=document.createElement('form'); form.method='post'; form.action='${pageContext.request.contextPath}/quan-ly-combo';
-            [['action','delete'],['id',ma],['token','${sessionScope.comboToken}']].forEach(function(pair){
+            var fields = [['action','delete'],['id',ma],['token','${sessionScope.comboToken}']];
+            for (var i = 0; i < fields.length; i++) {
+                var pair = fields[i];
                 var input=document.createElement('input'); input.type='hidden'; input.name=pair[0]; input.value=pair[1]; form.appendChild(input);
-            }); document.body.appendChild(form); form.submit();
+            }
+            document.body.appendChild(form); form.submit();
         }
     }
 

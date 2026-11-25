@@ -1,0 +1,22 @@
+KẾT QUẢ KIỂM TRA 25/11/2026
+Baseline: a7c658b (origin/main trước refactor).
+- Maven package: BUILD SUCCESS; cập nhật target/classes, thư mục webapp và WAR.
+- ComboValidationCheck: PASS.
+- CatalogIntegrationCheck: PASS trên bảng tạm SQL Server: CRUD, tìm kiếm,
+  giá, ảnh, tồn kho, phiên bản form, chặn xóa và rollback.
+- ThongKeIntegrationCheck: PASS: truy vấn database thật chỉ đọc và bộ dữ liệu
+  bảng tạm; tổng ngày/tháng/năm, năm nhuận, lọc thanh toán, chống nhân doanh thu,
+  xếp hạng và giữ nguyên giao dịch của bên gọi.
+- ComboUiRegressionCheck.cjs: PASS; so sánh lọc tiếng Việt, tổng giá và giảm giá
+  với JavaScript baseline a7c658b bằng DOM giả lập, không phải trình duyệt thật.
+- WebSmokeCheck: PASS trên Tomcat 10.1: đăng nhập, danh sách/tìm kiếm/sửa,
+  JSON chi tiết combo, báo cáo ngày/tháng/năm, bộ lọc sai, token và ảnh giả.
+  Kiểm thử form được cập nhật theo giao diện main (không giả định có ô upload).
+- Các trang phim, phòng, ghế, khách hàng, suất chiếu, bán vé, hóa đơn và check-in
+  đều trả HTTP 200. Tuy nhiên log các phần khách hàng/suất chiếu/bán vé báo
+  thiếu bảng KhachHang, cột GiaVeCoBan, cột TrangThai trong database hiện tại.
+  HTTP 200 không chứng minh các chức năng này hoạt động đầy đủ.
+  Các controller/repository tương ứng và cấu hình/schema không bị sửa trong refactor.
+- Không thử ghi hóa đơn, thanh toán, soát vé trên dữ liệu nghiệp vụ thật.
+- Log chi tiết lưu tại target/*-review.log (không đưa vào Git).
+- Không đưa bản sao lưu pull và database_anh_san_pham.sql chưa tracked vào commit.

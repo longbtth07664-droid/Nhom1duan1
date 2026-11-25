@@ -14,6 +14,12 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 
 // THỐNG KÊ: nhận bộ lọc ngày, lấy báo cáo và chuyển dữ liệu sang JSP.
+/* TRA CỨU HÀM: ThongKeServlet
+ * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
+ * Ctrl+F "validateRange(" để tìm phần xử lý.
+ * Ctrl+F "doGet(" để tìm phần xử lý.
+ * Ctrl+F "setQuickDates(" để tìm phần xử lý.
+ */
 @WebServlet(name = "ThongKeServlet", urlPatterns = {"/thong-ke"})
 public class ThongKeServlet extends HttpServlet {
     private final ThongKeRepository repository = new ThongKeRepository();

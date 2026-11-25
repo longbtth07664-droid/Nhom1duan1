@@ -1,0 +1,55 @@
+TRA CỨU KHI TRÌNH BÀY VỚI GIẢNG VIÊN
+Dùng Ctrl+Shift+F tìm tên hàm hoặc mã ghi chú trong toàn dự án.
+
+1. QUẢN LÝ COMBO
+Controller: src/main/java/controller/ComboServlet.java
+- Danh sách: hienThiDanhSach; tìm kiếm và lọc trạng thái: timKiemCombo.
+- Mở sửa: moFormSua; thêm/sửa: luuCombo; xóa: xoaCombo.
+- Đọc thông tin: docThongTinCombo; chọn món, số lượng, ghi chú: docDanhSachChiTiet.
+- Chi tiết AJAX: traChiTietJson; bảo vệ chuỗi JSON: escapeJson.
+Repository: src/main/java/repository/ComboRepository.java
+- getAll, getOne, search, getChiTiet: đọc dữ liệu.
+- save: lưu combo và thành phần trong một giao dịch.
+- kiemTraVaTinhTongGiaLe: kiểm tra tồn kho, trạng thái và cộng giá món.
+- fingerprint: phát hiện form cũ; delete: chặn xóa combo đã có hóa đơn.
+Giao diện: src/main/webapp/quanLyCombo.jsp
+- locSanPham: lọc món; toggleProductRow: bật số lượng/ghi chú.
+- tinhTongGiaLe: giá xem trước và giảm giá; validateComboForm: kiểm tra nhập.
+- khoiTaoBangSanPham: gắn sự kiện; timTruongBanNhap: tìm dữ liệu nhập trước.
+- DOMContentLoaded: khôi phục bản nháp sau lỗi, kiểm tra mã và phiên bản.
+- xemChiTietCombo: tải chi tiết, bỏ phản hồi cũ; xoaCombo: xác nhận và gửi POST.
+
+2. QUẢN LÝ SẢN PHẨM
+Controller: src/main/java/controller/SanPhamServlet.java
+- hienThiDanhSach, timKiemSanPham: xem, tìm theo mã/tên/loại và lọc trạng thái.
+- themSanPham, moFormSua, capNhatSanPham, xoaSanPham: thêm/sửa/xóa.
+- docThongTinSanPham, namTrongDanhSach: kiểm tra giá, tồn kho và danh mục.
+- luuSanPhamCoAnh: lưu ảnh; dọn ảnh mới nếu lưu dữ liệu thất bại.
+Repository: src/main/java/repository/SanPhamRepository.java
+- getAll, getAllDangKinhDoanh, getOne, search: đọc dữ liệu.
+- add, update, delete: ghi dữ liệu; fingerprint: phát hiện thay đổi đồng thời.
+- isSanPhamUsed: kiểm tra sản phẩm đã nằm trong combo/hóa đơn.
+Giao diện: src/main/webapp/quanLySanPham.jsp
+- Form thêm/sửa; goiYDonVi: gợi ý đơn vị; xoaSP: xác nhận xóa.
+
+3. THỐNG KÊ TRONG TỔNG QUAN
+Controller: src/main/java/controller/ThongKeServlet.java
+- doGet: nhận lọc ngày/tháng/năm và trả trang; validateRange: giới hạn khoảng lọc.
+- setQuickDates: hôm nay, 7 ngày qua, tháng này/tháng trước, đầu năm.
+Repository: src/main/java/repository/ThongKeRepository.java
+- load: đọc báo cáo; query: gắn khoảng ngày và thời gian chờ.
+- readDays: tổng doanh thu, giảm giá, giá trị vé/món, số hóa đơn/vé/món, sai lệch.
+- readRanking: top 10 phim và sản phẩm/combo theo giá trị bán.
+- DocBaoCao.execute: đọc nhất quán trong cùng giao dịch.
+Dữ liệu: src/main/java/entity/ThongKeReport.java
+- addDay: cộng tổng; getAverage: trung bình hóa đơn.
+- groupBy: gom tháng/năm; congSoLieu: cộng từng chỉ tiêu của nhóm.
+- prepareChart: tính chiều cao cột biểu đồ.
+Giao diện: src/main/webapp/WEB-INF/views/thongKe.jsp
+- Bộ lọc, thẻ tổng hợp, biểu đồ, bảng xếp hạng và bảng chi tiết theo kỳ.
+
+PHẦN DÙNG CHUNG
+Ảnh gọi util.AnhDanhMuc; kết nối gọi util.HibernateConfig; mã gọi util.DatabaseId.
+Giữ API, URL, câu truy vấn, transaction, khóa dữ liệu và token để tương thích phần bán hàng.
+SQL thống kê tổng hợp vé và món riêng trước khi nối để tránh nhân doanh thu.
+BigDecimal cần thiết cho tính tiền; fetch cần thiết cho tải chi tiết không tải lại trang.

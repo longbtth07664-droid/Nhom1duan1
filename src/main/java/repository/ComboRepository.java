@@ -10,6 +10,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 // Repository xử lý mọi thao tác CSDL cho module Combo (Hibernate ORM)
+/* TRA CỨU HÀM: ComboRepository
+ * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
+ * Ctrl+F "openSession(" để tìm phần xử lý.
+ * Ctrl+F "getAll(" để tìm phần xử lý.
+ * Ctrl+F "getOne(" để tìm phần xử lý.
+ * Ctrl+F "search(" để tìm phần xử lý.
+ * Ctrl+F "getChiTiet(" để tìm phần xử lý.
+ * Ctrl+F "save(" để tìm phần xử lý.
+ * Ctrl+F "fingerprint(" để tìm phần xử lý.
+ * Ctrl+F "delete(" để tìm phần xử lý.
+ * Ctrl+F "kiemTraVaTinhTongGiaLe(" để tìm phần xử lý.
+ * Ctrl+F "sapXepTheoMaSanPham(" để tìm phần xử lý.
+ */
 public class ComboRepository {
     protected Session openSession() {
         return HibernateConfig.getFACTORY().openSession();

@@ -15,6 +15,21 @@ import java.math.BigDecimal;
 import java.util.ConcurrentModificationException;
 import java.util.UUID;
 
+/* TRA CỨU HÀM: SanPhamServlet
+ * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
+ * Ctrl+F "doGet(" để tìm phần xử lý.
+ * Ctrl+F "xuLyGet(" để tìm phần xử lý.
+ * Ctrl+F "doPost(" để tìm phần xử lý.
+ * Ctrl+F "hienThiDanhSach(" để tìm phần xử lý.
+ * Ctrl+F "timKiemSanPham(" để tìm phần xử lý.
+ * Ctrl+F "themSanPham(" để tìm phần xử lý.
+ * Ctrl+F "moFormSua(" để tìm phần xử lý.
+ * Ctrl+F "capNhatSanPham(" để tìm phần xử lý.
+ * Ctrl+F "luuSanPhamCoAnh(" để tìm phần xử lý.
+ * Ctrl+F "xoaSanPham(" để tìm phần xử lý.
+ * Ctrl+F "docThongTinSanPham(" để tìm phần xử lý.
+ * Ctrl+F "namTrongDanhSach(" để tìm phần xử lý.
+ */
 @WebServlet(name = "SanPhamServlet", urlPatterns = {"/quan-ly-san-pham"})
 @MultipartConfig(maxFileSize = AnhDanhMuc.GIOI_HAN_TEP, maxRequestSize = AnhDanhMuc.GIOI_HAN_YEU_CAU)
 public class SanPhamServlet extends HttpServlet {
@@ -195,9 +210,19 @@ public class SanPhamServlet extends HttpServlet {
             String giaStr = req.getParameter("giaBan");
             String tonStr = req.getParameter("soLuongTon");
             // SẢN PHẨM: thêm mới luôn đang kinh doanh, kể cả request sửa tay.
-            String trangThai = "add".equals(req.getParameter("action")) ? "Đang kinh doanh" : req.getParameter("trangThai");
+            String trangThai;
+            if ("add".equals(req.getParameter("action"))) {
+                trangThai = "Đang kinh doanh";
+            } else {
+                trangThai = req.getParameter("trangThai");
+            }
 
-            Integer productId = "add".equals(req.getParameter("action")) ? null : util.DatabaseId.parse(maSP);
+            Integer productId;
+            if ("add".equals(req.getParameter("action"))) {
+                productId = null;
+            } else {
+                productId = util.DatabaseId.parse(maSP);
+            }
             if (productId != null && (tonStr == null || tonStr.isBlank()
                     || trangThai == null || trangThai.isBlank())) return null;
             if (tenSP == null || tenSP.trim().isEmpty()
@@ -208,7 +233,12 @@ public class SanPhamServlet extends HttpServlet {
             }
 
             BigDecimal giaBan = new BigDecimal(giaStr.trim());
-            int soLuongTon = (tonStr != null && !tonStr.trim().isEmpty()) ? Integer.parseInt(tonStr.trim()) : 0;
+            int soLuongTon;
+            if ((tonStr != null && !tonStr.trim().isEmpty())) {
+                soLuongTon = Integer.parseInt(tonStr.trim());
+            } else {
+                soLuongTon = 0;
+            }
             if (giaBan.compareTo(BigDecimal.ZERO) <= 0 || soLuongTon < 0) {
                 return null;
             }
@@ -246,4 +276,5 @@ public class SanPhamServlet extends HttpServlet {
             }
         }
         return false;
-    }}
+    }
+}

@@ -8,6 +8,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 // DTO báo cáo, không phải bảng Hibernate và không thay đổi database.
+/* TRA CỨU HÀM: ThongKeReport
+ * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
+ * Ctrl+F "addDay(" để tìm phần xử lý.
+ * Ctrl+F "getDays(" để tìm phần xử lý.
+ * Ctrl+F "getFilms(" để tìm phần xử lý.
+ * Ctrl+F "getProducts(" để tìm phần xử lý.
+ * Ctrl+F "getRevenue(" để tìm phần xử lý.
+ * Ctrl+F "getDiscount(" để tìm phần xử lý.
+ * Ctrl+F "getTicketValue(" để tìm phần xử lý.
+ * Ctrl+F "getProductValue(" để tìm phần xử lý.
+ * Ctrl+F "getInvoices(" để tìm phần xử lý.
+ * Ctrl+F "getTickets(" để tìm phần xử lý.
+ * Ctrl+F "getItems(" để tìm phần xử lý.
+ * Ctrl+F "getMismatches(" để tìm phần xử lý.
+ * Ctrl+F "getAverage(" để tìm phần xử lý.
+ * Ctrl+F "isEmpty(" để tìm phần xử lý.
+ * Ctrl+F "groupBy(" để tìm phần xử lý.
+ * Ctrl+F "prepareChart(" để tìm phần xử lý.
+ */
 public class ThongKeReport {
     // 1. Danh sách dùng cho biểu đồ, bảng theo ngày và hai bảng xếp hạng.
     private final List<Day> days = new ArrayList<>();
@@ -71,10 +90,7 @@ public class ThongKeReport {
                 old = new Day(key, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
                         BigDecimal.ZERO, 0, 0, 0, 0);
             }
-            Day sum = new Day(key, old.revenue.add(day.revenue), old.discount.add(day.discount),
-                    old.ticketValue.add(day.ticketValue), old.productValue.add(day.productValue),
-                    old.invoices + day.invoices, old.tickets + day.tickets,
-                    old.items + day.items, old.mismatches + day.mismatches);
+            Day sum = congSoLieu(key, old, day);
             sum.mode = mode;
             groups.put(key, sum);
         }
@@ -84,6 +100,22 @@ public class ThongKeReport {
         result.products.addAll(products);
         result.prepareChart();
         return result;
+    }
+
+    /** [TK-CONG-NHOM] Cộng hai dòng số liệu: tiền dùng BigDecimal, số lượng dùng long.
+     * Được groupBy gọi khi gom ngày vào cùng tháng hoặc cùng năm.
+     */
+    private Day congSoLieu(LocalDate ngayDauKy, Day cu, Day moi) {
+        BigDecimal doanhThu = cu.revenue.add(moi.revenue);
+        BigDecimal giamGia = cu.discount.add(moi.discount);
+        BigDecimal tienVe = cu.ticketValue.add(moi.ticketValue);
+        BigDecimal tienMon = cu.productValue.add(moi.productValue);
+        long soHoaDon = cu.invoices + moi.invoices;
+        long soVe = cu.tickets + moi.tickets;
+        long soMon = cu.items + moi.items;
+        long soSaiLech = cu.mismatches + moi.mismatches;
+        return new Day(ngayDauKy, doanhThu, giamGia, tienVe, tienMon,
+                soHoaDon, soVe, soMon, soSaiLech);
     }
 
     // Chuẩn hóa độ cao biểu đồ trên server, chỉ xuất số vào thuộc tính CSS.

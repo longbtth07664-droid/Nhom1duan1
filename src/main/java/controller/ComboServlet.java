@@ -23,6 +23,21 @@ import java.util.Map;
 // Controller điều phối toàn bộ chức năng Quản lý Combo bắp nước
 // URL: /quan-ly-combo
 // Chức năng: Xem danh sách, Tìm kiếm, Thêm, Sửa, Xóa, Xem chi tiết JSON
+/* TRA CỨU HÀM: ComboServlet
+ * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
+ * Ctrl+F "doGet(" để tìm phần xử lý.
+ * Ctrl+F "xuLyGet(" để tìm phần xử lý.
+ * Ctrl+F "doPost(" để tìm phần xử lý.
+ * Ctrl+F "hienThiDanhSach(" để tìm phần xử lý.
+ * Ctrl+F "timKiemCombo(" để tìm phần xử lý.
+ * Ctrl+F "moFormSua(" để tìm phần xử lý.
+ * Ctrl+F "luuCombo(" để tìm phần xử lý.
+ * Ctrl+F "xoaCombo(" để tìm phần xử lý.
+ * Ctrl+F "traChiTietJson(" để tìm phần xử lý.
+ * Ctrl+F "docThongTinCombo(" để tìm phần xử lý.
+ * Ctrl+F "docDanhSachChiTiet(" để tìm phần xử lý.
+ * Ctrl+F "escapeJson(" để tìm phần xử lý.
+ */
 @WebServlet(name = "ComboServlet", urlPatterns = {"/quan-ly-combo"})
 @MultipartConfig(maxFileSize = AnhDanhMuc.GIOI_HAN_TEP, maxRequestSize = AnhDanhMuc.GIOI_HAN_YEU_CAU)
 public class ComboServlet extends HttpServlet {
@@ -93,7 +108,12 @@ public class ComboServlet extends HttpServlet {
             else resp.sendError(400);
         } catch (RuntimeException e) {
             log("Không lưu được combo", e);
-            String message = e instanceof IllegalArgumentException ? e.getMessage() : "Không thể lưu dữ liệu. Vui lòng thử lại.";
+            String message;
+            if (e instanceof IllegalArgumentException) {
+                message = e.getMessage();
+            } else {
+                message = "Không thể lưu dữ liệu. Vui lòng thử lại.";
+            }
             String edit = "update".equals(req.getParameter("action")) ? "&action=edit&id="
                 + java.net.URLEncoder.encode(java.util.Objects.toString(req.getParameter("maCombo"), ""), java.nio.charset.StandardCharsets.UTF_8) : "";
             resp.sendRedirect(req.getContextPath() + "/quan-ly-combo?msg=error" + edit + "&error="
@@ -169,7 +189,12 @@ public class ComboServlet extends HttpServlet {
     /** [ComboServlet-luuCombo] Đọc form và mức giảm, gọi repository.save. Chuyển hướng sau lưu để tải lại trang không gửi trùng form. */
     private void luuCombo(HttpServletRequest req, HttpServletResponse resp, boolean adding)
             throws IOException, ServletException {
-        String id = adding ? null : req.getParameter("maCombo");
+        String id;
+        if (adding) {
+            id = null;
+        } else {
+            id = req.getParameter("maCombo");
+        }
         Combo combo = docThongTinCombo(req, id);
         if (combo == null) throw new IllegalArgumentException("Kiểm tra mã, tên, mô tả, trạng thái và tên ảnh (jpg, jpeg, png, webp).");
         if (adding) combo.setTrangThai("Đang bán");
@@ -239,10 +264,20 @@ public class ComboServlet extends HttpServlet {
             String giaStr = "1"; // Giá thật được tính tại repository, không tin giá gửi từ trình duyệt.
             String moTa = req.getParameter("moTa");
             String hinhAnh = req.getParameter("hinhAnh");
-            String trangThai = "add".equals(req.getParameter("action")) ? "Đang bán" : req.getParameter("trangThai");
+            String trangThai;
+            if ("add".equals(req.getParameter("action"))) {
+                trangThai = "Đang bán";
+            } else {
+                trangThai = req.getParameter("trangThai");
+            }
 
             // Bắt buộc: mã, tên, giá không được trống
-            Integer comboId = "add".equals(req.getParameter("action")) ? null : util.DatabaseId.parse(maCombo);
+            Integer comboId;
+            if ("add".equals(req.getParameter("action"))) {
+                comboId = null;
+            } else {
+                comboId = util.DatabaseId.parse(maCombo);
+            }
             if (tenCombo == null || tenCombo.trim().isEmpty()
                     || giaStr == null || giaStr.trim().isEmpty()) {
                 return null;
@@ -256,7 +291,12 @@ public class ComboServlet extends HttpServlet {
             }
 
             // Tên ảnh tĩnh do form cũ gửi lên vẫn được hỗ trợ. Form mới gửi file tepAnh.
-            String tenAnh = (hinhAnh != null) ? hinhAnh.trim() : "";
+            String tenAnh;
+            if ((hinhAnh != null)) {
+                tenAnh = hinhAnh.trim();
+            } else {
+                tenAnh = "";
+            }
             if (tenAnh.isEmpty()) {
                 tenAnh = "";
             } else if (!tenAnh.contains(".")) {
