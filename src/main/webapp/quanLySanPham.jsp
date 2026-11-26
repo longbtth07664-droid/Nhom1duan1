@@ -11,6 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lí Sản phẩm - Rạp Chiếu Phim CINEMAX</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/anh-danh-muc.css?v=2">
     <style>
         .alert-success {
             background: #ECFDF5; border: 1px solid #A7F3D0; color: #047857;
@@ -77,7 +78,7 @@
                 <div class="alert-error">Mã sản phẩm đã tồn tại!</div>
             </c:if>
             <c:if test="${param.msg == 'invalid_data' || param.msg == 'error'}">
-                <div class="alert-error">Dữ liệu không hợp lệ hoặc thao tác thất bại!</div>
+                <div class="alert-error">Dữ liệu không hợp lệ hoặc thao tác thất bại! <c:out value="${param.error}"/></div>
             </c:if>
 
             <div class="card">
@@ -112,6 +113,7 @@
                         <thead>
                         <tr>
                             <th>STT</th>
+                            <th>Hình ảnh</th>
                             <th>Mã SP</th>
                             <th>Tên Sản Phẩm</th>
                             <th>Loại SP</th>
@@ -126,6 +128,18 @@
                         <c:forEach items="${dsSanPham}" var="sp" varStatus="st">
                             <tr>
                                 <td>${st.index + 1}</td>
+                                <%-- [SP-HIEN-ANH] Đọc tên ảnh từ SanPham.HinhAnh rồi gọi servlet cung cấp ảnh. --%>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${not empty sp.hinhAnh}">
+                                            <c:url var="anhSanPham" value="/anh-danh-muc"><c:param name="ten" value="${sp.hinhAnh}"/></c:url>
+                                            <img src="<c:out value='${anhSanPham}'/>" alt="Ảnh sản phẩm" width="64" height="52"
+                                                 style="object-fit:contain; border-radius:6px;" onerror="this.hidden=true; this.nextElementSibling.hidden=false;">
+                                            <span hidden>Chưa có ảnh</span>
+                                        </c:when>
+                                        <c:otherwise>Chưa có ảnh</c:otherwise>
+                                    </c:choose>
+                                </td>
                                 <td><strong><c:out value="${sp.maSP}"/></strong></td>
                                 <td><c:out value="${sp.tenSP}"/></td>
                                 <td><c:out value="${sp.loaiSP}"/></td>
@@ -157,7 +171,7 @@
                         </c:forEach>
                         <c:if test="${empty dsSanPham}">
                             <tr>
-                                <td colspan="9" style="text-align:center; color:var(--text-secondary);">Không có sản phẩm nào.</td>
+                                <td colspan="10" style="text-align:center; color:var(--text-secondary);">Không có sản phẩm nào.</td>
                             </tr>
                         </c:if>
                         </tbody>
@@ -176,9 +190,21 @@
             <button type="button" class="modal-close" onclick="closeModal('addSPModal')">&times;</button>
         </div>
 
-        <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post">
+        <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post" enctype="multipart/form-data">
             <input type="hidden" name="token" value="${sessionScope.sanPhamToken}">
             <input type="hidden" name="action" value="add">
+            <%-- [SP-THEM-ANH] Gửi file tepAnh tới SanPhamServlet.luuSanPhamCoAnh. --%>
+            <div class="form-group">
+                <label for="addSPAnh">Ảnh sản phẩm</label>
+                <input id="addSPAnh" name="tepAnh" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                       class="form-control" data-sp-anh aria-describedby="addSPAnhGoiY">
+                <div class="anh-danh-muc-chon">
+                    <button type="button" class="btn btn-outline" data-sp-chon-anh aria-controls="addSPAnh">+ Thêm ảnh</button>
+                    <span class="anh-danh-muc-ten" role="status">Chưa chọn tệp</span>
+                </div>
+                <small id="addSPAnhGoiY" class="anh-danh-muc-goi-y">JPG hoặc PNG, tối đa 5 MB.</small>
+                <img class="anh-danh-muc-xem-truoc" alt="Xem trước ảnh sản phẩm" hidden>
+            </div>
             <div class="form-grid">
                 <div class="form-group">
                     <label>Mã sản phẩm<span class="required-star">*</span></label>
@@ -241,10 +267,24 @@
                 <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="modal-close">&times;</a>
             </div>
 
-            <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post">
+            <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="token" value="${sessionScope.sanPhamToken}">
                 <input type="hidden" name="version" value="${version}">
                 <input type="hidden" name="action" value="update">
+                <%-- [SP-SUA-ANH] Không chọn tệp mới: repository giữ nguyên ảnh đã lưu. --%>
+                <div class="form-group">
+                    <label for="editSPAnh">Thay ảnh sản phẩm</label>
+                    <input id="editSPAnh" name="tepAnh" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                           class="form-control" data-sp-anh aria-describedby="editSPAnhGoiY">
+                    <div class="anh-danh-muc-chon">
+                        <button type="button" class="btn btn-outline" data-sp-chon-anh aria-controls="editSPAnh">+ Thêm ảnh</button>
+                        <span class="anh-danh-muc-ten" role="status">Chưa chọn tệp mới</span>
+                    </div>
+                    <small id="editSPAnhGoiY" class="anh-danh-muc-goi-y">Bỏ trống để giữ ảnh hiện tại. JPG hoặc PNG, tối đa 5 MB.</small>
+                    <c:url var="anhSanPhamSua" value="/anh-danh-muc"><c:param name="ten" value="${editSP.hinhAnh}"/></c:url>
+                    <img class="anh-danh-muc-xem-truoc" src="<c:out value='${anhSanPhamSua}'/>"
+                         alt="Xem trước ảnh sản phẩm" ${empty editSP.hinhAnh ? 'hidden' : ''} onerror="this.hidden=true;">
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Mã sản phẩm</label>
@@ -306,6 +346,7 @@
     <input type="hidden" name="id">
 </form>
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
+<script src="${pageContext.request.contextPath}/assets/js/san-pham-anh.js?v=1"></script>
 <script>
     // SẢN PHẨM: gợi ý đơn vị theo loại, không đổi các giá trị dữ liệu hiện có.
     function goiYDonVi(select) {

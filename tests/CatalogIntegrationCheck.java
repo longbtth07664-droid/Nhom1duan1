@@ -25,6 +25,66 @@ public class CatalogIntegrationCheck {
     static List<ChiTietCombo> details(Integer comboId, Integer productId, int qty) {
         return new ArrayList<>(Collections.singletonList(new ChiTietCombo(comboId, productId, qty, "")));
     }
+    /** Nối thử servlet -> lưu tệp -> repository SQL thật trên bảng tạm. */
+    static void checkProductUpload(SanPhamRepository products) throws Exception {
+        Path folder = Files.createTempDirectory(Path.of("target"), "product-image-check-");
+        String oldFolder = System.getProperty("cinemax.anh.dir");
+        System.setProperty("cinemax.anh.dir", folder.toAbsolutePath().toString());
+        try {
+            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(8, 8, 1), "png", bytes);
+            jakarta.servlet.http.Part part = (jakarta.servlet.http.Part) java.lang.reflect.Proxy.newProxyInstance(
+                    CatalogIntegrationCheck.class.getClassLoader(), new Class[]{jakarta.servlet.http.Part.class}, (proxy, method, args) -> {
+                        if (method.getName().equals("getSize")) return (long) bytes.size();
+                        if (method.getName().equals("getInputStream")) return new java.io.ByteArrayInputStream(bytes.toByteArray());
+                        if (method.getName().equals("getSubmittedFileName")) return "product.png";
+                        throw new UnsupportedOperationException(method.getName());
+                    });
+            String[] version = {null};
+            boolean[] withFile = {true};
+            jakarta.servlet.http.HttpServletRequest request = (jakarta.servlet.http.HttpServletRequest) java.lang.reflect.Proxy.newProxyInstance(
+                    CatalogIntegrationCheck.class.getClassLoader(), new Class[]{jakarta.servlet.http.HttpServletRequest.class}, (proxy, method, args) -> {
+                        if (method.getName().equals("getContentType")) return "multipart/form-data";
+                        if (method.getName().equals("getPart")) return withFile[0] ? part : null;
+                        if (method.getName().equals("getParameter")) return version[0];
+                        throw new UnsupportedOperationException(method.getName());
+                    });
+            controller.SanPhamServlet servlet = new controller.SanPhamServlet();
+            java.lang.reflect.Field repo = controller.SanPhamServlet.class.getDeclaredField("sanPhamRepo");
+            repo.setAccessible(true); repo.set(servlet, products);
+            java.lang.reflect.Method save = controller.SanPhamServlet.class.getDeclaredMethod("luuSanPhamCoAnh",
+                    jakarta.servlet.http.HttpServletRequest.class, SanPham.class, boolean.class);
+            save.setAccessible(true);
+            SanPham product = new SanPham(null, "Ảnh tải lên", "Bắp", "Hộp", new BigDecimal("25000"), 5, "Đang kinh doanh");
+            check((Boolean) save.invoke(servlet, request, product, true), "Upload and create product");
+            String id = product.getMaSP().toString();
+            String original = products.getOne(id).getHinhAnh();
+            check(Files.exists(folder.resolve(original)), "Uploaded file and database name agree");
+            product = products.getOne(id); version[0] = products.fingerprint(product); withFile[0] = false;
+            check((Boolean) save.invoke(servlet, request, product, false), "Edit without file");
+            check(original.equals(products.getOne(id).getHinhAnh()), "No file preserves image");
+            product = products.getOne(id); version[0] = products.fingerprint(product); withFile[0] = true;
+            check((Boolean) save.invoke(servlet, request, product, false), "Replace uploaded image");
+            check(!original.equals(products.getOne(id).getHinhAnh()), "New image replaces database filename");
+            long count;
+            try (var files = Files.list(folder)) { count = files.count(); }
+            version[0] = "stale-version";
+            try { save.invoke(servlet, request, product, false); throw new AssertionError("Stale form accepted"); }
+            catch (java.lang.reflect.InvocationTargetException e) {
+                check(e.getCause() instanceof ConcurrentModificationException, "Stale form rejected");
+            }
+            try (var files = Files.list(folder)) { check(files.count() == count, "Failed SQL save cleans new file"); }
+            check(products.delete(id), "Remove temporary product");
+            System.out.println("PASS: product servlet upload, SQL filename, keep/replace image and failure cleanup.");
+        } finally {
+            if (oldFolder == null) System.clearProperty("cinemax.anh.dir");
+            else System.setProperty("cinemax.anh.dir", oldFolder);
+            try (var files = Files.list(folder)) {
+                for (Path file : (Iterable<Path>) files::iterator) Files.delete(file);
+            }
+            Files.delete(folder);
+        }
+    }
     public static void main(String[] args) throws Exception {
         String config = Files.readString(Path.of("src/main/java/util/HibernateConfig.java"));
         String[] keys = {"URL", "USER", "PASS"}, values = new String[3];
@@ -153,6 +213,7 @@ public class CatalogIntegrationCheck {
                 check(products.add(next) && next.getMaSP() > 1, "SQL Server keeps assigning identities after delete");
                 combos.save(defaultImage, details(null, next.getMaSP(), 1), 0, true, null);
                 check(combos.getOne(defaultImage.getMaCombo().toString()).getHinhAnh().equals(defaultImage.getMaCombo() + ".jpg"), "Default image uses generated identity");
+                checkProductUpload(products);
             }
         }
         System.out.println("PASS: INT IDENTITY catalog CRUD, searches, composite keys, pricing, images, stock checks, stale edits, deletion guards and rollback; temporary tables only.");

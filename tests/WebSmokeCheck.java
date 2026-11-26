@@ -101,8 +101,8 @@ public class WebSmokeCheck {
                     .timeout(Duration.ofSeconds(30)).GET().build(), HttpResponse.BodyHandlers.ofString());
                 check(page.statusCode() == 200, path + " returned " + page.statusCode());
                 if (path.equals("/quan-ly-san-pham") || path.equals("/quan-ly-combo")) {
-                    // Main hiện dùng form thường; kiểm tra token và nút thêm/sửa đúng giao diện hiện có.
                     check(page.body().contains("name=\"token\"") && page.body().contains("name=\"action\" value=\"add\""), "Catalog add form and token rendered");
+                    check(page.body().contains("enctype=\"multipart/form-data\"") && page.body().contains("name=\"tepAnh\""), "Image upload form rendered");
                     rejectFakeUpload(client, base, path, page.body());
                 }
                 if (path.equals("/quan-ly-combo?action=edit&id=1")) {
@@ -114,6 +114,7 @@ public class WebSmokeCheck {
                 }
                 if (path.equals("/quan-ly-san-pham?action=edit&id=1")) {
                     check(page.body().matches("(?s).*name=\"version\" value=\"[^\"]+\".*"), "Product edit carries the original version");
+                    check(page.body().contains("id=\"editSPAnh\"") && page.body().contains("data-sp-chon-anh"), "Product edit has image picker");
                 }
                 if (path.startsWith("/thong-ke?")) {
                     Files.writeString(Path.of("target/thong-ke-smoke.html"), page.body());
