@@ -12,7 +12,7 @@ public class PhimRepository {
     public List<Phim> getAll() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery(
-                    "SELECT DISTINCT p FROM Phim p LEFT JOIN FETCH p.theLoais ORDER BY p.maPhim",
+                    "SELECT DISTINCT p FROM Phim p LEFT JOIN FETCH p.theLoais LEFT JOIN FETCH p.dinhDangs ORDER BY p.maPhim",
                     Phim.class
             ).list();
         }
@@ -23,7 +23,7 @@ public class PhimRepository {
         if (maPhim == null) return null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery(
-                    "SELECT p FROM Phim p LEFT JOIN FETCH p.theLoais WHERE p.maPhim = :id",
+                    "SELECT p FROM Phim p LEFT JOIN FETCH p.theLoais LEFT JOIN FETCH p.dinhDangs WHERE p.maPhim = :id",
                     Phim.class
             ).setParameter("id", maPhim).uniqueResult();
         }
@@ -66,10 +66,10 @@ public class PhimRepository {
     }
 
     // 5. Tìm kiếm phim theo từ khóa (Mã/Tên/Đạo diễn) và lọc theo Thể loại
-    public List<Phim> search(String keyword, String maTheLoai) {
+    public List<Phim> search(String keyword, String maTheLoai,String trangThai) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             StringBuilder hql = new StringBuilder(
-                    "SELECT DISTINCT p FROM Phim p LEFT JOIN FETCH p.theLoais WHERE 1=1"
+                    "SELECT DISTINCT p FROM Phim p LEFT JOIN FETCH p.theLoais LEFT JOIN FETCH p.dinhDangs WHERE 1=1"
             );
 
             Integer numKw = null;
@@ -92,6 +92,10 @@ public class PhimRepository {
                 }
             }
 
+            if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(trangThai)) {
+                hql.append(" AND p.trangThai = :trangThai");
+            }
+
             hql.append(" ORDER BY p.maPhim");
 
             var query = session.createQuery(hql.toString(), Phim.class);
@@ -102,9 +106,12 @@ public class PhimRepository {
                     query.setParameter("numKw", numKw);
                 }
             }
-
             if (intTheLoai != null) {
                 query.setParameter("maTL", intTheLoai);
+            }
+
+            if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(trangThai)) {
+                query.setParameter("trangThai", trangThai.trim());
             }
 
             return query.list();
@@ -112,5 +119,29 @@ public class PhimRepository {
             e.printStackTrace();
             return getAll();
         }
+    }
+
+    // =========================================================================
+    // [PHÂN TRANG - BACKEND] 1. Lấy danh sách phim theo trang (kết hợp tìm kiếm & lọc thể loại)
+    // - page: Số trang cần lấy (bắt đầu từ 1)
+    // - pageSize: Số lượng phim trên mỗi trang
+    // =========================================================================
+    public List<Phim> searchPaged(String keyword, String maTheLoai, String trangThai, int page, int pageSize) {
+        List<Phim> all = search(keyword, maTheLoai, trangThai);
+        if (all == null || all.isEmpty()) return java.util.Collections.emptyList();
+
+        int fromIndex = (page - 1) * pageSize;
+        if (fromIndex >= all.size()) return java.util.Collections.emptyList();
+
+        int toIndex = Math.min(fromIndex + pageSize, all.size());
+        return all.subList(fromIndex, toIndex);
+    }
+
+    // =========================================================================
+    // [PHÂN TRANG - BACKEND] 2. Đếm tổng số lượng phim thỏa mãn điều kiện tìm kiếm/lọc
+    // =========================================================================
+    public int countSearch(String keyword, String maTheLoai, String trangThai) {
+        List<Phim> all = search(keyword, maTheLoai, trangThai);
+        return all != null ? all.size() : 0;
     }
 }

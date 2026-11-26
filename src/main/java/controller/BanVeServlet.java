@@ -3,6 +3,7 @@ package controller;
 import entity.Combo;
 import entity.Ghe;
 import entity.Phim;
+import entity.SanPham;
 import entity.SuatChieu;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import repository.ComboRepository;
 import repository.GheRepository;
 import repository.PhimRepository;
+import repository.SanPhamRepository;
 import repository.SuatChieuRepository;
 import repository.TheLoaiRepository;
 
@@ -35,6 +37,7 @@ public class BanVeServlet extends HttpServlet {
     private final SuatChieuRepository suatChieuRepo = new SuatChieuRepository();
     private final GheRepository gheRepo = new GheRepository();
     private final ComboRepository comboRepo = new ComboRepository();
+    private final SanPhamRepository sanPhamRepo = new SanPhamRepository();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -127,6 +130,17 @@ public class BanVeServlet extends HttpServlet {
             listCombo = comboRepo.getAll();
         }
 
+        // Tải danh sách Sản phẩm lẻ (Bắp / Nước / Đồ ăn vặt đang kinh doanh)
+        List<SanPham> listSanPham = Collections.emptyList();
+        try {
+            listSanPham = sanPhamRepo.getAllDangKinhDoanh();
+            if (listSanPham == null || listSanPham.isEmpty()) {
+                listSanPham = sanPhamRepo.getAll();
+            }
+        } catch (Exception ex) {
+            System.err.println("Không tải được danh sách sản phẩm lẻ: " + ex.getMessage());
+        }
+
         // 6. Xác định bước (1: Phim & Suất, 2: Chọn ghế, 3: Chọn combo)
         String stepParam = req.getParameter("step");
         int currentStep = 1;
@@ -153,6 +167,7 @@ public class BanVeServlet extends HttpServlet {
         req.setAttribute("mapHangGhe", mapHangGhe);
         req.setAttribute("bookedSeatIds", bookedSeatIds);
         req.setAttribute("listCombo", listCombo);
+        req.setAttribute("listSanPham", listSanPham);
         req.setAttribute("currentStep", currentStep);
 
         req.getRequestDispatcher("/ban-ve/view.jsp").forward(req, resp);

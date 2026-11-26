@@ -82,10 +82,11 @@
                 </c:when>
 
                 <c:when test="${currentStep == 2}">
-                    <a href="${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}&step=3"
-                       class="btn-pos-action" style="text-align:center; text-decoration:none; display:block;">
-                        Tiếp tục: Chọn Combo bắp nước →
-                    </a>
+                    <button type="button" id="btnCartProceedToCombo"
+                            class="btn-pos-action" style="text-align:center; display:block; width:100%;"
+                            onclick="proceedToCombo('${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}&step=3')">
+                        Tiếp tục: Chọn Bắp nước & Combo →
+                    </button>
                 </c:when>
 
                 <c:when test="${currentStep == 3}">

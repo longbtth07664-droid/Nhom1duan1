@@ -77,6 +77,38 @@ public class Phim {
     )
     private Set<TheLoai> theLoais = new LinkedHashSet<>();
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "Phim_DinhDang",
+            joinColumns = @JoinColumn(name = "MaPhim"),
+            inverseJoinColumns = @JoinColumn(name = "MaDinhDang")
+    )
+    private Set<DinhDang> dinhDangs = new LinkedHashSet<>();
+
+    /**
+     * Chuỗi tên định dạng ngăn cách bằng dấu phẩy để hiển thị trên bảng/thẻ phim (VD: "2D, 3D, IMAX")
+     */
+    public String getTenDinhDangsStr() {
+        if (dinhDangs == null || dinhDangs.isEmpty()) {
+            return "";
+        }
+        return dinhDangs.stream()
+                .map(DinhDang::getTenDinhDang)
+                .collect(Collectors.joining(", "));
+    }
+
+    /**
+     * Chuỗi mã định dạng ngăn cách bằng dấu phẩy để tự động tick checkbox khi sửa (VD: "1,2")
+     */
+    public String getMaDinhDangsStr() {
+        if (dinhDangs == null || dinhDangs.isEmpty()) {
+            return "";
+        }
+        return dinhDangs.stream()
+                .map(dd -> String.valueOf(dd.getMaDinhDang()))
+                .collect(Collectors.joining(","));
+    }
+
     /**
      * Chuỗi tên thể loại ngăn cách bằng dấu phẩy để hiển thị trên bảng và pop-up Chi tiết.
      */
@@ -101,5 +133,28 @@ public class Phim {
                 .collect(Collectors.joining(","));
     }
 
+    /**
+     * [TỰ ĐỘNG TÍNH TRẠNG THÁI PHIM THEO THỜI GIAN THỰC]
+     * Tự động so sánh ngày hôm nay (LocalDate.now()) với ngày khởi chiếu và ngày kết thúc:
+     * - Nếu hôm nay trước ngày khởi chiếu -> "Sắp chiếu"
+     * - Nếu hôm nay sau ngày kết thúc     -> "Ngừng chiếu"
+     * - Nếu nằm trong khoảng chiếu        -> "Đang chiếu"
+     */
+    public String getTrangThai() {
+        LocalDate homNay = LocalDate.now();
+        if (ngayKhoiChieu != null && homNay.isBefore(ngayKhoiChieu)) {
+            return "Sắp chiếu";
+        }
+        if (ngayKetThuc != null && homNay.isAfter(ngayKetThuc)) {
+            return "Ngừng chiếu";
+        }
+        if (ngayKhoiChieu != null) {
+            return "Đang chiếu";
+        }
+        return trangThai != null ? trangThai : "Đang chiếu";
+    }
 
+    public void setTrangThai(String trangThai) {
+        this.trangThai = trangThai;
+    }
 }

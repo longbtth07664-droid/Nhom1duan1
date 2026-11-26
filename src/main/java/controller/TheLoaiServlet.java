@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import repository.TheLoaiRepository;
 
 import java.io.IOException;
+import java.util.List;
 
 @WebServlet(name = "TheLoaiServlet", value = {
         "/the-loai/view",        // GET
@@ -19,6 +20,9 @@ import java.io.IOException;
 })
 public class TheLoaiServlet extends HttpServlet {
     private final TheLoaiRepository repo = new TheLoaiRepository();
+
+    // [PHÂN TRANG - BACKEND] Số lượng thể loại hiển thị trên mỗi trang (5 dòng/trang)
+    private static final int PAGE_SIZE = 5;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -32,8 +36,44 @@ public class TheLoaiServlet extends HttpServlet {
         }
     }
 
+    // =========================================================================
+    // [PHÂN TRANG - BACKEND] Hàm xử lý tính toán số trang và nạp dữ liệu phân trang
+    // =========================================================================
+    private void napDuLieuPhanTrang(HttpServletRequest req) {
+        // 1. Đọc số trang người dùng muốn xem từ URL (VD: ?page=2). Mặc định là trang 1
+        int page = 1;
+        String pageParam = req.getParameter("page");
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            try {
+                page = Integer.parseInt(pageParam.trim());
+            } catch (NumberFormatException e) {
+                page = 1;
+            }
+        }
+
+        // 2. Lấy tổng số thể loại hiện có trong Database
+        long totalItems = repo.countAll();
+
+        // 3. Tính tổng số trang (totalPages = làm tròn lên của totalItems / PAGE_SIZE)
+        int totalPages = (int) Math.ceil((double) totalItems / PAGE_SIZE);
+        if (totalPages <= 0) totalPages = 1;
+
+        // Giới hạn số trang hợp lệ trong khoảng từ 1 đến totalPages
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+
+        // 4. Lấy danh sách thể loại của trang hiện tại (chỉ lấy đúng 5 bản ghi)
+        List<TheLoai> listTheLoai = repo.getPagination(page, PAGE_SIZE);
+
+        // 5. Gửi các thông số phân trang sang file view.jsp
+        req.setAttribute("listTheLoai", listTheLoai);     // Danh sách thể loại của trang này
+        req.setAttribute("currentPage", page);           // Trang hiện tại
+        req.setAttribute("totalPages", totalPages);       // Tổng số trang
+        req.setAttribute("totalItems", totalItems);       // Tổng số bản ghi
+    }
+
     private void view(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.setAttribute("listTheLoai", repo.getAll());
+        napDuLieuPhanTrang(req);
         req.getRequestDispatcher("/the-loai/view.jsp").forward(req, resp);
     }
 
@@ -42,7 +82,7 @@ public class TheLoaiServlet extends HttpServlet {
         TheLoai tl = repo.getOne(id);
         req.setAttribute("tl", tl);
         req.setAttribute("openModal", "detail");
-        req.setAttribute("listTheLoai", repo.getAll());
+        napDuLieuPhanTrang(req);
         req.getRequestDispatcher("/the-loai/view.jsp").forward(req, resp);
     }
 
@@ -51,7 +91,7 @@ public class TheLoaiServlet extends HttpServlet {
         TheLoai tl = repo.getOne(id);
         req.setAttribute("tl", tl);
         req.setAttribute("openModal", "update");
-        req.setAttribute("listTheLoai", repo.getAll());
+        napDuLieuPhanTrang(req);
         req.getRequestDispatcher("/the-loai/view.jsp").forward(req, resp);
     }
 

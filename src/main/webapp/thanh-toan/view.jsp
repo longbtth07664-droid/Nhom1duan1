@@ -896,7 +896,7 @@
         const comboKeys = Object.keys(CHECKOUT_STATE.selectedCombos);
 
         if (comboKeys.length === 0) {
-            container.innerHTML = '<div style="color:#94a3b8; font-size:13px; font-style:italic;">Chưa chọn combo bắp nước</div>';
+            container.innerHTML = '<div style="color:#94a3b8; font-size:13px; font-style:italic;">Chưa chọn bắp nước / combo</div>';
             txtSubtotal.textContent = '0 đ';
             CHECKOUT_STATE.comboTotal = 0;
             return;
@@ -909,10 +909,13 @@
             const c = CHECKOUT_STATE.selectedCombos[k];
             const sub = c.gia * c.soLuong;
             total += sub;
+            const badge = c.isProduct
+                ? '<span style="font-size:10px; background:#e0f2fe; color:#0369a1; padding:1px 5px; border-radius:4px; margin-right:4px; font-weight:600;">Lẻ</span>'
+                : '<span style="font-size:10px; background:#fce7f3; color:#db2777; padding:1px 5px; border-radius:4px; margin-right:4px; font-weight:600;">Combo</span>';
             html += `
                 <div class="item-list-row">
                     <div>
-                        <strong>\${c.soLuong}x</strong> \${c.tenCombo}
+                        <strong>\${c.soLuong}x</strong> \${badge}\${c.tenCombo}
                     </div>
                     <strong>\${formatVND(sub)}</strong>
                 </div>

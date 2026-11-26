@@ -6,7 +6,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Danh sách phim - Rạp Chiếu Phim CINEMAX</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=10">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=12">
+    <style>
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-top: 1px solid #f1f5f9;
+            background: #ffffff;
+            border-radius: 0 0 16px 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .pagination-info {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .pagination-info strong {
+            color: #1e293b;
+            font-weight: 700;
+        }
+        .pagination-btns {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto; /* Căn toàn bộ cụm nút sang góc phải */
+        }
+        .pg-btn {
+            min-width: 36px;
+            height: 36px;
+            padding: 0 10px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        .pg-btn:hover:not(.disabled):not(.active) {
+            border-color: #ff385c;
+            color: #ff385c;
+            background: #fff1f2;
+        }
+        .pg-btn.active {
+            background: #ff385c !important;
+            border-color: #ff385c !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(255, 56, 92, 0.4);
+            cursor: default;
+        }
+        .pg-btn.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            background: #ffffff;
+            border-color: #f1f5f9;
+            color: #94a3b8;
+        }
+    </style>
 </head>
 <body>
 <div class="app-shell">
@@ -51,6 +119,12 @@
                             </option>
                         </c:forEach>
                     </select>
+                    <select name="trangThai" class="form-control" style="max-width: 180px;">
+                        <option value="" ${empty selectedTrangThai ? 'selected' : ''}>-- Tất cả trạng thái --</option>
+                        <option value="Đang chiếu" ${selectedTrangThai == 'Đang chiếu' ? 'selected' : ''}>Đang chiếu</option>
+                        <option value="Sắp chiếu" ${selectedTrangThai == 'Sắp chiếu' ? 'selected' : ''}>Sắp chiếu</option>
+                        <option value="Ngừng chiếu" ${selectedTrangThai == 'Ngừng chiếu' ? 'selected' : ''}>Ngừng chiếu</option>
+                    </select>
 
                     <button type="submit" class="btn btn-pink">Tìm kiếm</button>
                     <a href="${pageContext.request.contextPath}/phim/view" class="btn btn-ghost">Làm mới</a>
@@ -66,7 +140,7 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <button type="button" class="btn btn-pink" onclick="openAddPhim()">+ Thêm</button>
-                        <span class="badge-pink">${listPhim.size()} phim</span>
+                        <span class="badge-pink">${totalItems != null ? totalItems : listPhim.size()} phim</span>
                     </div>
                 </div>
 
@@ -112,6 +186,20 @@
                                         <c:otherwise>Chưa gán thể loại</c:otherwise>
                                     </c:choose>
                                 </div>
+                                <div class="movie-formats" style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">
+                                    <c:choose>
+                                        <c:when test="${not empty item.tenDinhDangsStr}">
+                                            <c:forEach items="${item.dinhDangs}" var="dd">
+                                                <span style="display:inline-block; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; background:#e0e7ff; color:#4338ca;">
+                                                    <c:out value="${dd.tenDinhDang}"/>
+                                                </span>
+                                            </c:forEach>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span style="font-size:11px; color:#94a3b8; font-style:italic;">Chưa gán định dạng</span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
                                 <div class="movie-meta">
                                     <div>Thời lượng: <strong>${item.thoiLuong} phút</strong></div>
                                     <div>Khởi chiếu: ${item.ngayKhoiChieu} - ${item.ngayKetThuc}</div>
@@ -143,6 +231,8 @@
                                         data-mota="<c:out value='${item.moTa}'/>"
                                         data-tentheloais="<c:out value='${item.tenTheLoaisStr}'/>"
                                         data-matheloais="<c:out value='${item.maTheLoaisStr}'/>"
+                                        data-tendinhdangs="<c:out value='${item.tenDinhDangsStr}'/>"
+                                        data-madinhdangs="<c:out value='${item.maDinhDangsStr}'/>"
                                         onclick="openDetailPhimFromBtn(this)">Chi tiết</button>
                                 <button type="button"
                                         class="btn btn-outline btn-sm"
@@ -160,11 +250,76 @@
                                         data-trangthai="<c:out value='${item.trangThai}'/>"
                                         data-mota="<c:out value='${item.moTa}'/>"
                                         data-matheloais="<c:out value='${item.maTheLoaisStr}'/>"
+                                        data-madinhdangs="<c:out value='${item.maDinhDangsStr}'/>"
                                         onclick="openEditPhimFromBtn(this)">Sửa</button>
                             </div>
                         </article>
                     </c:forEach>
                 </div>
+
+                <%-- =========================================================================
+                     [PHÂN TRANG - GIAO DIỆN JSP]
+                     Thanh điều hướng chuyển trang cho danh sách phim:
+                     - «  ‹  1  2  ›  » căn góc bên phải
+                     - Giữ nguyên từ khóa tìm kiếm (keyword) và thể loại (maTheLoai) khi chuyển trang
+                     ========================================================================= --%>
+                <c:if test="${totalPages > 1}">
+                    <div class="pagination-bar">
+                        <div class="pagination-info">
+                            Trang <strong>${currentPage}</strong> / <strong>${totalPages}</strong> (Tổng cộng: <strong>${totalItems}</strong> bộ phim)
+                        </div>
+
+                        <div class="pagination-btns">
+                            <%-- 1. Nút về Trang đầu («) --%>
+                            <c:choose>
+                                <c:when test="${currentPage > 1}">
+                                    <a href="${pageContext.request.contextPath}/phim/view?action=search&keyword=<c:out value='${keyword}'/>&maTheLoai=<c:out value='${selectedTheLoai}'/>&trangThai=<c:out value='${selectedTrangThai}'/>&page=1" class="pg-btn" title="Trang đầu">&laquo;</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="pg-btn disabled">&laquo;</span>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <%-- 2. Nút về Trang trước (‹) --%>
+                            <c:choose>
+                                <c:when test="${currentPage > 1}">
+                                    <a href="${pageContext.request.contextPath}/phim/view?action=search&keyword=<c:out value='${keyword}'/>&maTheLoai=<c:out value='${selectedTheLoai}'/>&trangThai=<c:out value='${selectedTrangThai}'/>&page=${currentPage - 1}" class="pg-btn" title="Trang trước">&lsaquo;</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="pg-btn disabled">&lsaquo;</span>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <%-- 3. Vòng lặp in các nút số trang (1, 2...) --%>
+                            <c:forEach begin="1" end="${totalPages}" var="p">
+                                <a href="${pageContext.request.contextPath}/phim/view?action=search&keyword=<c:out value='${keyword}'/>&maTheLoai=<c:out value='${selectedTheLoai}'/>&trangThai=<c:out value='${selectedTrangThai}'/>&page=${p}"
+                                   class="pg-btn ${currentPage == p ? 'active' : ''}">
+                                    ${p}
+                                </a>
+                            </c:forEach>
+
+                            <%-- 4. Nút sang Trang sau (›) --%>
+                            <c:choose>
+                                <c:when test="${currentPage < totalPages}">
+                                    <a href="${pageContext.request.contextPath}/phim/view?action=search&keyword=<c:out value='${keyword}'/>&maTheLoai=<c:out value='${selectedTheLoai}'/>&trangThai=<c:out value='${selectedTrangThai}'/>&page=${currentPage + 1}" class="pg-btn" title="Trang sau">&rsaquo;</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="pg-btn disabled">&rsaquo;</span>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <%-- 5. Nút sang Trang cuối (») --%>
+                            <c:choose>
+                                <c:when test="${currentPage < totalPages}">
+                                    <a href="${pageContext.request.contextPath}/phim/view?action=search&keyword=<c:out value='${keyword}'/>&maTheLoai=<c:out value='${selectedTheLoai}'/>&trangThai=<c:out value='${selectedTrangThai}'/>&page=${totalPages}" class="pg-btn" title="Trang cuối">&raquo;</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="pg-btn disabled">&raquo;</span>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+                    </div>
+                </c:if>
             </div>
         </main>
     </div>
@@ -267,6 +422,25 @@
                             <label class="checkbox-pill">
                                 <input type="checkbox" name="maTheLoais" value="${tl.maTheLoai}" ${tlChecked ? 'checked' : ''}>
                                 <span><c:out value="${tl.tenTheLoai}"/></span>
+                            </label>
+                        </c:forEach>
+                    </div>
+                </div>
+                <div class="form-group full">
+                    <label>Định dạng phim</label>
+                    <div class="checkbox-group">
+                        <c:forEach items="${listDinhDang}" var="dd">
+                            <c:set var="ddChecked" value="false"/>
+                            <c:if test="${openModal == 'add'}">
+                                <c:forEach items="${formPhim.dinhDangs}" var="selDd">
+                                    <c:if test="${selDd.maDinhDang == dd.maDinhDang}">
+                                        <c:set var="ddChecked" value="true"/>
+                                    </c:if>
+                                </c:forEach>
+                            </c:if>
+                            <label class="checkbox-pill">
+                                <input type="checkbox" name="maDinhDangs" value="${dd.maDinhDang}" ${ddChecked ? 'checked' : ''}>
+                                <span><c:out value="${dd.tenDinhDang}"/></span>
                             </label>
                         </c:forEach>
                     </div>
@@ -391,6 +565,25 @@
                     </div>
                 </div>
                 <div class="form-group full">
+                    <label>Định dạng phim</label>
+                    <div class="checkbox-group">
+                        <c:forEach items="${listDinhDang}" var="dd">
+                            <c:set var="ddChecked" value="false"/>
+                            <c:if test="${openModal == 'update'}">
+                                <c:forEach items="${formPhim.dinhDangs}" var="selDd">
+                                    <c:if test="${selDd.maDinhDang == dd.maDinhDang}">
+                                        <c:set var="ddChecked" value="true"/>
+                                    </c:if>
+                                </c:forEach>
+                            </c:if>
+                            <label class="checkbox-pill">
+                                <input type="checkbox" name="maDinhDangs" value="${dd.maDinhDang}" ${ddChecked ? 'checked' : ''}>
+                                <span><c:out value="${dd.tenDinhDang}"/></span>
+                            </label>
+                        </c:forEach>
+                    </div>
+                </div>
+                <div class="form-group full">
                     <label for="editMoTa">Mô tả nội dung</label>
                     <textarea id="editMoTa" name="moTa" class="form-control"><c:if test="${openModal == 'update'}"><c:out value="${formPhim.moTa}"/></c:if></textarea>
                 </div>
@@ -425,6 +618,10 @@
             <div class="form-group full">
                 <label>Thể loại</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailTheLoai"></div>
+            </div>
+            <div class="form-group full">
+                <label>Định dạng</label>
+                <div class="form-control" style="background:var(--bg-input);" id="detailDinhDang"></div>
             </div>
             <div class="form-group">
                 <label>Thời lượng</label>

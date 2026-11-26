@@ -16,7 +16,7 @@
 <div class="app-shell">
     <!-- 1. MENU ĐIỀU HƯỚNG BÊN TRÁI (TỰ ĐỘNG THEO QUYỀN QUẢN LÝ / NHÂN VIÊN) -->
     <c:choose>
-        <c:when test="${sessionScope.userRole == 'NhanVien'}">
+        <c:when test="${sessionScope.userRole == 'NhanVien' || sessionScope.userRole == 'Nhân viên'}">
             <jsp:include page="/menunv.jsp" />
         </c:when>
         <c:otherwise>
@@ -50,9 +50,10 @@
                            class="step-pill-btn ${currentStep == 2 ? 'active' : ''}">
                             2. Chọn ghế
                         </a>
-                        <a href="${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}&step=3"
+                        <a href="javascript:void(0)"
+                           onclick="proceedToCombo('${pageContext.request.contextPath}/ban-ve?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}&step=3')"
                            class="step-pill-btn ${currentStep == 3 ? 'active' : ''}">
-                            3. Chọn Combo
+                            3. Chọn Bắp nước & Combo
                         </a>
                         <a href="${pageContext.request.contextPath}/thanh-toan?ngayChieu=${selectedNgay}&maSuat=${selectedSuat.maSuat}"
                            class="step-pill-btn ${currentStep == 4 ? 'active' : ''}">

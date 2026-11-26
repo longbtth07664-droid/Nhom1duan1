@@ -330,15 +330,15 @@ public class ThanhToanServlet extends HttpServlet {
         while (m.find()) {
             String block = m.group(1);
             String maComboVal = extractFieldFromBlock(block, "maCombo");
+            String maSPVal = extractFieldFromBlock(block, "maSP");
             String soLuongVal = extractFieldFromBlock(block, "soLuong");
             String giaVal = extractFieldFromBlock(block, "gia");
             if (giaVal == null) {
                 giaVal = extractFieldFromBlock(block, "donGia");
             }
 
-            if (maComboVal != null && soLuongVal != null) {
+            if (soLuongVal != null) {
                 try {
-                    int maCombo = Integer.parseInt(maComboVal.trim());
                     int soLuong = Integer.parseInt(soLuongVal.trim());
                     BigDecimal gia = BigDecimal.ZERO;
                     if (giaVal != null) {
@@ -346,10 +346,17 @@ public class ThanhToanServlet extends HttpServlet {
                     }
                     if (soLuong > 0) {
                         ChiTietHoaDon ct = new ChiTietHoaDon();
-                        ct.setMaCombo(maCombo);
-                        ct.setSoLuong(soLuong);
-                        ct.setDonGia(gia);
-                        list.add(ct);
+                        if (maComboVal != null && !maComboVal.isEmpty() && !"null".equalsIgnoreCase(maComboVal)) {
+                            ct.setMaCombo(Integer.parseInt(maComboVal.trim()));
+                        }
+                        if (maSPVal != null && !maSPVal.isEmpty() && !"null".equalsIgnoreCase(maSPVal)) {
+                            ct.setMaSP(Integer.parseInt(maSPVal.trim()));
+                        }
+                        if (ct.getMaCombo() != null || ct.getMaSP() != null) {
+                            ct.setSoLuong(soLuong);
+                            ct.setDonGia(gia);
+                            list.add(ct);
+                        }
                     }
                 } catch (Exception ignored) {}
             }

@@ -227,6 +227,11 @@ function openEditPhimFromBtn(btn) {
         cb.checked = maTheLoais.includes(cb.value);
     });
 
+    const maDinhDangs = (btn.getAttribute('data-madinhdangs') || '').split(',').map((s) => s.trim()).filter(Boolean);
+    document.querySelectorAll('#editPhimModal input[name="maDinhDangs"]').forEach((cb) => {
+        cb.checked = maDinhDangs.includes(cb.value);
+    });
+
     const errBox = document.getElementById('editPhimError');
     if (errBox) errBox.style.display = 'none';
     openModal('editPhimModal');
@@ -330,6 +335,7 @@ function openDetailPhimFromBtn(btn) {
         detailMaPhim: 'data-ma',
         detailTenPhim: 'data-ten',
         detailTheLoai: 'data-tentheloais',
+        detailDinhDang: 'data-tendinhdangs',
         detailThoiLuong: 'data-thoiluong-text',
         detailNgayKhoiChieu: 'data-khoichieu',
         detailNgayKetThuc: 'data-ketthuc',

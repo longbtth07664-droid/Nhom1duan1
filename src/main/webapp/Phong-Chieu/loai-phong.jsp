@@ -90,6 +90,18 @@
             <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item">
                 <span>Quản lí hóa đơn</span>
             </a>
+
+            <a href="${pageContext.request.contextPath}/hoa-don" class="nav-item">
+                <span>Quản lí hóa đơn</span>
+            </a>
+
+            <a href="${pageContext.request.contextPath}/nhan-vien/view" class="nav-item">
+                <span>Quản lý nhân viên</span>
+            </a>
+
+            <a href="${pageContext.request.contextPath}/tai-khoan/view" class="nav-item">
+                <span>Quản lý tài khoản</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">
