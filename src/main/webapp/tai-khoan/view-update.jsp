@@ -61,7 +61,7 @@
                             <label>Trạng Thái</label>
                             <select name="trangThai" class="form-control" style="background:var(--bg-card, #fff);">
                                 <option value="Đang làm việc" ${tk.trangThai == 'Đang làm việc' ? 'selected' : ''}>Đang làm việc</option>
-                                <option value="Đã khóa" ${tk.trangThai == 'Đã khóa' ? 'selected' : ''}>Đã khóa</option>
+                                <option value="Đã khóa" ${tk.trangThai == 'Đã khóa' ? 'selected' : ''}>Nghỉ việc</option>
                             </select>
                         </div>
                     </div>

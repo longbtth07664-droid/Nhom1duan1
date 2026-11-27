@@ -64,7 +64,7 @@ public class NhanVienServlet extends HttpServlet {
         }
     }
 
-    private void add(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    private void add(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String hoTen = req.getParameter("hoTen");
         String cccd = req.getParameter("cccd");
         String email = req.getParameter("email");
@@ -73,17 +73,31 @@ public class NhanVienServlet extends HttpServlet {
         String username = req.getParameter("username");
         String matKhau = req.getParameter("matKhau");
 
-        // Ép cứng luôn vai trò là NhanVien để không bị phụ thuộc vào form hay bị null
         String vaiTro = "NhanVien";
-        String trangThai = "Đang làm việc"; // Mặc định khi thêm mới
+        String trangThai = "Đang làm việc";
+
+        String error = nhanVienRepository.validateFormat(cccd, email, soDienThoai);
+        if (error != null) {
+            req.setAttribute("errorMessage", error);
+            req.setAttribute("openAddModal", true);
+            req.setAttribute("oldHoTen", hoTen);
+            req.setAttribute("oldCccd", cccd);
+            req.setAttribute("oldEmail", email);
+            req.setAttribute("oldSoDienThoai", soDienThoai);
+            req.setAttribute("oldDiaChi", diaChi);
+            req.setAttribute("oldUsername", username);
+            req.setAttribute("listNhanVien", nhanVienRepository.getAll());
+            req.getRequestDispatcher("/nhan-vien/view.jsp").forward(req, resp);
+            return;
+        }
 
         NhanVien nv = new NhanVien();
-        nv.setHoTen(hoTen);
-        nv.setCccd(cccd);
-        nv.setEmail(email);
-        nv.setSoDienThoai(soDienThoai);
-        nv.setDiaChi(diaChi);
-        nv.setUsername(username);
+        nv.setHoTen(hoTen != null ? hoTen.trim() : null);
+        nv.setCccd(cccd != null ? cccd.trim() : null);
+        nv.setEmail(email != null ? email.trim() : null);
+        nv.setSoDienThoai(soDienThoai != null ? soDienThoai.trim() : null);
+        nv.setDiaChi(diaChi != null ? diaChi.trim() : null);
+        nv.setUsername(username != null ? username.trim() : null);
         nv.setMatKhau(matKhau);
         nv.setVaiTro(vaiTro);
         nv.setTrangThai(trangThai);
@@ -92,7 +106,7 @@ public class NhanVienServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/nhan-vien/view");
     }
 
-    private void update(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    private void update(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Integer id = Integer.valueOf(req.getParameter("id"));
         String hoTen = req.getParameter("hoTen");
         String cccd = req.getParameter("cccd");
@@ -104,14 +118,34 @@ public class NhanVienServlet extends HttpServlet {
         String vaiTro = req.getParameter("vaiTro");
         String trangThai = req.getParameter("trangThai");
 
+        String error = nhanVienRepository.validateFormat(cccd, email, soDienThoai);
+        if (error != null) {
+            NhanVien nvForm = new NhanVien();
+            nvForm.setId(id);
+            nvForm.setHoTen(hoTen);
+            nvForm.setCccd(cccd);
+            nvForm.setEmail(email);
+            nvForm.setSoDienThoai(soDienThoai);
+            nvForm.setDiaChi(diaChi);
+            nvForm.setUsername(username);
+            nvForm.setMatKhau(matKhau);
+            nvForm.setVaiTro(vaiTro);
+            nvForm.setTrangThai(trangThai);
+
+            req.setAttribute("nv", nvForm);
+            req.setAttribute("errorMessage", error);
+            req.getRequestDispatcher("/nhan-vien/view-update.jsp").forward(req, resp);
+            return;
+        }
+
         NhanVien nv = new NhanVien();
         nv.setId(id);
-        nv.setHoTen(hoTen);
-        nv.setCccd(cccd);
-        nv.setEmail(email);
-        nv.setSoDienThoai(soDienThoai);
-        nv.setDiaChi(diaChi);
-        nv.setUsername(username);
+        nv.setHoTen(hoTen != null ? hoTen.trim() : null);
+        nv.setCccd(cccd != null ? cccd.trim() : null);
+        nv.setEmail(email != null ? email.trim() : null);
+        nv.setSoDienThoai(soDienThoai != null ? soDienThoai.trim() : null);
+        nv.setDiaChi(diaChi != null ? diaChi.trim() : null);
+        nv.setUsername(username != null ? username.trim() : null);
         nv.setMatKhau(matKhau);
         nv.setVaiTro(vaiTro);
         nv.setTrangThai(trangThai);

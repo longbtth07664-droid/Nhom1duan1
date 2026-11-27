@@ -7,6 +7,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý nhân viên - Rạp Chiếu Phim CINEMAX</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
+    <style>
+        /* Gọn gàng 2 cột giống ảnh 2, tránh bị kéo dài dọc như ảnh 1 */
+        .modal-box.modal-wide {
+            max-width: 760px;
+            width: 92%;
+        }
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 18px;
+        }
+        .form-grid-2 .form-group {
+            margin-bottom: 0;
+        }
+        .form-grid-2 .form-full {
+            grid-column: 1 / -1;
+        }
+        @media (max-width: 640px) {
+            .form-grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .form-grid-2 .form-full {
+                grid-column: auto;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="app-shell">
@@ -43,7 +69,6 @@
                         <div class="card-subtitle">Quản lý tài khoản và thông tin nhân sự làm việc tại rạp</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <!-- Nút Mở Modal Thêm mới -->
                         <button type="button" class="btn btn-pink" onclick="openAddModal()">+ Thêm</button>
                         <span class="badge-pink">${listNhanVien.size()} nhân viên</span>
                     </div>
@@ -68,20 +93,18 @@
                         <c:forEach items="${listNhanVien}" var="nv" varStatus="status">
                             <tr>
                                 <td>${status.index + 1}</td>
-                                <!-- Sửa từ nv.maTK thành nv.id -->
                                 <td><strong><c:out value="${nv.id}"/></strong></td>
                                 <td><c:out value="${nv.hoTen}"/></td>
                                 <td><c:out value="${nv.username}"/></td>
                                 <td><c:out value="${nv.soDienThoai}"/></td>
                                 <td>
-            <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: ${nv.vaiTro == 'QuanLy' ? '#ffe3e3; color: #c92a2a;' : '#e7f5ff; color: #1864ab;'};">
-                <c:out value="${nv.vaiTro}"/>
-            </span>
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: ${nv.vaiTro == 'QuanLy' ? '#ffe3e3; color: #c92a2a;' : '#e7f5ff; color: #1864ab;'};">
+                                        <c:out value="${nv.vaiTro}"/>
+                                    </span>
                                 </td>
                                 <td><c:out value="${nv.trangThai}"/></td>
                                 <td>
                                     <div class="action-group">
-                                        <!-- Sửa data-id gọi nv.id -->
                                         <button type="button" class="btn btn-ghost btn-sm"
                                                 data-id="<c:out value='${nv.id}'/>"
                                                 data-hoten="<c:out value='${nv.hoTen}'/>"
@@ -94,7 +117,6 @@
                                                 data-trangthai="<c:out value='${nv.trangThai}'/>"
                                                 onclick="openDetailModal(event, this)">Chi tiết</button>
 
-                                        <!-- Sửa nút Sửa gọi nv.id -->
                                         <a href="${pageContext.request.contextPath}/nhan-vien/view-update?id=${nv.id}" class="btn btn-outline btn-sm">Sửa</a>
                                     </div>
                                 </td>
@@ -110,32 +132,33 @@
 
 <!-- ================= MODAL THÊM NHÂN VIÊN ================= -->
 <div class="modal-backdrop" id="addModal">
-    <div class="modal-box">
+    <div class="modal-box modal-wide">
         <div class="modal-header">
             <h3>Thêm nhân viên mới</h3>
             <button type="button" class="modal-close" onclick="closeModal('addModal')">&times;</button>
         </div>
         <form action="${pageContext.request.contextPath}/nhan-vien/add" method="post">
-            <div class="form-stack">
+            <div class="form-grid-2">
                 <div class="form-group">
                     <label>Họ Tên <span class="required-star">*</span></label>
                     <input type="text" name="hoTen" class="form-control" placeholder="Nhập họ tên" required>
                 </div>
                 <div class="form-group">
-                    <label>CCCD</label>
-                    <input type="text" name="cccd" class="form-control" placeholder="Nhập số CCCD">
+                    <label>CCCD <span class="required-star">*</span></label>
+                    <input type="text" name="cccd" class="form-control" placeholder="0xxxxxxxxxxx"
+                           value="<c:out value='${oldCccd}'/>"
+                           pattern="0\d{11}" title="CCCD bắt buộc nhập, gồm 12 chữ số và bắt đầu bằng 0" required>
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="email" class="form-control" placeholder="Nhập email">
+                    <input type="email" name="email" class="form-control" placeholder="ten@gmail.com"
+                           value="<c:out value='${oldEmail}'/>" pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+                           title="Email phải có dạng ten@domain.com">
                 </div>
                 <div class="form-group">
                     <label>Số Điện Thoại</label>
-                    <input type="text" name="soDienThoai" class="form-control" placeholder="Số điện thoại">
-                </div>
-                <div class="form-group">
-                    <label>Địa Chỉ</label>
-                    <input type="text" name="diaChi" class="form-control" placeholder="Nhập địa chỉ">
+                    <input type="text" name="soDienThoai" class="form-control" placeholder="0xxxxxxxxx"
+                           value="<c:out value='${oldSoDienThoai}'/>" pattern="0\d{9,10}" title="SĐT gồm 10-11 chữ số, bắt đầu bằng 0">
                 </div>
                 <div class="form-group">
                     <label>Username <span class="required-star">*</span></label>
@@ -153,11 +176,14 @@
                 </div>
                 <div class="form-group">
                     <label>Trạng Thái</label>
-                    <!-- Thêm input hidden để chắc chắn gửi giá trị "Đang làm việc" qua Servlet, bỏ disabled đi -->
                     <input type="text" class="form-control" value="Đang làm việc" disabled style="background:var(--bg-input);">
                     <input type="hidden" name="trangThai" value="Đang làm việc">
                 </div>
-                <div style="font-size:12px; color:var(--text-secondary);">
+                <div class="form-group form-full">
+                    <label>Địa Chỉ</label>
+                    <input type="text" name="diaChi" class="form-control" placeholder="Nhập địa chỉ">
+                </div>
+                <div class="form-full" style="font-size:12px; color:var(--text-secondary);">
                     (<span class="required-star">*</span>) Trường bắt buộc nhập
                 </div>
             </div>
@@ -171,12 +197,12 @@
 
 <!-- ================= MODAL CHI TIẾT NHÂN VIÊN ================= -->
 <div class="modal-backdrop" id="detailModal">
-    <div class="modal-box">
+    <div class="modal-box modal-wide">
         <div class="modal-header">
             <h3>Chi tiết nhân viên</h3>
             <button type="button" class="modal-close" onclick="closeModal('detailModal')">&times;</button>
         </div>
-        <div class="form-stack">
+        <div class="form-grid-2">
             <div class="form-group">
                 <label>Mã tài khoản</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailId"></div>
@@ -198,10 +224,6 @@
                 <div class="form-control" style="background:var(--bg-input);" id="detailSoDienThoai"></div>
             </div>
             <div class="form-group">
-                <label>Địa Chỉ</label>
-                <div class="form-control" style="background:var(--bg-input);" id="detailDiaChi"></div>
-            </div>
-            <div class="form-group">
                 <label>Username</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailUsername"></div>
             </div>
@@ -212,6 +234,10 @@
             <div class="form-group">
                 <label>Trạng Thái</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailTrangThai"></div>
+            </div>
+            <div class="form-group form-full">
+                <label>Địa Chỉ</label>
+                <div class="form-control" style="background:var(--bg-input);" id="detailDiaChi"></div>
             </div>
         </div>
         <div class="modal-footer">
@@ -247,5 +273,12 @@
         document.getElementById(modalId).classList.remove('open');
     }
 </script>
+<c:if test="${openAddModal}">
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById('addModal').classList.add('open');
+        });
+    </script>
+</c:if>
 </body>
 </html>
