@@ -202,8 +202,8 @@
                 <div class="form-group">
                     <label for="addComboAnh">Ảnh combo</label>
                     <input id="addComboAnh" name="tepAnh" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"
-                           class="form-control" data-anh-preview="addComboPreview" aria-describedby="addComboAnhGoiY">
-                    <div class="anh-danh-muc-chon" data-anh-control hidden>
+                           data-anh-preview="addComboPreview" aria-describedby="addComboAnhGoiY" hidden>
+                    <div class="anh-danh-muc-chon" data-anh-control>
                         <button type="button" class="btn btn-outline" aria-controls="addComboAnh" aria-describedby="addComboAnhGoiY">+ Thêm ảnh</button>
                         <span class="anh-danh-muc-ten" role="status">Chưa chọn tệp</span>
                     </div>
@@ -310,8 +310,8 @@
                     <div class="form-group">
                         <label for="editComboAnh">Thay ảnh combo</label>
                         <input id="editComboAnh" name="tepAnh" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"
-                               class="form-control" data-anh-preview="editComboPreview" aria-describedby="editComboAnhGoiY">
-                        <div class="anh-danh-muc-chon" data-anh-control hidden>
+                               data-anh-preview="editComboPreview" aria-describedby="editComboAnhGoiY" hidden>
+                        <div class="anh-danh-muc-chon" data-anh-control>
                             <button type="button" class="btn btn-outline" aria-controls="editComboAnh" aria-describedby="editComboAnhGoiY">+ Thêm ảnh</button>
                             <span class="anh-danh-muc-ten" role="status">Chưa chọn tệp mới</span>
                         </div>
@@ -442,7 +442,7 @@
 </div>
 
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
-<script src="${pageContext.request.contextPath}/assets/js/anh-danh-muc.js?v=2"></script>
+<script src="${pageContext.request.contextPath}/assets/js/anh-danh-muc.js?v=3"></script>
 <%-- [CB-XOA-FORM] Chỉ gửi POST; token được tạo trong phiên làm việc. --%>
 <%-- [CB-FORM] action=add: thêm; update: sửa; delete: xóa. --%>
 <form id="deleteComboForm" method="post" action="${pageContext.request.contextPath}/quan-ly-combo">
