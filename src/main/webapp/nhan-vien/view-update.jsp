@@ -18,6 +18,12 @@
             <a href="${pageContext.request.contextPath}/nhan-vien/view" class="btn-close" aria-label="Close"></a>
         </div>
 
+        <c:if test="${not empty errorMessage}">
+            <div class="alert alert-danger py-2" role="alert">
+                <c:out value="${errorMessage}" />
+            </div>
+        </c:if>
+
         <!-- Thêm contextPath vào action của form -->
         <form action="${pageContext.request.contextPath}/nhan-vien/update?id=${nv.id}" method="post">
             <div class="mb-3">
@@ -31,7 +37,11 @@
             <!-- Đã bổ sung trường CCCD -->
             <div class="mb-3">
                 <label class="form-label fw-bold">CCCD</label>
-                <input type="text" name="cccd" class="form-control" value="${nv.cccd}">
+                <input type="text" name="cccd" class="form-control"
+                       placeholder="0xxxxxxxxxxx"
+                       value="${nv.cccd}"
+                       pattern="0\d{11}"
+                       title="CCCD gồm 12 chữ số và bắt đầu bằng 0">
             </div>
             <!-- Đã bổ sung trường Email -->
             <div class="mb-3">
