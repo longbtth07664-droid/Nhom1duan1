@@ -4,6 +4,7 @@
 <fmt:setLocale value="vi_VN"/>
 <%-- Dữ liệu và mã gợi ý luôn được tải qua servlet. --%>
 <c:if test="${requestScope.dsSanPham == null}"><c:redirect url="/quan-ly-san-pham"/></c:if>
+<%-- [SP-VIEW] Form gửi Servlet -> Repository -> dữ liệu trả về JSP. Tra cứu: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt --%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -12,24 +13,7 @@
     <title>Quản lí Sản phẩm - Rạp Chiếu Phim CINEMAX</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/anh-danh-muc.css?v=2">
-    <style>
-        .alert-success {
-            background: #ECFDF5; border: 1px solid #A7F3D0; color: #047857;
-            padding: 10px 14px; border-radius: var(--radius-sm);
-            font-size: 13px; font-weight: 600; margin-bottom: 16px;
-        }
-        .badge-success {
-            display: inline-block; padding: 4px 10px; border-radius: 99px;
-            font-size: 11px; font-weight: 700; background: #ECFDF5; color: #047857;
-        }
-        .badge-danger {
-            display: inline-block; padding: 4px 10px; border-radius: 99px;
-            font-size: 11px; font-weight: 700; background: #FEF2F2; color: #DC2626;
-        }
-        .filter-bar {
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px;
-        }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/quan-ly-san-pham.css?v=1">
 </head>
 <body>
 <div class="app-shell">
@@ -95,6 +79,7 @@
                 </div>
 
                 <%-- Tìm kiếm & lọc --%>
+                <%-- [SP-TIM-KIEM] Gửi bộ lọc tới Servlet bằng GET. --%>
                 <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="get" class="filter-bar">
                     <input type="hidden" name="action" value="search">
                     <input type="text" name="keyword" class="form-control" style="max-width: 280px;"
@@ -190,7 +175,8 @@
             <button type="button" class="modal-close" onclick="closeModal('addSPModal')">&times;</button>
         </div>
 
-        <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post" enctype="multipart/form-data">
+        <%-- [SP-FORM] action=add: thêm; update: sửa; delete: xóa. --%>
+<form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post" enctype="multipart/form-data">
             <input type="hidden" name="token" value="${sessionScope.sanPhamToken}">
             <input type="hidden" name="action" value="add">
             <%-- [SP-THEM-ANH] Gửi file tepAnh tới SanPhamServlet.luuSanPhamCoAnh. --%>
@@ -267,7 +253,8 @@
                 <a href="${pageContext.request.contextPath}/quan-ly-san-pham" class="modal-close">&times;</a>
             </div>
 
-            <form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post" enctype="multipart/form-data">
+            <%-- [SP-FORM] action=add: thêm; update: sửa; delete: xóa. --%>
+<form action="${pageContext.request.contextPath}/quan-ly-san-pham" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="token" value="${sessionScope.sanPhamToken}">
                 <input type="hidden" name="version" value="${version}">
                 <input type="hidden" name="action" value="update">
@@ -340,6 +327,7 @@
 </c:if>
 
 <%-- [SP-XOA] Nút xóa xác nhận rồi gửi mã qua form POST. --%>
+<%-- [SP-FORM] action=add: thêm; update: sửa; delete: xóa. --%>
 <form id="deleteProductForm" method="post" action="${pageContext.request.contextPath}/quan-ly-san-pham">
     <input type="hidden" name="action" value="delete">
     <input type="hidden" name="token" value="${sessionScope.sanPhamToken}">
@@ -347,21 +335,6 @@
 </form>
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
 <script src="${pageContext.request.contextPath}/assets/js/san-pham-anh.js?v=1"></script>
-<script>
-    // SẢN PHẨM: gợi ý đơn vị theo loại, không đổi các giá trị dữ liệu hiện có.
-    function goiYDonVi(select) {
-        var units = {"Bắp":"Hộp", "Nước có gas":"Ly", "Nước suối":"Chai", "Snack":"Gói", "Đồ ăn nóng":"Hộp"};
-        select.form.elements.donViTinh.value = units[select.value] || "";
-    }
-    function xoaSP(btn) {
-        var ma = btn.getAttribute('data-ma');
-        var ten = btn.getAttribute('data-ten');
-        if (confirm('Bạn có chắc muốn xóa sản phẩm "' + ten + '" (' + ma + ') không?')) {
-            var form = document.getElementById('deleteProductForm');
-            form.elements.namedItem('id').value = ma;
-            form.submit();
-        }
-    }
-</script>
+<script src="${pageContext.request.contextPath}/assets/js/quan-ly-san-pham.js?v=1"></script>
 </body>
 </html>

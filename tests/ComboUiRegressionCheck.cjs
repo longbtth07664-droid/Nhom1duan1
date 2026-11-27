@@ -5,7 +5,7 @@ const cp = require('child_process');
 const assert = require('assert');
 const path = 'src/main/webapp/quanLyCombo.jsp';
 const previous = cp.execFileSync('git', ['show', 'a7c658b:' + path], {encoding:'utf8'});
-const current = fs.readFileSync(path, 'utf8');
+const current = '<script>' + fs.readFileSync('src/main/webapp/assets/js/quan-ly-combo.js', 'utf8') + '</script>';
 function run(source, rate) {
     const nodes = {
         addEmpty: {},

@@ -1,0 +1,46 @@
+/* [CB-GIAO-DIEN] Màu, bảng và hộp thoại. */
+.alert-success {
+    background: #ECFDF5; border: 1px solid #A7F3D0; color: #047857;
+    padding: 10px 14px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; margin-bottom: 16px;
+}
+.badge-success {
+    display: inline-block; padding: 4px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 700; background: #ECFDF5; color: #047857;
+}
+.badge-danger {
+    display: inline-block; padding: 4px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 700; background: #FEF2F2; color: #DC2626;
+}
+.modal-box-lg {
+    max-width: 780px; max-height: 90vh; overflow-y: auto;
+}
+.filter-bar {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px;
+}
+.combo-detail-box {
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-subtle);
+}
+/* Ô hiển thị ảnh combo & khung chờ .jpg khi chưa có file ảnh */
+.combo-thumb {
+    width: 56px; height: 56px; object-fit: cover;
+    border-radius: 8px; border: 1px solid var(--border-subtle);
+    display: block; background: var(--bg-input);
+}
+.combo-thumb-placeholder {
+    width: 56px; height: 56px; border-radius: 8px;
+    border: 1px dashed var(--border-strong); background: var(--bg-input);
+    display: none; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: var(--text-secondary);
+    text-align: center; padding: 4px; word-break: break-all;
+}
+.sp-picker-wrap {
+    max-height: 250px; overflow-y: auto;
+    border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    margin-top: 8px;
+}
+.sp-row-active { background: var(--pink-soft); }
+.tong-gia-le {
+    margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--pink);
+    text-align: right;
+}

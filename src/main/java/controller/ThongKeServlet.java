@@ -14,18 +14,13 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 
 // THỐNG KÊ: nhận bộ lọc ngày, lấy báo cáo và chuyển dữ liệu sang JSP.
-/* TRA CỨU HÀM: ThongKeServlet
- * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
- * Ctrl+F "validateRange(" để tìm phần xử lý.
- * Ctrl+F "doGet(" để tìm phần xử lý.
- * Ctrl+F "setQuickDates(" để tìm phần xử lý.
- */
+// Tra cứu chức năng: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt
 @WebServlet(name = "ThongKeServlet", urlPatterns = {"/thong-ke"})
 public class ThongKeServlet extends HttpServlet {
     private final ThongKeRepository repository = new ThongKeRepository();
 
     // 1. KIỂM TRA NGÀY: không đảo ngày, không xem quá 366 ngày mỗi lần.
-    /** [ThongKeServlet-validateRange] Chặn ngày đảo ngược, ngoài giới hạn và khoảng dài hơn 366 ngày trước khi truy vấn. */
+    // [TK-KIEM-TRA] Giới hạn ngày tối đa 366 ngày, tháng trong một năm, năm tối đa 10 năm.
     public static void validateRange(LocalDate from, LocalDate to) {
         if (from.getYear() < 1900 || to.getYear() > 9998 || to.isBefore(from)) {
             throw new IllegalArgumentException("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc (từ năm 1900).");
@@ -52,7 +47,7 @@ public class ThongKeServlet extends HttpServlet {
     }
 
     @Override
-    /** [ThongKeServlet-doGet] Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. */
+    // [TK-BO-LOC] Đọc chế độ ngày/tháng/năm, kiểm tra khoảng thời gian, lấy báo cáo và forward JSP.
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         // 2. CHUẨN BỊ: tiếng Việt và không lưu báo cáo cũ trong bộ nhớ đệm.
@@ -74,45 +69,23 @@ public class ThongKeServlet extends HttpServlet {
 
         try {
             // 3. ĐỌC BỘ LỌC: lần đầu mở trang dùng đầu tháng đến hôm nay.
-            String start = request.getParameter("from");
-            String end = request.getParameter("to");
-            if ("month".equals(mode) || "year".equals(mode)) {
-                // [TK-BOLOC] Theo tháng lấy đủ năm; theo năm lấy đủ các năm.
-                int firstYear;
-                int lastYear;
-                try {
-                    if ("month".equals(mode)) {
-                        String year = request.getParameter("year");
-                        firstYear = year == null ? today.getYear() : Integer.parseInt(year);
-                        lastYear = firstYear;
-                        request.setAttribute("selectedYear", firstYear);
-                        periodName = "tháng";
-                    } else {
-                        String first = request.getParameter("startYear");
-                        String last = request.getParameter("endYear");
-                        firstYear = first == null ? today.getYear() - 4 : Integer.parseInt(first);
-                        lastYear = last == null ? today.getYear() : Integer.parseInt(last);
-                        request.setAttribute("startYear", firstYear);
-                        request.setAttribute("endYear", lastYear);
-                        periodName = "năm";
-                    }
-                    if (firstYear < 1900 || lastYear > 9998 || lastYear < firstYear)
-                        throw new IllegalArgumentException("Khoảng năm không hợp lệ (1900–9998).");
-                    from = LocalDate.of(firstYear, 1, 1);
-                    to = LocalDate.of(lastYear, 12, 31);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Năm phải là số nguyên hợp lệ.");
-                }
-            } else if (start != null || end != null) {
-                if (start == null || end == null || start.isBlank() || end.isBlank()) {
-                    throw new IllegalArgumentException("Vui lòng nhập đầy đủ từ ngày và đến ngày.");
-                }
-                try {
-                    from = LocalDate.parse(start);
-                    to = LocalDate.parse(end);
-                } catch (DateTimeParseException e) {
-                    throw new IllegalArgumentException("Ngày không hợp lệ. Vui lòng chọn lại.");
-                }
+            if ("month".equals(mode)) {
+                int year = docNam(request, "year", today.getYear());
+                request.setAttribute("selectedYear", year);
+                from = LocalDate.of(year, 1, 1);
+                to = LocalDate.of(year, 12, 31);
+                periodName = "tháng";
+            } else if ("year".equals(mode)) {
+                int first = docNam(request, "startYear", today.getYear() - 4);
+                int last = docNam(request, "endYear", today.getYear());
+                request.setAttribute("startYear", first);
+                request.setAttribute("endYear", last);
+                from = LocalDate.of(first, 1, 1);
+                to = LocalDate.of(last, 12, 31);
+                periodName = "năm";
+            } else if (request.getParameter("from") != null || request.getParameter("to") != null) {
+                from = docNgay(request.getParameter("from"));
+                to = docNgay(request.getParameter("to"));
             }
 
             // 4. LẤY SỐ LIỆU: chỉ truy vấn sau khi ngày đã hợp lệ.
@@ -139,7 +112,7 @@ public class ThongKeServlet extends HttpServlet {
     }
 
     // Các mốc ngày dành cho nút Hôm nay, 7 ngày qua, Tháng này, Tháng trước.
-    /** [ThongKeServlet-setQuickDates] Tính các mốc ngày cho nút Hôm nay, 7 ngày, tháng, năm theo ngày Việt Nam. */
+    // [TK-MOC-NGAY] Tạo ngày cho các nút lọc nhanh theo múi giờ Việt Nam.
     private void setQuickDates(HttpServletRequest request, LocalDate today) {
         request.setAttribute("today", today.toString());
         request.setAttribute("weekStart", today.minusDays(6).toString());
@@ -148,4 +121,29 @@ public class ThongKeServlet extends HttpServlet {
         request.setAttribute("previousStart", today.minusMonths(1).withDayOfMonth(1).toString());
         request.setAttribute("previousEnd", today.withDayOfMonth(1).minusDays(1).toString());
     }
+    // [TK-DOC-NAM] Ô năm trống hoặc sai định dạng phải báo lỗi trước khi tạo LocalDate.
+    private int docNam(HttpServletRequest request, String tenO, int macDinh) {
+        String value = request.getParameter(tenO);
+        if (value == null) return macDinh;
+        try {
+            int year = Integer.parseInt(value);
+            if (year < 1900 || year > 9998)
+                throw new IllegalArgumentException("Khoảng năm không hợp lệ (1900–9998).");
+            return year;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Năm phải là số nguyên hợp lệ.");
+        }
+    }
+
+    // [TK-DOC-NGAY] Đọc đúng định dạng yyyy-MM-dd từ input type=date.
+    private LocalDate docNgay(String value) {
+        if (value == null || value.isBlank())
+            throw new IllegalArgumentException("Vui lòng nhập đầy đủ từ ngày và đến ngày.");
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Ngày không hợp lệ. Vui lòng chọn lại.");
+        }
+    }
+
 }

@@ -2,6 +2,7 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <fmt:setLocale value="vi_VN"/>
+<%-- [TK-VIEW] Form gửi Servlet -> Repository -> dữ liệu trả về JSP. Tra cứu: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt --%>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -42,7 +43,8 @@
                     </section>
                     <%-- THỐNG KÊ: bộ lọc dùng GET; server kiểm tra ngày và giới hạn khoảng xem. --%>
                     <section class="card tk-filter">
-                        <form method="get" action="${pageContext.request.contextPath}/thong-ke">
+                        <%-- [TK-TIM-KIEM] Gửi bộ lọc tới Servlet bằng GET. --%>
+                <form method="get" action="${pageContext.request.contextPath}/thong-ke">
                             <%-- [TK-GIAODIEN] Server quyết định khoảng ngày thật; JS chỉ đổi ô nhập. --%>
                             <div class="form-group">
                                 <label for="tkMode">Thống kê theo</label>
@@ -350,26 +352,5 @@
                 </main>
             </div>
         </div>
-<script>
-    // [TK-DOICHE DO] Chỉ gửi các ô thuộc chế độ đang chọn, tránh required ở ô ẩn.
-    function doiCheDoThongKe() {
-        var mode = document.getElementById('tkMode').value;
-        var groups = document.querySelectorAll('[data-mode]');
-        for (var i = 0; i < groups.length; i++) {
-            var active = groups[i].getAttribute('data-mode') === mode;
-            groups[i].hidden = !active;
-            groups[i].style.display = active ? '' : 'none';
-            var inputs = groups[i].querySelectorAll('input');
-            for (var j = 0; j < inputs.length; j++) inputs[j].disabled = !active;
-        }
-    }
-    doiCheDoThongKe();
-    // Menu dùng riêng tại trang này, giữ nguyên mã menu của các module khác.
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-    function toggleSubmenu(button) {
-        button.closest('.nav-group').classList.toggle('open');
-    }
-</script>
+<script src="${pageContext.request.contextPath}/assets/js/thong-ke.js?v=1"></script>
 </body></html>

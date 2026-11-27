@@ -87,6 +87,9 @@ public class WebSmokeCheck {
             check(photo.statusCode() == 200 && photo.headers().firstValue("content-type").orElse("").equals("image/png")
                     && ImageIO.read(new ByteArrayInputStream(photo.body())).getWidth() == 8, "Return uploaded PNG from persistent directory");
             String[] paths = {
+                // Tài nguyên vừa tách khỏi JSP phải được phục vụ trong đúng context path.
+                "/assets/js/quan-ly-combo.js", "/assets/js/quan-ly-san-pham.js", "/assets/js/thong-ke.js",
+                "/assets/css/quan-ly-combo.css", "/assets/css/quan-ly-san-pham.css",
                 // Hồi quy các trang của nhóm: chỉ GET, không tạo giao dịch bán hàng.
                 "/phim/view", "/phong-chieu/view", "/ghe/view", "/khach-hang/view",
                 "/suat-chieu/view", "/ban-ve", "/hoa-don", "/check-in",
@@ -97,6 +100,10 @@ public class WebSmokeCheck {
                 "/thong-ke?mode=month&year=2026", "/thong-ke?mode=year&startYear=2025&endYear=2026"
             };
             for (String path : paths) {
+                // Có thể kiểm tra riêng ba chức năng khi module khác đang lỗi từ remote.
+                if (args.length > 0 && "--catalog-only".equals(args[0])
+                        && !path.startsWith("/quan-ly-") && !path.startsWith("/thong-ke")
+                        && !path.startsWith("/assets/")) continue;
                 HttpResponse<String> page = client.send(HttpRequest.newBuilder(URI.create(base + path))
                     .timeout(Duration.ofSeconds(30)).GET().build(), HttpResponse.BodyHandlers.ofString());
                 check(page.statusCode() == 200, path + " returned " + page.statusCode());

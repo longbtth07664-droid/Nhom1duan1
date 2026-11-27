@@ -6,6 +6,7 @@ import java.util.Objects;
 // Lớp khóa chính ghép cho bảng ChiTietCombo — gồm (maCombo, maSP)
 // JPA yêu cầu: implements Serializable, tên thuộc tính trùng với @Id trong ChiTietCombo,
 // và bắt buộc ghi đè equals() + hashCode() để Hibernate phân biệt từng dòng
+// [DL-CHITIETCOMBOID] Các trường ánh xạ cột SQL; constructor tạo đối tượng, getter/setter đọc và gán giá trị.
 public class ChiTietComboId implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -23,21 +24,13 @@ public class ChiTietComboId implements Serializable {
 
     // --- Getter & Setter ---
 
-    public Integer getMaCombo() {
-        return maCombo;
-    }
+    public Integer getMaCombo() { return maCombo; }
 
-    public void setMaCombo(Integer maCombo) {
-        this.maCombo = maCombo;
-    }
+    public void setMaCombo(Integer maCombo) { this.maCombo = maCombo; }
 
-    public Integer getMaSP() {
-        return maSP;
-    }
+    public Integer getMaSP() { return maSP; }
 
-    public void setMaSP(Integer maSP) {
-        this.maSP = maSP;
-    }
+    public void setMaSP(Integer maSP) { this.maSP = maSP; }
 
     // So sánh 2 khóa chính — Hibernate dùng để nhận biết dòng nào đã tồn tại trong Session cache
     @Override
@@ -50,12 +43,8 @@ public class ChiTietComboId implements Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(maCombo, maSP);
-    }
+    public int hashCode() { return Objects.hash(maCombo, maSP); }
 
     @Override
-    public String toString() {
-        return "ChiTietComboId{maCombo='" + maCombo + "', maSP='" + maSP + "'}";
-    }
+    public String toString() { return "ChiTietComboId{maCombo='" + maCombo + "', maSP='" + maSP + "'}"; }
 }

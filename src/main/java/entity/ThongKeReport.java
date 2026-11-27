@@ -8,25 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // DTO báo cáo, không phải bảng Hibernate và không thay đổi database.
-/* TRA CỨU HÀM: ThongKeReport
- * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
- * Ctrl+F "addDay(" để tìm phần xử lý.
- * Ctrl+F "getDays(" để tìm phần xử lý.
- * Ctrl+F "getFilms(" để tìm phần xử lý.
- * Ctrl+F "getProducts(" để tìm phần xử lý.
- * Ctrl+F "getRevenue(" để tìm phần xử lý.
- * Ctrl+F "getDiscount(" để tìm phần xử lý.
- * Ctrl+F "getTicketValue(" để tìm phần xử lý.
- * Ctrl+F "getProductValue(" để tìm phần xử lý.
- * Ctrl+F "getInvoices(" để tìm phần xử lý.
- * Ctrl+F "getTickets(" để tìm phần xử lý.
- * Ctrl+F "getItems(" để tìm phần xử lý.
- * Ctrl+F "getMismatches(" để tìm phần xử lý.
- * Ctrl+F "getAverage(" để tìm phần xử lý.
- * Ctrl+F "isEmpty(" để tìm phần xử lý.
- * Ctrl+F "groupBy(" để tìm phần xử lý.
- * Ctrl+F "prepareChart(" để tìm phần xử lý.
- */
+// Tra cứu chức năng: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt
 public class ThongKeReport {
     // 1. Danh sách dùng cho biểu đồ, bảng theo ngày và hai bảng xếp hạng.
     private final List<Day> days = new ArrayList<>();
@@ -40,7 +22,7 @@ public class ThongKeReport {
     private long invoices, tickets, items, mismatches;
 
     // Cộng các nhóm ngày đã được SQL tổng hợp độc lập, tránh nhân bản chi tiết.
-    /** [ThongKeReport-addDay] Thêm một ngày vào danh sách và cộng từng chỉ tiêu vào tổng báo cáo; ngày đã được SQL tổng hợp. */
+    // [TK-CONG-TONG] Thêm dòng và cộng doanh thu, giảm giá, tiền vé, tiền món, số lượng vào tổng.
     public void addDay(Day day) {
         days.add(day);
         revenue = revenue.add(day.revenue);
@@ -63,7 +45,7 @@ public class ThongKeReport {
     public long getTickets() { return tickets; }
     public long getItems() { return items; }
     public long getMismatches() { return mismatches; }
-    /** [ThongKeReport-getAverage] Doanh thu chia số hóa đơn, làm tròn đến đồng. Nếu không có hóa đơn trả 0 để tránh chia cho 0. */
+    // [TK-TRUNG-BINH] Doanh thu chia số hóa đơn; không có hóa đơn thì trả 0.
     public BigDecimal getAverage() {
         // Chưa có hóa đơn thì trả về 0, tránh chia cho 0.
         if (invoices == 0) {
@@ -87,8 +69,7 @@ public class ThongKeReport {
             if ("year".equals(mode)) key = key.withDayOfYear(1);
             Day old = groups.get(key);
             if (old == null) {
-                old = new Day(key, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
-                        BigDecimal.ZERO, 0, 0, 0, 0);
+                old = Day.empty(key);
             }
             Day sum = congSoLieu(key, old, day);
             sum.mode = mode;
@@ -119,7 +100,7 @@ public class ThongKeReport {
     }
 
     // Chuẩn hóa độ cao biểu đồ trên server, chỉ xuất số vào thuộc tính CSS.
-    /** [ThongKeReport-prepareChart] Hai vòng lặp: tìm doanh thu lớn nhất rồi đổi mỗi ngày sang phần trăm chiều cao cột. */
+    // [TK-BIEU-DO] Tìm doanh thu lớn nhất, tính chiều cao mỗi cột = doanh thu / lớn nhất × 100.
     public void prepareChart() {
         // Bước 1: tìm doanh thu lớn nhất để làm cột cao 100%.
         BigDecimal maxRevenue = BigDecimal.ZERO;
@@ -160,6 +141,11 @@ public class ThongKeReport {
             this.tickets = tickets;
             this.items = items;
             this.mismatches = mismatches;
+        }
+        // [TK-NGAY-TRONG] Ngày không bán hàng vẫn có một dòng giá trị 0.
+        public static Day empty(LocalDate date) {
+            return new Day(date, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                    BigDecimal.ZERO, 0, 0, 0, 0);
         }
         public String getDate() {
             if ("month".equals(mode)) return date.format(DateTimeFormatter.ofPattern("MM/yyyy"));

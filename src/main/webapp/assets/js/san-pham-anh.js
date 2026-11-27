@@ -23,7 +23,10 @@ function khoiTaoAnhSanPham(input) {
     });
 
     // [SP-ANH-XEM-TRUOC] Kiểm tra tệp và hiện ảnh vừa chọn, chưa ghi vào database.
-    input.addEventListener('change', function () {
+    input.addEventListener('change', capNhatAnhSanPham);
+
+    // Hàm nằm trong khoiTaoAnhSanPham để mỗi form giữ riêng ảnh gốc và URL tạm.
+    function capNhatAnhSanPham() {
         var file = input.files[0];
         if (file && (file.size > 5 * 1024 * 1024
                 || (file.type !== 'image/jpeg' && file.type !== 'image/png'))) {
@@ -47,5 +50,5 @@ function khoiTaoAnhSanPham(input) {
             else preview.removeAttribute('src');
             preview.hidden = originalHidden;
         }
-    });
+    }
 }

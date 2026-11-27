@@ -23,21 +23,7 @@ import java.util.Map;
 // Controller điều phối toàn bộ chức năng Quản lý Combo bắp nước
 // URL: /quan-ly-combo
 // Chức năng: Xem danh sách, Tìm kiếm, Thêm, Sửa, Xóa, Xem chi tiết JSON
-/* TRA CỨU HÀM: ComboServlet
- * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
- * Ctrl+F "doGet(" để tìm phần xử lý.
- * Ctrl+F "xuLyGet(" để tìm phần xử lý.
- * Ctrl+F "doPost(" để tìm phần xử lý.
- * Ctrl+F "hienThiDanhSach(" để tìm phần xử lý.
- * Ctrl+F "timKiemCombo(" để tìm phần xử lý.
- * Ctrl+F "moFormSua(" để tìm phần xử lý.
- * Ctrl+F "luuCombo(" để tìm phần xử lý.
- * Ctrl+F "xoaCombo(" để tìm phần xử lý.
- * Ctrl+F "traChiTietJson(" để tìm phần xử lý.
- * Ctrl+F "docThongTinCombo(" để tìm phần xử lý.
- * Ctrl+F "docDanhSachChiTiet(" để tìm phần xử lý.
- * Ctrl+F "escapeJson(" để tìm phần xử lý.
- */
+// Tra cứu chức năng: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt
 @WebServlet(name = "ComboServlet", urlPatterns = {"/quan-ly-combo"})
 @MultipartConfig(maxFileSize = AnhDanhMuc.GIOI_HAN_TEP, maxRequestSize = AnhDanhMuc.GIOI_HAN_YEU_CAU)
 public class ComboServlet extends HttpServlet {
@@ -48,7 +34,7 @@ public class ComboServlet extends HttpServlet {
     // ======================== XỬ LÝ GET ========================
 
     @Override
-    /** [ComboServlet-doGet] Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. */
+    // [CB-MO-TRANG] Tạo token phiên, nhận yêu cầu xem danh sách, tìm kiếm, sửa hoặc xem chi tiết.
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
             if (req.getSession().getAttribute("comboToken") == null)
@@ -86,7 +72,7 @@ public class ComboServlet extends HttpServlet {
     // ======================== XỬ LÝ POST ========================
 
     @Override
-    /** [ComboServlet-doPost] Nhận dữ liệu form gửi lên. Xác định action và gọi chức năng thêm, sửa hoặc xóa. */
+    // [CB-NHAN-FORM] Kiểm tra token rồi chuyển action add/update/delete đến hàm tương ứng.
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
 
@@ -124,7 +110,7 @@ public class ComboServlet extends HttpServlet {
     // ======================== CÁC HÀM XỬ LÝ ========================
 
     // Hiển thị trang mặc định: danh sách combo + danh sách sản phẩm lẻ (để chọn khi thêm combo)
-    /** [ComboServlet-hienThiDanhSach] Lấy danh sách từ repository, đặt vào request bằng setAttribute, forward sang JSP. */
+    // [CB-DANH-SACH] Lấy combo và sản phẩm đang bán, chuyển sang quanLyCombo.jsp.
     private void hienThiDanhSach(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         req.setAttribute("dsCombo", comboRepo.getAll());           // Danh sách combo
@@ -133,6 +119,7 @@ public class ComboServlet extends HttpServlet {
     }
 
     // Tìm kiếm combo theo từ khóa + lọc trạng thái
+    // [CB-TIM-KIEM] Đọc keyword/trangThai, tìm trong database và giữ lại bộ lọc trên form.
     private void timKiemCombo(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String keyword = req.getParameter("keyword");
@@ -146,7 +133,7 @@ public class ComboServlet extends HttpServlet {
     }
 
     // Tải dữ liệu combo cần sửa lên modal
-    /** [ComboServlet-moFormSua] Lấy bản hiện có và danh sách cho form; đặt editSP/editCombo vào request để JSP mở hộp sửa. */
+    // [CB-MO-SUA] Đọc combo, thành phần và dấu phiên bản; giữ cả món cũ đã ngừng bán.
     private void moFormSua(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String maCombo = req.getParameter("id");
@@ -167,12 +154,13 @@ public class ComboServlet extends HttpServlet {
         }
 
         req.setAttribute("dsCombo", comboRepo.getAll());
-        req.setAttribute("dsSanPham", sanPhamRepo.getAllDangKinhDoanh());
         req.setAttribute("editCombo", editCombo);           // Thông tin combo đang sửa
         req.setAttribute("editChiTietMap", editChiTietMap); // Map sản phẩm đã chọn
         // Giữ cả sản phẩm cũ đã ngừng bán để việc sửa không làm mất chi tiết.
         Map<Integer, SanPham> sanPhamChon = new LinkedHashMap<>();
-        for (SanPham sp : sanPhamRepo.getAllDangKinhDoanh()) {
+        List<SanPham> dangBan = sanPhamRepo.getAllDangKinhDoanh();
+        req.setAttribute("dsSanPham", dangBan);
+        for (SanPham sp : dangBan) {
             sanPhamChon.put(sp.getMaSP(), sp);
         }
         for (ChiTietCombo ct : editChiTiet) {
@@ -186,7 +174,7 @@ public class ComboServlet extends HttpServlet {
     }
 
     // THÊM / SỬA: đọc form, báo lỗi cụ thể và để repository tính giá từ dữ liệu thật.
-    /** [ComboServlet-luuCombo] Đọc form và mức giảm, gọi repository.save. Chuyển hướng sau lưu để tải lại trang không gửi trùng form. */
+    // [CB-LUU] Đọc form, thành phần, ảnh; gọi save để lưu trong một giao dịch.
     private void luuCombo(HttpServletRequest req, HttpServletResponse resp, boolean adding)
             throws IOException, ServletException {
         String id;
@@ -216,6 +204,7 @@ public class ComboServlet extends HttpServlet {
     }
 
     // Xóa combo — chặn nếu combo đã nằm trong hóa đơn (bảng ChiTietHoaDon)
+    // [CB-XOA] Gửi mã combo cho repository kiểm tra và xóa.
     private void xoaCombo(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         String maCombo = req.getParameter("id");
@@ -225,7 +214,7 @@ public class ComboServlet extends HttpServlet {
     }
 
     // Trả JSON danh sách sản phẩm bên trong combo — phục vụ modal Chi tiết qua AJAX/fetch
-    /** [ComboServlet-traChiTietJson] Đọc chi tiết theo mã, tạo JSON trả cho fetch trên giao diện. Escape chuỗi để JSON không hỏng. */
+    // [CB-CHI-TIET] Trả danh sách món dạng JSON để JavaScript mở hộp chi tiết.
     private void traChiTietJson(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         String maCombo = req.getParameter("id");
@@ -257,11 +246,10 @@ public class ComboServlet extends HttpServlet {
     // ======================== HÀM HỖ TRỢ ========================
 
     // Đọc thông tin combo từ form request → trả về Combo hợp lệ hoặc null nếu sai
-    /** [ComboServlet-docThongTinCombo] Đọc thông tin chung; kiểm tra mã, tên, trạng thái và tên ảnh. Giá gửi từ trình duyệt không quyết định giá lưu. */
+    // [CB-DOC-FORM] Kiểm tra tên, mô tả, mã, ảnh và trạng thái; sai trả null.
     private Combo docThongTinCombo(HttpServletRequest req, String maCombo) {
         try {
             String tenCombo = req.getParameter("tenCombo");
-            String giaStr = "1"; // Giá thật được tính tại repository, không tin giá gửi từ trình duyệt.
             String moTa = req.getParameter("moTa");
             String hinhAnh = req.getParameter("hinhAnh");
             String trangThai;
@@ -271,20 +259,16 @@ public class ComboServlet extends HttpServlet {
                 trangThai = req.getParameter("trangThai");
             }
 
-            // Bắt buộc: mã, tên, giá không được trống
+            // [CB-KIEM-TRA] Mã sửa phải hợp lệ; mã thêm do SQL tự cấp.
             Integer comboId;
             if ("add".equals(req.getParameter("action"))) {
                 comboId = null;
             } else {
                 comboId = util.DatabaseId.parse(maCombo);
             }
-            if (tenCombo == null || tenCombo.trim().isEmpty()
-                    || giaStr == null || giaStr.trim().isEmpty()) {
+            if (tenCombo == null || tenCombo.trim().isEmpty()) {
                 return null;
             }
-
-            // Giá phải là số dương
-            BigDecimal giaCombo = new BigDecimal(giaStr.trim());
             // Trạng thái mặc định "Đang bán" nếu không truyền
             if (trangThai == null || trangThai.trim().isEmpty()) {
                 trangThai = "Đang bán";
@@ -292,14 +276,12 @@ public class ComboServlet extends HttpServlet {
 
             // Tên ảnh tĩnh do form cũ gửi lên vẫn được hỗ trợ. Form mới gửi file tepAnh.
             String tenAnh;
-            if ((hinhAnh != null)) {
+            if (hinhAnh != null) {
                 tenAnh = hinhAnh.trim();
             } else {
                 tenAnh = "";
             }
-            if (tenAnh.isEmpty()) {
-                tenAnh = "";
-            } else if (!tenAnh.contains(".")) {
+            if (!tenAnh.isEmpty() && !tenAnh.contains(".")) {
                 tenAnh = tenAnh + ".jpg";
             }
 
@@ -311,17 +293,18 @@ public class ComboServlet extends HttpServlet {
                     || !("Đang bán".equals(trangThai.trim()) || "Ngừng bán".equals(trangThai.trim()))) {
                 return null;
             }
-            return new Combo(comboId, tenCombo.trim(), giaCombo,
+            // Giá tạm bằng 0; repository tính lại từ giá sản phẩm trong database trước khi lưu.
+            return new Combo(comboId, tenCombo.trim(), BigDecimal.ZERO,
                     moTa != null ? moTa.trim() : "", tenAnh, trangThai.trim());
         } catch (IllegalArgumentException e) {
-            return null; // Giá không phải số → trả null
+            return null; // Mã hoặc dữ liệu form không hợp lệ.
         }
     }
 
     // Đọc danh sách sản phẩm đã tích checkbox từ form
     // Cấu trúc form: checkbox name="ctMaSP" value="1"
     //                input name="ctSoLuong_1", input name="ctGhiChu_1"
-    /** [ComboServlet-docDanhSachChiTiet] Đọc các checkbox ctMaSP; lấy số lượng và ghi chú theo mã; dùng Map loại mã lặp rồi trả danh sách. */
+    // [CB-DOC-MON] Duyệt checkbox, kiểm tra số lượng và ghi chú; Map loại mã sản phẩm lặp.
     private List<ChiTietCombo> docDanhSachChiTiet(HttpServletRequest req, Integer maCombo) {
         String[] selectedMaSPs = req.getParameterValues("ctMaSP"); // Mảng mã SP đã tích
         Map<Integer, ChiTietCombo> map = new LinkedHashMap<>();     // Dùng Map tránh trùng
@@ -330,7 +313,7 @@ public class ComboServlet extends HttpServlet {
             for (String rawMa : selectedMaSPs) {
                 Integer maSP = util.DatabaseId.parse(rawMa);
 
-                // Đọc số lượng, mặc định = 1, tối thiểu = 1
+                // Số lượng bắt buộc là số nguyên từ 1 trở lên.
                 int sl = 0;
                 String slStr = req.getParameter("ctSoLuong_" + maSP);
                 try {
@@ -353,6 +336,7 @@ public class ComboServlet extends HttpServlet {
     }
 
     // Escape ký tự đặc biệt khi ghép chuỗi JSON thủ công
+    // [CB-JSON] Đổi dấu nháy, gạch chéo và ký tự điều khiển thành chuỗi JSON hợp lệ.
     private String escapeJson(String s) {
         if (s == null) return "";
         StringBuilder result = new StringBuilder();
