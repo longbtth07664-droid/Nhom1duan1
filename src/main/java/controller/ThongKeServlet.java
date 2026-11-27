@@ -19,8 +19,8 @@ import java.time.temporal.ChronoUnit;
 public class ThongKeServlet extends HttpServlet {
     private final ThongKeRepository repository = new ThongKeRepository();
 
-    // 1. KIỂM TRA NGÀY: không đảo ngày, không xem quá 366 ngày mỗi lần.
-    // [TK-KIEM-TRA] Giới hạn ngày tối đa 366 ngày, tháng trong một năm, năm tối đa 10 năm.
+    // [TK-KIEM-TRA] Đoạn nào chặn chọn ngày ngược hoặc khoảng ngày quá dài?
+    // validateRange kiểm tra mốc năm và thứ tự ngày. Chênh lệch tối đa 365 ngày là 366 ngày tính cả hai đầu.
     public static void validateRange(LocalDate from, LocalDate to) {
         if (from.getYear() < 1900 || to.getYear() > 9998 || to.isBefore(from)) {
             throw new IllegalArgumentException("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc (từ năm 1900).");
@@ -30,7 +30,8 @@ public class ThongKeServlet extends HttpServlet {
         }
     }
 
-    /** [TK-KIEMTRA-NHOM] Mỗi chế độ có giới hạn riêng để báo cáo dễ đọc. */
+    // [TK-KIEMTRA-NHOM] Đoạn nào giới hạn bộ lọc theo tháng hoặc năm?
+    // Chế độ tháng xem từng tháng trong một năm. Chế độ năm xem tối đa 10 năm, tính cả năm đầu và năm cuối.
     public static void validateRange(LocalDate from, LocalDate to, String mode) {
         if ("day".equals(mode)) {
             validateRange(from, to);
@@ -47,7 +48,8 @@ public class ThongKeServlet extends HttpServlet {
     }
 
     @Override
-    // [TK-BO-LOC] Đọc chế độ ngày/tháng/năm, kiểm tra khoảng thời gian, lấy báo cáo và forward JSP.
+    // [TK-BO-LOC] Bấm lọc Thống kê theo ngày, tháng hoặc năm thì code nào chạy?
+    // doGet xác định khoảng ngày từ mode, kiểm tra khoảng rồi gọi repository.load và groupBy.
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         // 2. CHUẨN BỊ: tiếng Việt và không lưu báo cáo cũ trong bộ nhớ đệm.
@@ -68,7 +70,8 @@ public class ThongKeServlet extends HttpServlet {
         String periodName = "ngày";
 
         try {
-            // 3. ĐỌC BỘ LỌC: lần đầu mở trang dùng đầu tháng đến hôm nay.
+            // [TK-CHON-KHOANG] Theo tháng lấy cả năm đã chọn. Theo năm lấy trọn các năm trong khoảng.
+            // Theo ngày dùng from/to người dùng nhập, mặc định từ đầu tháng đến hôm nay.
             if ("month".equals(mode)) {
                 int year = docNam(request, "year", today.getYear());
                 request.setAttribute("selectedYear", year);
@@ -88,7 +91,7 @@ public class ThongKeServlet extends HttpServlet {
                 to = docNgay(request.getParameter("to"));
             }
 
-            // 4. LẤY SỐ LIỆU: chỉ truy vấn sau khi ngày đã hợp lệ.
+            // [TK-GOI-BAO-CAO] load lấy dữ liệu theo ngày, groupBy gom lại nếu đang xem tháng hoặc năm.
             validateRange(from, to, mode);
             ThongKeReport report = repository.load(from, to).groupBy(mode);
             request.setAttribute("report", report);
@@ -111,8 +114,8 @@ public class ThongKeServlet extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/thongKe.jsp").forward(request, response);
     }
 
-    // Các mốc ngày dành cho nút Hôm nay, 7 ngày qua, Tháng này, Tháng trước.
-    // [TK-MOC-NGAY] Tạo ngày cho các nút lọc nhanh theo múi giờ Việt Nam.
+    // [TK-MOC-NGAY] Các mốc của nút lọc nhanh được tính ở đâu?
+    // setQuickDates dùng ngày hiện tại theo giờ Việt Nam. 7 ngày qua bắt đầu từ hôm nay trừ 6 ngày.
     private void setQuickDates(HttpServletRequest request, LocalDate today) {
         request.setAttribute("today", today.toString());
         request.setAttribute("weekStart", today.minusDays(6).toString());
@@ -121,7 +124,8 @@ public class ThongKeServlet extends HttpServlet {
         request.setAttribute("previousStart", today.minusMonths(1).withDayOfMonth(1).toString());
         request.setAttribute("previousEnd", today.withDayOfMonth(1).minusDays(1).toString());
     }
-    // [TK-DOC-NAM] Ô năm trống hoặc sai định dạng phải báo lỗi trước khi tạo LocalDate.
+    // [TK-DOC-NAM] Năm được đọc và kiểm tra ở đâu?
+    // Không gửi tham số thì dùng mặc định. Đã gửi thì phải là số nguyên từ 1900 đến 9998.
     private int docNam(HttpServletRequest request, String tenO, int macDinh) {
         String value = request.getParameter(tenO);
         if (value == null) return macDinh;
@@ -135,7 +139,8 @@ public class ThongKeServlet extends HttpServlet {
         }
     }
 
-    // [TK-DOC-NGAY] Đọc đúng định dạng yyyy-MM-dd từ input type=date.
+    // [TK-DOC-NGAY] Chuỗi ngày trên form được chuyển thành kiểu ngày ở đâu?
+    // docNgay chặn giá trị trống và dùng LocalDate.parse để đọc ngày dạng yyyy-MM-dd.
     private LocalDate docNgay(String value) {
         if (value == null || value.isBlank())
             throw new IllegalArgumentException("Vui lòng nhập đầy đủ từ ngày và đến ngày.");

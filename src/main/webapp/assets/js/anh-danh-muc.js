@@ -8,7 +8,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// [CB-ANH-XEM-TRUOC] Mỗi ô file có hàm riêng, dùng vòng for để gắn sự kiện.
+// [CB-ANH-XEM-TRUOC] Đoạn nào hiển thị ảnh combo vừa chọn?
+// khoiTaoAnhCombo gắn sự kiện change cho ô tepAnh. Chỉ createObjectURL và dòng gán previewImg.src.
+// Khi đổi ảnh, revokeObjectURL giải phóng địa chỉ tạm trước đó. Việc lưu ảnh diễn ra khi gửi form.
 function khoiTaoAnhCombo(input) {
         var temporaryUrl = null;
         input.addEventListener('change', function () {

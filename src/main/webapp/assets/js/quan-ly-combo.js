@@ -1,6 +1,6 @@
 // [CB-JS] Xử lý thao tác trên giao diện. Kiểm tra và lưu thật nằm ở Servlet/Repository.
-// Bật/tắt ô nhập SL + Ghi chú khi người dùng tích Checkbox chọn sản phẩm
-// [CB-CHON-MON] Bật ô số lượng/ghi chú theo checkbox rồi tính lại giá xem trước.
+// [CB-CHON-MON] Tích chọn món thì đoạn nào bật ô số lượng và ghi chú?
+// Chỉ vào inputs[i].disabled = !checkbox.checked. Ô được bật khi món đã tích, sau đó hàm tính lại giá xem trước.
 function toggleProductRow(checkbox, mode) {
     var row = checkbox.closest('tr');
     var inputs = row.querySelectorAll('input[type="number"], input[type="text"]');
@@ -12,8 +12,8 @@ function toggleProductRow(checkbox, mode) {
 }
 
 
-// COMBO: lọc dòng theo mã/tên, không bỏ lựa chọn đã tích.
-// [CB-LOC-MON] Lọc tên không phân biệt dấu tiếng Việt, giữ món đã chọn khi bị ẩn.
+// [CB-LOC-MON] Gõ tên món thì đoạn nào lọc danh sách? Món bị ẩn còn được chọn không?
+// Chỉ vào row.hidden. Hàm so chuỗi đã bỏ dấu và chỉ ẩn dòng, nên ô đã tích vẫn giữ nguyên.
 function locSanPham(mode, text) {
     var keyword = boDauTiengViet(text.trim());
     var count = 0;
@@ -26,12 +26,14 @@ function locSanPham(mode, text) {
     document.getElementById(mode + 'Empty').hidden = count > 0;
 }
 
-// [CB-BO-DAU] NFD tách dấu khỏi chữ; bỏ dấu để "bap" vẫn tìm thấy "Bắp".
+// [CB-BO-DAU] Vì sao gõ "bap" vẫn tìm được "Bắp"?
+// normalize('NFD') tách dấu để replace xóa dấu. Hàm cũng đưa về chữ thường và đổi đ thành d.
 function boDauTiengViet(text) {
     return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
 }
-// COMBO: tính cả những món đang bị bộ lọc ẩn; giá lưu được server tính lại.
-// [CB-GIA-XEM-TRUOC] Cộng giá × số lượng rồi áp dụng giảm giá; giá lưu thật do server tính.
+// [CB-GIA-XEM-TRUOC] Giá combo trên màn hình được tính ở đâu?
+// Chỉ vào total += giá × số lượng và Math.round. Hàm cộng món đã tích, kể cả món bị ẩn, rồi áp dụng mức giảm.
+// rate = -1 thì hiện giá cũ. Giá ghi vào database được tính ở ComboRepository, mã [CB-GIAM-GIA].
 function tinhTongGiaLe(mode) {
     var body=document.getElementById(mode+'PickerBody');
     if(!body) return;
@@ -51,8 +53,9 @@ function tinhTongGiaLe(mode) {
         price.value = Math.round(total * (100 - rate) / 100);
     }
 }
-// COMBO: báo chính xác món vượt kho hoặc đã ngừng bán.
-// [CB-KIEM-TRA-FORM] Kiểm tra món, số lượng, tồn kho và lưu bản nháp trước khi gửi.
+// [CB-KIEM-TRA-FORM] Trước khi gửi form, đoạn nào chặn quên chọn món hoặc nhập số lượng sai?
+// Chỉ vào các nhánh return false. Phải chọn ít nhất một món, số lượng là số nguyên dương.
+// Combo đang bán còn phải đủ tồn và món đang kinh doanh. Server kiểm tra lại khi lưu.
 function validateComboForm(mode) {
     var form = document.getElementById(mode + 'GiaCombo').form;
     var dangBan = mode === 'add' || form.elements.trangThai.value === 'Đang bán';
@@ -72,6 +75,8 @@ function validateComboForm(mode) {
         }
     }
     tinhTongGiaLe(mode);
+    // [CB-LUU-NHAP] Bản nháp được lưu trước khi gửi form ở đâu?
+    // FormData đọc các trường đã nhập. sessionStorage giữ phần dạng chuỗi trong tab, ảnh phải chọn lại.
     try {
         // Trình duyệt yêu cầu chọn lại tệp sau khi trang tải lại. Chỉ giữ các ô văn bản.
         var fields = [];
@@ -82,7 +87,6 @@ function validateComboForm(mode) {
     } catch(e) {}
     return true;
 }
-// COMBO: đổi thành phần sẽ tính lại giá; giữ bản nhập khi server trả lỗi.
 document.addEventListener('DOMContentLoaded',function() {
     khoiTaoBangSanPham('add');
     khoiTaoBangSanPham('edit');
@@ -91,7 +95,8 @@ document.addEventListener('DOMContentLoaded',function() {
         var body=document.getElementById(mode+'PickerBody');
         if(!body) return;
         body.addEventListener('invalid',function(e){e.target.closest('tr').hidden=false;},true);
-        // [CB-GIU-GIA] Chỉ đổi món hoặc số lượng mới tự chuyển sang tính lại giá.
+        // [CB-GIU-GIA] Khi nào form tự bỏ chế độ giữ giá cũ?
+        // Sự kiện input chỉ xử lý checkbox và ô số lượng. rate.value từ -1 chuyển về 0 rồi tính lại.
         body.addEventListener('input',function(event){
             var type = event.target.type;
             if (type !== 'checkbox' && type !== 'number') return;
@@ -101,6 +106,8 @@ document.addEventListener('DOMContentLoaded',function() {
         });
         tinhTongGiaLe(mode);
     }
+    // [CB-KHOI-PHUC-NHAP] Nếu server báo lỗi thì đoạn nào điền lại dữ liệu?
+    // msg=error tải comboDraft. Form sửa chỉ khôi phục khi đúng mã combo và version đang mở.
     try {
         var params=new URLSearchParams(location.search);
         if(params.get('msg')==='error') {
@@ -144,7 +151,8 @@ document.addEventListener('DOMContentLoaded',function() {
     } catch(e) { /* Không có bản nháp thì giữ form mặc định. */ }
 });
 
-// [CB-BAN-NHAP] Duyệt lần lượt và trả trường đầu tiên đúng tên.
+// [CB-BAN-NHAP] Code nào tìm action, maCombo hoặc version trong bản nháp?
+// timTruongBanNhap duyệt các cặp tên và giá trị, rồi trả cặp đầu tiên có tên cần tìm.
 function timTruongBanNhap(entries, name) {
     for (var i = 0; i < entries.length; i++) {
         if (entries[i][0] === name) return entries[i];
@@ -153,7 +161,9 @@ function timTruongBanNhap(entries, name) {
 }
 // Mở modal Chi tiết và đổ dữ liệu an toàn
 var detailRequest=0; // Bỏ phản hồi cũ khi chuyển combo.
-// [CB-XEM-CHI-TIET] Gọi JSON chi tiết và tạo từng ô bằng textContent để hiển thị an toàn.
+// [CB-XEM-CHI-TIET] Bấm Xem chi tiết thì code nào lấy món và đưa lên bảng?
+// Chỉ vào fetch gửi action=chiTiet và id, rồi vòng lặp tạo từng ô từ JSON. textContent hiển thị dữ liệu dạng văn bản.
+// requestId giúp bỏ phản hồi đến trễ nếu người dùng đã bấm xem combo khác.
 function xemChiTietCombo(btn) {
     var requestId=++detailRequest;
     var ma = btn.getAttribute('data-ma') || '';
@@ -208,7 +218,8 @@ function xemChiTietCombo(btn) {
         });
 }
 
-// [CB-XAC-NHAN-XOA] Xác nhận rồi gửi form POST chứa mã và token.
+// [CB-XAC-NHAN-XOA] Bấm Xóa combo thì trình duyệt làm gì?
+// confirm hỏi lại. Nếu đồng ý, hàm gán mã vào form và gọi form.submit(). Repository quyết định có được xóa hay không.
 function xoaCombo(btn) {
     var ma = btn.getAttribute('data-ma');
     var ten = btn.getAttribute('data-ten');

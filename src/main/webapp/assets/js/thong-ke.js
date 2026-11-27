@@ -1,6 +1,7 @@
-// [TK-JS] Xử lý thao tác trên giao diện. Kiểm tra và lưu thật nằm ở Servlet/Repository.
-// [TK-DOICHE DO] Chỉ gửi các ô thuộc chế độ đang chọn, tránh required ở ô ẩn.
-// [TK-DOI-CHE-DO] Hiện ô thuộc chế độ đang chọn, vô hiệu hóa ô thuộc chế độ khác.
+// [TK-DOI-CHE-DO] Chọn Ngày, Tháng hoặc Năm thì đoạn nào đổi ô nhập?
+// doiCheDoThongKe so tkMode với data-mode của từng nhóm rồi hiện đúng nhóm đang chọn.
+// Chỉ inputs[j].disabled = !active: ô của nhóm khác không được gửi và không bị kiểm tra required.
+// Khi gửi form, ThongKeServlet kiểm tra khoảng thời gian và ThongKeRepository lấy số liệu.
 function doiCheDoThongKe() {
     var mode = document.getElementById('tkMode').value;
     var groups = document.querySelectorAll('[data-mode]');
@@ -13,7 +14,8 @@ function doiCheDoThongKe() {
     }
 }
 doiCheDoThongKe();
-// Menu dùng riêng tại trang này, giữ nguyên mã menu của các module khác.
+// [TK-MENU] Bấm nút menu thì đoạn nào đóng hoặc mở thanh bên?
+// toggleSidebar đổi class open của thanh bên. toggleSubmenu đổi class open của nhóm chứa nút.
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
 }

@@ -26,8 +26,8 @@ public class ComboRepository {
         return HibernateConfig.getFACTORY().openSession();
     }
 
-    // Lấy toàn bộ combo, sắp xếp theo mã tăng dần
-    // [CB-SQL-DANH-SACH] Đọc toàn bộ combo theo mã tăng dần.
+    // [CB-SQL-DANH-SACH] Câu truy vấn lấy danh sách combo nằm ở đâu?
+    // getAll lấy toàn bộ combo và ORDER BY sắp kết quả theo mã tăng dần.
     public List<Combo> getAll() {
         try (Session session = openSession()) {
             return session.createQuery("SELECT c FROM Combo c ORDER BY c.maCombo", Combo.class).list();
@@ -41,15 +41,16 @@ public class ComboRepository {
         if (maCombo == null || maCombo.trim().isEmpty()) {
             return null;
         }
+        Integer id = DatabaseId.parse(maCombo);
         try (Session session = openSession()) {
-            return session.find(Combo.class, DatabaseId.parse(maCombo));
+            return session.find(Combo.class, id);
         } catch (Exception e) {
             throw new IllegalStateException("Không tải được dữ liệu combo.", e);
         }
     }
 
-    // Tìm kiếm combo theo từ khóa (mã hoặc tên) + lọc trạng thái ("Đang bán" / "Ngừng bán")
-    // [CB-SQL-TIM] Tìm mã/tên và trạng thái; truyền đầu vào bằng setParameter.
+    // [CB-SQL-TIM] Đoạn nào tìm combo theo mã, tên hoặc lọc trạng thái?
+    // search thêm LIKE cho mã/tên và điều kiện trạng thái khi có bộ lọc. setParameter gắn giá trị vào truy vấn.
     public List<Combo> search(String keyword, String trangThai) {
         try (Session session = openSession()) {
             StringBuilder hql = new StringBuilder("SELECT c FROM Combo c WHERE 1=1");
@@ -83,21 +84,20 @@ public class ComboRepository {
         }
     }
 
-    // Lấy danh sách sản phẩm lẻ bên trong 1 combo
-    // JOIN FETCH ct.sanPham → tải sẵn thông tin sản phẩm trước khi đóng Session,
-    //                         tránh lỗi LazyInitializationException
-    // [CB-SQL-CHI-TIET] JOIN FETCH tải sẵn tên/giá sản phẩm trước khi đóng session.
+    // [CB-SQL-CHI-TIET] Đoạn nào lấy món trong combo và vì sao dùng JOIN FETCH?
+    // WHERE chọn đúng mã combo. JOIN FETCH tải sẵn sản phẩm để đọc được tên, giá sau khi đóng Session.
     public List<ChiTietCombo> getChiTiet(String maCombo) {
         if (maCombo == null || maCombo.trim().isEmpty()) {
             return new ArrayList<>();
         }
+        Integer id = DatabaseId.parse(maCombo);
         try (Session session = openSession()) {
             String hql = "SELECT ct FROM ChiTietCombo ct "
                     + "JOIN FETCH ct.sanPham "
                     + "WHERE ct.maCombo = :ma "
                     + "ORDER BY ct.maSP";
             return session.createQuery(hql, ChiTietCombo.class)
-                    .setParameter("ma", DatabaseId.parse(maCombo))
+                    .setParameter("ma", id)
                     .list();
         } catch (Exception e) {
             throw new IllegalStateException("Không tải được dữ liệu combo.", e);
@@ -105,8 +105,9 @@ public class ComboRepository {
     }
 
 
-    // Lưu combo và chi tiết trong cùng giao dịch; tạo combo không trừ kho.
-    // [CB-SQL-LUU] Khóa bản sửa, kiểm tra phiên bản, tính giá, lưu cha và chi tiết; lỗi thì rollback.
+    // [CB-SQL-LUU] Đoạn nào lưu combo và các món vào cơ sở dữ liệu?
+    // save mở một giao dịch chung. Thêm thì tạo combo để lấy mã. Sửa thì cập nhật và thay danh sách món.
+    // Commit khi cả combo và các món đã lưu, rollback khi gặp lỗi. Tạo combo chỉ kiểm tra kho, không trừ tồn.
     public boolean save(Combo combo, List<ChiTietCombo> details, int discount, boolean adding, String expected) {
         try (Session session = openSession()) {
             Transaction tx = session.beginTransaction();
@@ -121,6 +122,7 @@ public class ComboRepository {
                     List<ChiTietCombo> previous = session.createQuery(
                         "FROM ChiTietCombo WHERE maCombo = :ma ORDER BY maSP", ChiTietCombo.class)
                         .setParameter("ma", combo.getMaCombo()).list();
+                    // [CB-CHONG-GHI-DE] So dữ liệu hiện tại sau khi khóa với version lúc mở form.
                     if (!fingerprint(old, previous).equals(expected))
                         throw new IllegalArgumentException("Combo đã được người khác sửa. Hãy tải lại trang.");
                     if (combo.getHinhAnh() == null || combo.getHinhAnh().isEmpty()) {
@@ -129,10 +131,12 @@ public class ComboRepository {
                 }
                 boolean dangBan = "Đang bán".equals(combo.getTrangThai());
                 BigDecimal total = kiemTraVaTinhTongGiaLe(session, details, dangBan);
+                // [CB-GIU-GIA-CU] Sửa combo và chọn giữ giá thì lấy giá cũ ngay ở nhánh -1.
                 if (discount == -1 && !adding) combo.setGiaCombo(old.getGiaCombo());
                 else combo.setGiaCombo(tinhGiaSauGiam(total, discount));
                 if (combo.getGiaCombo().signum() <= 0 || combo.getGiaCombo().precision() > 18)
                     throw new IllegalArgumentException("Giá combo vượt giới hạn cho phép.");
+                // [CB-GHI-COMBO] Thêm dùng persist để nhận mã mới, sửa dùng merge với mã đang có.
                 if (adding) {
                     session.persist(combo); // IDENTITY đã được cấp trước khi lưu các dòng con.
                     if (combo.getHinhAnh() == null || combo.getHinhAnh().isEmpty())
@@ -145,6 +149,7 @@ public class ComboRepository {
                     session.flush();
                     session.clear(); // Bỏ chi tiết cũ trong cache trước khi thêm lại cùng khóa.
                 }
+                // [CB-GHI-THANH-PHAN] Gắn mã combo vào từng món rồi persist từng dòng ChiTietCombo.
                 for (ChiTietCombo detail : details) {
                     detail.setMaCombo(combo.getMaCombo());
                     session.persist(detail);
@@ -158,8 +163,8 @@ public class ComboRepository {
         }
     }
 
-    // Phát hiện thay đổi đồng thời bằng nội dung, giữ nguyên cấu trúc bảng hiện có.
-    // [CB-PHIEN-BAN] Tạo dấu nội dung, so với lúc mở form để tránh ghi đè thay đổi của người khác.
+    // [CB-PHIEN-BAN] Làm sao biết combo đã bị người khác sửa khi mình còn mở form?
+    // fingerprint tạo dấu từ thông tin combo và danh sách món đã sắp theo mã. save so dấu mới với dấu trên form.
     public String fingerprint(Combo combo, List<ChiTietCombo> details) {
         StringBuilder data = new StringBuilder(combo.toString());
         data.append('|').append(combo.getMoTa()).append('|').append(combo.getHinhAnh());
@@ -177,8 +182,8 @@ public class ComboRepository {
         }
     }
 
-    // Chỉ xóa khi combo tồn tại và chưa được sử dụng trong hóa đơn.
-    // [CB-SQL-XOA] Chặn combo đã có hóa đơn; xóa chi tiết trước rồi xóa combo trong cùng giao dịch.
+    // [CB-SQL-XOA] Điều kiện chặn xóa combo đã bán nằm ở đâu?
+    // delete đếm dòng ChiTietHoaDon theo MaCombo. Có tham chiếu thì báo lỗi. Nếu được xóa, xóa món trước combo.
     public boolean delete(String id) {
         Integer comboId = DatabaseId.parse(id);
         try (Session session = openSession()) {
@@ -202,9 +207,9 @@ public class ComboRepository {
             }
         }
     }
-    /** [CB-GIA] Tính tổng giá lẻ. Combo đang bán cần đủ tồn và món còn kinh doanh.
-     * Combo ngừng bán được giữ công thức cũ dù nguyên liệu hết hàng.
-     */
+    // [CB-GIA] Đoạn nào cộng giá từng món và kiểm tra đủ tồn?
+    // Vòng lặp lấy giá từ cơ sở dữ liệu rồi cộng giá × số lượng. Combo đang bán phải đủ tồn và món còn kinh doanh.
+    // Combo ngừng bán vẫn cần món hợp lệ, nhưng được phép giữ món đã ngừng kinh doanh hoặc thiếu tồn.
     private BigDecimal kiemTraVaTinhTongGiaLe(Session session, List<ChiTietCombo> details, boolean dangBan) {
         if (details.isEmpty()) throw new IllegalArgumentException("Hãy chọn ít nhất một sản phẩm.");
         BigDecimal total = BigDecimal.ZERO;
@@ -238,8 +243,9 @@ public class ComboRepository {
             danhSach.set(j + 1, hienTai);
         }
     }
-    // [CB-GIAM-GIA] Giá combo = tổng (giá sản phẩm × số lượng) × (100 - % giảm) / 100.
-    // BigDecimal giữ tiền chính xác; HALF_UP làm tròn tới một đồng.
+    // [CB-GIAM-GIA] Công thức tính giá combo sau giảm nằm ở đâu?
+    // tinhGiaSauGiam lấy tổng giá lẻ × (100 - % giảm) / 100. Ví dụ 100.000 giảm 10% còn 90.000.
+    // BigDecimal giữ phép tính tiền chính xác, HALF_UP làm tròn tới một đồng.
     private BigDecimal tinhGiaSauGiam(BigDecimal tongGiaLe, int giamGia) {
         if (giamGia != 0 && giamGia != 10 && giamGia != 20 && giamGia != 50)
             throw new IllegalArgumentException("Mức giảm giá không hợp lệ.");

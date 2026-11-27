@@ -23,7 +23,8 @@ public class SanPhamServlet extends HttpServlet {
     private final SanPhamRepository sanPhamRepo = new SanPhamRepository();
 
     @Override
-    // [SP-MO-TRANG] Tạo token rồi mở danh sách, kết quả tìm kiếm hoặc form sửa.
+    // [SP-MO-TRANG] Bấm vào Quản lý sản phẩm thì code nào chạy đầu tiên?
+    // doGet tạo token nếu phiên chưa có. xuLyGet đọc action để mở danh sách, tìm kiếm hoặc mở form sửa.
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         try {
@@ -67,7 +68,8 @@ public class SanPhamServlet extends HttpServlet {
     }
 
     @Override
-    // [SP-NHAN-FORM] Kiểm tra token, chọn thao tác thêm/sửa/xóa và xử lý lỗi.
+    // [SP-NHAN-FORM] Bấm Thêm, Lưu hoặc Xóa thì code nào nhận yêu cầu?
+    // doPost kiểm tra token của phiên rồi chuyển action add/update/delete đến hàm tương ứng.
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
 
@@ -98,14 +100,16 @@ public class SanPhamServlet extends HttpServlet {
         }
     }
 
-    // [SP-DANH-SACH] Đọc sản phẩm từ repository rồi forward sang quanLySanPham.jsp.
+    // [SP-DANH-SACH] Danh sách sản phẩm được lấy ở đâu?
+    // sanPhamRepo.getAll lấy danh sách. setAttribute đặt dữ liệu vào request để trang đọc được.
     private void hienThiDanhSach(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         req.setAttribute("dsSanPham", sanPhamRepo.getAll());
         req.getRequestDispatcher("/quanLySanPham.jsp").forward(req, resp);
     }
 
-    // [SP-TIM-KIEM] Đọc từ khóa và trạng thái từ form tìm kiếm.
+    // [SP-TIM-KIEM] Bấm Tìm kiếm sản phẩm thì vào đâu?
+    // Đọc keyword và trangThai, gọi sanPhamRepo.search rồi gửi kết quả và bộ lọc về trang.
     private void timKiemSanPham(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String keyword = req.getParameter("keyword");
@@ -117,13 +121,15 @@ public class SanPhamServlet extends HttpServlet {
         req.getRequestDispatcher("/quanLySanPham.jsp").forward(req, resp);
     }
 
-    // [SP-THEM] Gọi luuSanPham với themMoi=true.
+    // [SP-THEM] Đoạn nào bắt đầu thêm sản phẩm?
+    // themSanPham gọi luuSanPham với themMoi=true để đi vào nhánh thêm.
     private void themSanPham(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
         luuSanPham(req, resp, true);
     }
 
-    // [SP-MO-SUA] Lấy bản hiện có và dấu phiên bản để phát hiện form sửa đã cũ.
+    // [SP-MO-SUA] Bấm Sửa thì dữ liệu cũ và version lấy ở đâu?
+    // getOne đọc theo id, fingerprint tạo dấu trạng thái hiện tại để so lại khi bấm Lưu.
     private void moFormSua(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String maSP = req.getParameter("id");
@@ -138,13 +144,15 @@ public class SanPhamServlet extends HttpServlet {
         req.getRequestDispatcher("/quanLySanPham.jsp").forward(req, resp);
     }
 
-    // [SP-SUA] Gọi luuSanPham với themMoi=false.
+    // [SP-SUA] Bấm Lưu sau khi sửa sản phẩm thì vào đâu?
+    // capNhatSanPham gọi luuSanPham với themMoi=false để đi vào nhánh cập nhật.
     private void capNhatSanPham(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
         luuSanPham(req, resp, false);
     }
 
-    // [SP-LUU] Đọc form -> kiểm tra -> lưu ảnh và sản phẩm -> chuyển về danh sách.
+    // [SP-LUU] Đoạn nào dùng chung cho thêm và sửa sản phẩm?
+    // luuSanPham gọi docThongTinSanPham để kiểm tra, rồi luuSanPhamCoAnh để lưu và trả thông báo.
     private void luuSanPham(HttpServletRequest req, HttpServletResponse resp, boolean themMoi)
             throws IOException, ServletException {
         SanPham sp = docThongTinSanPham(req, req.getParameter("maSP"));
@@ -164,7 +172,8 @@ public class SanPhamServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + thongBao);
     }
 
-    // [SP-ANH] Dọn tệp mới nếu SQL từ chối lưu, kể cả khi form sửa đã cũ.
+    // [SP-ANH] Đoạn nào lưu ảnh và gọi thêm hoặc cập nhật sản phẩm?
+    // AnhDanhMuc.luu nhận ảnh. themMoi quyết định gọi add hay update. Lưu thất bại thì finally dọn tệp mới.
     private boolean luuSanPhamCoAnh(HttpServletRequest req, SanPham sp, boolean themMoi)
             throws IOException, ServletException {
         String anhMoi = AnhDanhMuc.luu(req);
@@ -179,7 +188,8 @@ public class SanPhamServlet extends HttpServlet {
         }
     }
 
-    // [SP-XOA] Chặn sản phẩm đã dùng trong combo/hóa đơn trước khi gọi xóa.
+    // [SP-XOA] Bấm Xóa sản phẩm thì code nào kiểm tra trước?
+    // isSanPhamUsed kiểm tra sản phẩm đã dùng trong combo hoặc hóa đơn. Chưa dùng thì mới gọi delete.
     private void xoaSanPham(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         String maSP = req.getParameter("id");
@@ -191,8 +201,9 @@ public class SanPhamServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + (ok ? "delete_ok" : "error"));
     }
 
-    // Đọc & kiểm tra dữ liệu sản phẩm từ form
-    // [SP-KIEM-TRA] Kiểm tra tên, danh mục, giá nguyên dương, tồn kho không âm và trạng thái.
+    // [SP-KIEM-TRA] Đoạn nào chặn giá hoặc tồn kho không hợp lệ?
+    // Giá là số nguyên dương. Tồn kho là số nguyên từ 0, lúc thêm để trống thì mặc định 0.
+    // Hàm cũng kiểm tra tên, loại, đơn vị và trạng thái trước khi tạo đối tượng SanPham.
     private SanPham docThongTinSanPham(HttpServletRequest req, String maSP) {
         try {
             String tenSP = req.getParameter("tenSP");
@@ -225,11 +236,12 @@ public class SanPhamServlet extends HttpServlet {
 
             BigDecimal giaBan = new BigDecimal(giaStr.trim());
             int soLuongTon;
-            if ((tonStr != null && !tonStr.trim().isEmpty())) {
+               if ((tonStr != null && !tonStr.trim().isEmpty())) {
                 soLuongTon = Integer.parseInt(tonStr.trim());
             } else {
                 soLuongTon = 0;
             }
+            // [SP-GIA-TON] Giá bằng 0 hoặc âm, hay tồn kho âm đều bị từ chối tại đây.
             if (giaBan.compareTo(BigDecimal.ZERO) <= 0 || soLuongTon < 0) {
                 return null;
             }

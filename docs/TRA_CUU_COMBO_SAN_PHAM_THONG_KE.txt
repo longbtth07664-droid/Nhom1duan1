@@ -2,20 +2,101 @@ TRA CỨU COMBO - SẢN PHẨM - THỐNG KÊ (27/11/2026)
 
 CÁCH TÌM KHI GIẢNG VIÊN HỎI
 1. IntelliJ: Ctrl+Shift+F, nhập mã trong ngoặc vuông, ví dụ [CB-GIAM-GIA].
-2. Chọn kết quả trong src/main. Ghi chú nằm ngay trước hàm xử lý.
-3. Giải thích theo luồng: JSP/JS gửi form -> Servlet kiểm tra -> Repository truy vấn -> Entity chứa dữ liệu -> JSP hiển thị.
-4. Tìm file bằng Ctrl+Shift+N. Các đường dẫn dưới đây tính từ src/main/.
+2. Mở kết quả trong file Java ở src/main/java. Ghi chú đặt ngay trước hàm hoặc dòng xử lý.
+3. Chỉ vào dòng thực hiện, rồi nói dòng đó lấy dữ liệu gì và làm gì với dữ liệu.
+4. Nếu đã mở file, Ctrl+F tìm tên hàm hoặc đoạn cần chỉ. Ctrl+B tại lời gọi hàm để nhảy tới định nghĩa.
 
-VÍ DỤ CÂU HỎI THƯỜNG GẶP
-- Thêm/sửa combo: CB-LUU -> CB-SQL-LUU. Thành phần: CB-DOC-MON.
-- Giá combo tính ở đâu: CB-GIA (tổng giá lẻ) -> CB-GIAM-GIA (giảm giá tại server).
-- Vì sao sửa combo không đổi giá: mức -1 trong ComboRepository.save giữ giá cũ.
-- Thêm/sửa sản phẩm: SP-THEM / SP-SUA -> SP-LUU -> SP-SQL-THEM / SP-SQL-SUA.
-- Vì sao không xóa được: SP-DA-SU-DUNG hoặc CB-SQL-XOA, có tham chiếu thì chặn.
-- Doanh thu tính ở đâu: TK-DOANH-THU -> TK-CONG-TONG.
-- Theo tháng/năm: TK-BO-LOC -> ThongKeReport.groupBy (TK-NHOM).
-- Biểu đồ: TK-BIEU-DO -> WEB-INF/views/thongKe.jsp -> assets/css/thongKe.css.
-- Ảnh: AnhDanhMuc.luu -> lưu tên vào Entity -> AnhDanhMucServlet cung cấp ảnh.
+HỎI ĐÁP THỰC HÀNH TRONG 7 FILE JAVA
+
+1. QUẢN LÝ COMBO
+- “Đoạn nào thêm/sửa combo?”
+  ComboServlet.doPost [CB-NHAN-FORM] -> luuCombo [CB-LUU] -> ComboRepository.save [CB-SQL-LUU].
+  Chỉ dòng: comboRepo.save(...), rồi session.persist(combo) hoặc session.merge(combo) [CB-GHI-COMBO].
+  Trả lời: Em đọc món và mức giảm ở Servlet. Repository lưu combo và từng món trong một giao dịch.
+- “Đoạn nào đọc món được tích?”
+  ComboServlet.docDanhSachChiTiet [CB-DOC-MON]. Chỉ req.getParameterValues("ctMaSP") và map.put(maSP, ...).
+  Trả lời: Em duyệt mã đã chọn, đọc số lượng theo từng mã và dùng Map để một mã chỉ có một dòng.
+- “Giá combo và giảm giá được tính ở đâu?”
+  ComboRepository.kiemTraVaTinhTongGiaLe [CB-GIA] -> tinhGiaSauGiam [CB-GIAM-GIA].
+  Chỉ dòng: total.add(...) và tongGiaLe.multiply(...).divide(...).
+  Trả lời: Em lấy giá từng món từ database, nhân số lượng, cộng lại rồi giảm theo phần trăm. 100.000 giảm 10% còn 90.000.
+  Nếu hỏi về giữ giá khi sửa, chỉ nhánh discount == -1 && !adding trong save [CB-GIU-GIA-CU].
+- “Lúc lưu combo có trừ kho chưa?”
+  ComboRepository.kiemTraVaTinhTongGiaLe [CB-GIA]. Chỉ điều kiện so số lượng món với getSoLuongTon().
+  Trả lời: Tạo combo mới chỉ kiểm tra tồn kho và lưu công thức gồm món, số lượng. Tồn kho được xử lý khi bán.
+- “Chi tiết combo lấy ở đâu?”
+  ComboServlet.traChiTietJson [CB-CHI-TIET] -> ComboRepository.getChiTiet [CB-SQL-CHI-TIET].
+  Chỉ WHERE ct.maCombo = :ma và JOIN FETCH ct.sanPham. Trả lời: Lấy món theo mã combo, tải sẵn thông tin món rồi trả JSON.
+- “Vì sao combo đã có trong hóa đơn không xóa được?”
+  ComboRepository.delete [CB-SQL-XOA]. Chỉ câu SELECT COUNT(*) FROM ChiTietHoaDon và điều kiện count.longValue() > 0.
+  Trả lời: Hóa đơn còn tham chiếu đến combo nên báo lỗi và hướng dẫn chuyển sang Ngừng bán.
+
+2. QUẢN LÝ SẢN PHẨM
+- “Đoạn nào thêm/sửa sản phẩm?”
+  SanPhamServlet.luuSanPham [SP-LUU] -> luuSanPhamCoAnh [SP-ANH] -> SanPhamRepository.add/update.
+  Chỉ dòng: if (themMoi), rồi session.persist(sp) [SP-SQL-THEM] hoặc session.merge(sp) [SP-SQL-SUA].
+  Trả lời: Hai thao tác dùng chung phần kiểm tra và xử lý ảnh. Thêm mới lấy mã tự tăng, sửa cập nhật theo mã đã có.
+- “Kiểm tra giá và tồn kho ở đâu?”
+  SanPhamServlet.docThongTinSanPham [SP-KIEM-TRA]. Chỉ điều kiện tại [SP-GIA-TON] và kiểm tra scale sau đó.
+  Trả lời: Giá phải là số nguyên dương. Tồn kho là số nguyên từ 0, thêm mới để trống thì mặc định 0.
+- “Tìm sản phẩm theo tên, mã hoặc loại ở đâu?”
+  SanPhamServlet.timKiemSanPham [SP-TIM-KIEM] -> SanPhamRepository.search [SP-SQL-TIM].
+  Chỉ nhóm điều kiện LIKE :kw và setParameter("kw", ...). Trả lời: Có từ khóa thì tìm theo mã, tên hoặc loại. Có trạng thái thì lọc thêm.
+- “Nếu sản phẩm đang mở form sửa mà kho vừa thay đổi thì sao?”
+  SanPhamRepository.update [SP-CHONG-GHI-DE]. Chỉ điều kiện !fingerprint(existing).equals(version).
+  Trả lời: Dấu version có chứa tồn kho. Nếu kho thay đổi sau khi mở form thì dấu khác, hệ thống yêu cầu tải lại dữ liệu.
+- “Đoạn nào chặn xóa sản phẩm?”
+  SanPhamServlet.xoaSanPham [SP-XOA] -> SanPhamRepository.demSoLanSuDung [SP-DA-SU-DUNG].
+  Chỉ câu đếm ChiTietCombo, ChiTietHoaDon theo MaSP và điều kiện > 0 trong delete.
+  Trả lời: Còn combo hoặc hóa đơn sử dụng sản phẩm thì chặn. Repository kiểm tra lại ngay trong giao dịch xóa.
+
+3. THỐNG KÊ TỔNG QUAN
+- “Chọn theo ngày, tháng, năm thì code nằm ở đâu?”
+  ThongKeServlet.doGet [TK-CHON-KHOANG]. Chỉ các nhánh mode và validateRange(from, to, mode).
+  Trả lời: Servlet đổi mỗi chế độ thành một khoảng ngày. Repository lấy dữ liệu ngày, groupBy gom theo kỳ hiển thị.
+- “Hóa đơn nào được tính? Có tính hết ngày kết thúc không?”
+  ThongKeRepository.PAID [TK-HOA-DON-HOP-LE] và query [TK-TRUYEN-NGAY]. Chỉ EXISTS và to.plusDays(1).
+  Trả lời: Hóa đơn phải hoàn tất và có thanh toán thành công. So nhỏ hơn 0 giờ ngày kế tiếp để lấy trọn ngày cuối.
+- “Doanh thu, số vé và số món tính ở đâu? Vì sao không bị cộng trùng?”
+  ThongKeRepository.readDays [TK-DOANH-THU]. Chỉ Tickets, Items và SUM(p.TongTien).
+  Trả lời: Doanh thu cộng TongTien. Vé và món được cộng riêng theo hóa đơn, sau đó mới nối với hóa đơn để tránh nhân số dòng.
+- “Top 10 dựa theo gì?”
+  ThongKeRepository.readRanking [TK-XEP-HANG]. Chỉ TOP (10) và ORDER BY ... DESC.
+  Trả lời: Phim xếp theo tổng tiền vé. Sản phẩm và combo xếp theo số lượng nhân đơn giá đã ghi trong hóa đơn.
+- “Gom số liệu tháng/năm ở đâu?”
+  ThongKeReport.groupBy [TK-NHOM]. Chỉ withDayOfMonth(1), withDayOfYear(1) và congSoLieu.
+  Trả lời: Các ngày cùng tháng hoặc năm có chung một khóa, nên cộng vào cùng một nhóm.
+- “Chiều cao cột biểu đồ và trung bình hóa đơn tính ở đâu?”
+  ThongKeReport.prepareChart [TK-BIEU-DO] và getAverage [TK-TRUNG-BINH]. Chỉ hai phép divide tương ứng.
+  Trả lời: Cột cao nhất là 100%, các cột khác chia theo tỷ lệ doanh thu. Trung bình bằng tổng doanh thu chia số hóa đơn.
+
+HỎI ĐÁP JAVASCRIPT TRONG THƯ MỤC assets/js
+
+- “Tích món, lọc món hoặc đổi số lượng thì code nào xử lý?”
+  quan-ly-combo.js: toggleProductRow [CB-CHON-MON], locSanPham [CB-LOC-MON], khoiTaoBangSanPham [CB-GIU-GIA].
+  Chỉ disabled và row.hidden. Trả lời: Tích món thì bật ô nhập. Lọc chỉ ẩn dòng. Đổi món hoặc số lượng thì tính lại giá.
+- “Giá xem trước và kiểm tra trước khi gửi nằm ở đâu?”
+  quan-ly-combo.js: tinhTongGiaLe [CB-GIA-XEM-TRUOC], validateComboForm [CB-KIEM-TRA-FORM].
+  Chỉ Math.round và các nhánh return false. Trả lời: Trình duyệt tính giá để xem trước và báo lỗi nhập sớm. Java tính lại khi lưu.
+- “Nếu lưu combo lỗi thì dữ liệu đã nhập được lấy lại ở đâu?”
+  quan-ly-combo.js: validateComboForm [CB-LUU-NHAP] và sự kiện DOMContentLoaded [CB-KHOI-PHUC-NHAP].
+  Chỉ sessionStorage.setItem và getItem. Trả lời: Các trường dạng chuỗi được giữ trong tab, form sửa chỉ khôi phục khi mã và version khớp.
+- “Bấm Xem chi tiết combo thì danh sách món hiện bằng cách nào?”
+  quan-ly-combo.js: xemChiTietCombo [CB-XEM-CHI-TIET]. Chỉ fetch và td.textContent.
+  Trả lời: Gửi mã combo lên Servlet, nhận JSON rồi tạo từng dòng trong bảng.
+- “Bấm Xóa thì đoạn nào hỏi xác nhận?”
+  quan-ly-combo.js: xoaCombo [CB-XAC-NHAN-XOA]. quan-ly-san-pham.js: xoaSP [SP-XAC-NHAN-XOA].
+  Chỉ confirm và form.submit(). Trả lời: Nếu đồng ý thì điền mã và gửi form POST để Java kiểm tra và xóa.
+- “Chọn loại Bắp thì ô đơn vị vì sao hiện Hộp?”
+  quan-ly-san-pham.js: goiYDonVi [SP-GOI-Y]. Chỉ units[select.value] và dòng gán donViTinh.
+  Trả lời: Hàm tra loại đang chọn trong bảng gợi ý đơn vị rồi điền vào ô trên cùng form.
+- “Đoạn nào mở hộp chọn tệp và hiển thị ảnh xem trước?”
+  san-pham-anh.js: khoiTaoAnhSanPham [SP-ANH-CHON], capNhatAnhSanPham [SP-ANH-XEM-TRUOC].
+  anh-danh-muc.js: khoiTaoAnhCombo [CB-ANH-XEM-TRUOC]. Chỉ input.click(), createObjectURL và dòng gán src tương ứng.
+  Trả lời: Nút bấm mở bộ chọn tệp. Khi có ảnh, trình duyệt tạo URL tạm để xem trước. Ảnh sản phẩm còn được kiểm tra JPG/PNG và 5 MB.
+- “Chọn thống kê theo tháng thì vì sao ô chọn ngày ẩn?”
+  thong-ke.js: doiCheDoThongKe [TK-DOI-CHE-DO]. Chỉ phép so data-mode và dòng gán disabled.
+  Trả lời: Chỉ nhóm khớp chế độ mới hiện và được gửi cùng form. Phần lọc và tính số liệu nằm ở Java.
 
 DANH SÁCH HÀM
 
@@ -87,6 +168,13 @@ webapp/assets/js/quan-ly-combo.js
 webapp/assets/js/quan-ly-san-pham.js
   [SP-GOI-Y] goiYDonVi(): Gợi ý đơn vị tính khi đổi loại sản phẩm.
   [SP-XAC-NHAN-XOA] xoaSP(): Xác nhận rồi gửi form POST xóa.
+
+webapp/assets/js/san-pham-anh.js
+  [SP-ANH-CHON] khoiTaoAnhSanPham(): Gắn nút chọn ảnh vào input file.
+  [SP-ANH-XEM-TRUOC] capNhatAnhSanPham(): Kiểm tra tệp, xem trước hoặc hiện lại ảnh gốc.
+
+webapp/assets/js/anh-danh-muc.js
+  [CB-ANH-XEM-TRUOC] khoiTaoAnhCombo(): Hiện ảnh combo vừa chọn qua URL tạm.
 
 webapp/assets/js/thong-ke.js
   [TK-DOI-CHE-DO] doiCheDoThongKe(): Hiện ô thuộc chế độ đang chọn, vô hiệu hóa ô thuộc chế độ khác.

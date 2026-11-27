@@ -20,8 +20,8 @@ public class SanPhamRepository {
         return HibernateConfig.getFACTORY().openSession();
     }
 
-    // Lấy toàn bộ sản phẩm (dùng cho trang Quản lý sản phẩm)
-    // [SP-SQL-DANH-SACH] Đọc danh sách theo mã.
+    // [SP-SQL-DANH-SACH] Câu truy vấn danh sách sản phẩm ở đâu?
+    // getAll lấy tất cả sản phẩm và ORDER BY sắp theo mã tăng dần.
     public List<SanPham> getAll() {
         try (Session session = openSession()) {
             return session.createQuery("SELECT sp FROM SanPham sp ORDER BY sp.maSP", SanPham.class).list();
@@ -30,8 +30,8 @@ public class SanPhamRepository {
         }
     }
 
-    // Lấy danh sách sản phẩm đang kinh doanh để đưa vào bảng chọn món khi tạo/sửa Combo
-    // [SP-DANG-BAN] Chỉ lấy món đang kinh doanh cho form combo.
+    // [SP-DANG-BAN] Danh sách món đang kinh doanh để chọn khi tạo combo lấy ở đâu?
+    // getAllDangKinhDoanh lọc theo trangThai = Đang kinh doanh.
     public List<SanPham> getAllDangKinhDoanh() {
         try (Session session = openSession()) {
             return session.createQuery(
@@ -45,15 +45,16 @@ public class SanPhamRepository {
 
     // Lấy 1 sản phẩm theo mã
     public SanPham getOne(String maSP) {
+        Integer id = DatabaseId.parse(maSP);
         try (Session session = openSession()) {
-            return session.find(SanPham.class, DatabaseId.parse(maSP));
+            return session.find(SanPham.class, id);
         } catch (Exception e) {
             throw new IllegalStateException("Không tải được sản phẩm.", e);
         }
     }
 
-    // Tìm kiếm sản phẩm theo mã/tên và lọc theo trạng thái
-    // [SP-SQL-TIM] Tìm theo mã, tên, loại; thêm điều kiện trạng thái nếu có chọn.
+    // [SP-SQL-TIM] Đoạn nào tìm sản phẩm theo mã, tên hoặc loại?
+    // search dùng LIKE cho mã, tên và loại. Nếu chọn trạng thái cụ thể thì thêm điều kiện trạng thái.
     public List<SanPham> search(String keyword, String trangThai) {
         try (Session session = openSession()) {
             StringBuilder hql = new StringBuilder("SELECT sp FROM SanPham sp WHERE 1=1");
@@ -80,8 +81,8 @@ public class SanPhamRepository {
         }
     }
 
-    // Thêm sản phẩm mới
-    // [SP-SQL-THEM] Để SQL cấp mã tự tăng, persist rồi commit; thất bại rollback.
+    // [SP-SQL-THEM] Dòng nào ghi sản phẩm mới và mã mới lấy từ đâu?
+    // Đặt maSP = null để SQL Server cấp mã tự tăng. persist đưa bản ghi mới vào giao dịch, commit xác nhận lưu.
     public boolean add(SanPham sp) {
         try (Session session = openSession()) {
             Transaction tx = session.beginTransaction();
@@ -98,15 +99,16 @@ public class SanPhamRepository {
         }
     }
 
-    // Cập nhật sản phẩm
-    // [SP-SQL-SUA] Khóa dòng, so phiên bản, giữ ảnh cũ nếu không chọn ảnh mới rồi merge.
+    // [SP-SQL-SUA] Dòng nào cập nhật sản phẩm? Nếu không chọn ảnh mới thì sao?
+    // update khóa bản ghi, kiểm tra version rồi merge để cập nhật. Ảnh để trống thì dùng tên ảnh đang lưu.
     public boolean update(SanPham sp, String version) {
         Transaction tx = null;
         try (Session session = openSession()) {
             tx = session.beginTransaction();
             try {
                 SanPham existing = session.find(SanPham.class, sp.getMaSP(), LockModeType.PESSIMISTIC_WRITE);
-                // [SP-CHONG-GHI-DE] So sánh bản lúc mở form với bản mới nhất khi đã khóa dòng.
+                // [SP-CHONG-GHI-DE] Kho đã đổi khi đang mở form thì đoạn nào chặn ghi đè?
+                // Tồn kho nằm trong fingerprint. Dấu mới khác version trên form thì báo dữ liệu đã thay đổi.
                 if (existing == null || !fingerprint(existing).equals(version)) {
                     throw new ConcurrentModificationException("Sản phẩm đã thay đổi hoặc đã bị xóa.");
                 }
@@ -126,8 +128,8 @@ public class SanPhamRepository {
         }
     }
 
-    /** Dấu dữ liệu của form sửa, gồm cả tồn kho để phát hiện bán hàng trong lúc mở form. */
-    // [SP-PHIEN-BAN] Ghép các trường có độ dài, gồm tồn kho và ảnh, làm dấu dữ liệu lúc mở form.
+    // [SP-PHIEN-BAN] Dấu version của sản phẩm được tạo từ đâu?
+    // fingerprint ghép độ dài và giá trị của các trường, gồm tồn kho và ảnh, rồi biểu diễn bằng Base64.
     public String fingerprint(SanPham sp) {
         StringBuilder data = new StringBuilder();
         String[] fields = {sp.getMaSP().toString(), sp.getGiaBan().toPlainString(),
@@ -151,8 +153,8 @@ public class SanPhamRepository {
         }
     }
 
-    // Xóa sản phẩm
-    // [SP-SQL-XOA] Khóa dòng, kiểm tra lại tham chiếu, remove rồi commit.
+    // [SP-SQL-XOA] Dòng nào xóa sản phẩm trong cơ sở dữ liệu?
+    // delete khóa dòng và kiểm tra lại tham chiếu trong giao dịch. Đủ điều kiện thì remove rồi commit.
     public boolean delete(String maSP) {
         Integer productId = DatabaseId.parse(maSP);
         Transaction tx = null;
@@ -174,7 +176,8 @@ public class SanPhamRepository {
         }
     }
 
-    // [SP-DA-SU-DUNG] Dùng chung cho nút xóa và kiểm tra lại trong giao dịch xóa.
+    // [SP-DA-SU-DUNG] Vì sao sản phẩm nằm trong combo hoặc hóa đơn thì không xóa được?
+    // Hàm đếm theo MaSP trong ChiTietCombo và ChiTietHoaDon. Tổng lớn hơn 0 nghĩa là còn nơi sử dụng.
     private long demSoLanSuDung(Session session, Integer maSP) {
         Number count = (Number) session.createNativeQuery(
                 "SELECT (SELECT COUNT_BIG(*) FROM ChiTietCombo WHERE MaSP=:ma) "

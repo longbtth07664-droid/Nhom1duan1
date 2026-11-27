@@ -21,8 +21,8 @@ public class ThongKeReport {
     private BigDecimal productValue = BigDecimal.ZERO;
     private long invoices, tickets, items, mismatches;
 
-    // Cộng các nhóm ngày đã được SQL tổng hợp độc lập, tránh nhân bản chi tiết.
-    // [TK-CONG-TONG] Thêm dòng và cộng doanh thu, giảm giá, tiền vé, tiền món, số lượng vào tổng.
+    // [TK-CONG-TONG] Tổng doanh thu và các chỉ số trên đầu báo cáo được cộng ở đâu?
+    // Mỗi lần addDay thêm một dòng, nó cộng các chỉ số của dòng đó vào tổng toàn kỳ.
     public void addDay(Day day) {
         days.add(day);
         revenue = revenue.add(day.revenue);
@@ -45,7 +45,8 @@ public class ThongKeReport {
     public long getTickets() { return tickets; }
     public long getItems() { return items; }
     public long getMismatches() { return mismatches; }
-    // [TK-TRUNG-BINH] Doanh thu chia số hóa đơn; không có hóa đơn thì trả 0.
+    // [TK-TRUNG-BINH] Giá trị trung bình một hóa đơn tính ở đâu?
+    // getAverage chia doanh thu cho số hóa đơn và làm tròn tới đồng. Nếu có 0 hóa đơn thì trả 0.
     public BigDecimal getAverage() {
         // Chưa có hóa đơn thì trả về 0, tránh chia cho 0.
         if (invoices == 0) {
@@ -55,10 +56,9 @@ public class ThongKeReport {
     }
     public boolean isEmpty() { return invoices == 0; }
 
-    /** [TK-NHOM] Gom các ngày thành tháng/năm bằng vòng lặp.
-     * SQL vẫn tổng hợp đúng từng hóa đơn trước; chỉ cộng lại số liệu đã có.
-     * Ngày trống cũng được gom nên luôn có đủ 12 tháng hoặc các năm đã chọn.
-     */
+    // [TK-NHOM] Sau khi SQL trả số liệu theo ngày, đoạn nào gom thành tháng hoặc năm?
+    // groupBy dùng ngày đầu tháng hoặc ngày đầu năm làm khóa Map. Các dòng cùng khóa được cộng với nhau.
+    // Chế độ ngày giữ nguyên báo cáo. Chế độ tháng/năm giữ bảng top của toàn kỳ và tính lại chiều cao cột.
     public ThongKeReport groupBy(String mode) {
         if ("day".equals(mode)) return this;
         if (!"month".equals(mode) && !"year".equals(mode))
@@ -83,9 +83,8 @@ public class ThongKeReport {
         return result;
     }
 
-    /** [TK-CONG-NHOM] Cộng hai dòng số liệu: tiền dùng BigDecimal, số lượng dùng long.
-     * Được groupBy gọi khi gom ngày vào cùng tháng hoặc cùng năm.
-     */
+    // [TK-CONG-NHOM] Các dòng có cùng tháng hoặc năm được cộng như thế nào?
+    // congSoLieu cộng từng khoản tiền bằng BigDecimal và từng số đếm bằng long.
     private Day congSoLieu(LocalDate ngayDauKy, Day cu, Day moi) {
         BigDecimal doanhThu = cu.revenue.add(moi.revenue);
         BigDecimal giamGia = cu.discount.add(moi.discount);
@@ -99,8 +98,9 @@ public class ThongKeReport {
                 soHoaDon, soVe, soMon, soSaiLech);
     }
 
-    // Chuẩn hóa độ cao biểu đồ trên server, chỉ xuất số vào thuộc tính CSS.
-    // [TK-BIEU-DO] Tìm doanh thu lớn nhất, tính chiều cao mỗi cột = doanh thu / lớn nhất × 100.
+    // [TK-BIEU-DO] Đoạn nào quyết định chiều cao từng cột doanh thu?
+    // prepareChart tìm kỳ có doanh thu cao nhất, rồi lấy doanh thu mỗi kỳ chia cho mức đó × 100.
+    // Ví dụ kỳ cao nhất 200.000 đồng thì kỳ 100.000 đồng có cột cao 50%. Mức không dương có cột cao 0%.
     public void prepareChart() {
         // Bước 1: tìm doanh thu lớn nhất để làm cột cao 100%.
         BigDecimal maxRevenue = BigDecimal.ZERO;

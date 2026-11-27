@@ -142,6 +142,15 @@ public class WebSmokeCheck {
             check(deleteGet.statusCode() == 405, "Product delete must reject GET");
             HttpResponse<String> deleteNoToken = client.send(HttpRequest.newBuilder(productDelete).POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
             check(deleteNoToken.statusCode() == 403, "Product delete must reject a POST without its session token");
+            for (String action : new String[]{"edit", "chiTiet"}) {
+                URI invalidCombo = URI.create(base + "/quan-ly-combo?action=" + action + "&id=abc");
+                HttpResponse<String> result = client.send(HttpRequest.newBuilder(invalidCombo).GET().build(), HttpResponse.BodyHandlers.ofString());
+                check(result.statusCode() == 400, "Invalid combo ID should return HTTP 400 for " + action);
+            }
+            URI invalidProduct = URI.create(base + "/quan-ly-san-pham?action=edit&id=abc");
+            HttpResponse<String> invalidEdit = client.send(HttpRequest.newBuilder(invalidProduct).GET().build(), HttpResponse.BodyHandlers.ofString());
+            check(invalidEdit.statusCode() == 302 && invalidEdit.headers().firstValue("location").orElse("").contains("msg=invalid_data"),
+                    "Invalid product ID should return to the list with an invalid-data message");
             for (String bad : new String[]{"mode=year&startYear=2026&endYear=2025", "mode=year&startYear=2000&endYear=2026", "mode=month&year=abc", "mode=unknown"}) {
                 HttpResponse<String> page = client.send(HttpRequest.newBuilder(URI.create(base + "/thong-ke?" + bad)).GET().build(), HttpResponse.BodyHandlers.ofString());
                 check(page.statusCode() == 400 && page.body().contains("Chưa thể hiển thị báo cáo"), "Invalid filter returns helpful HTTP 400");
