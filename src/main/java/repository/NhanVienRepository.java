@@ -78,7 +78,6 @@ public class NhanVienRepository {
         }
     }
 
-<<<<<<< HEAD
     // Kiểm tra trùng Username (trừ id hiện tại nếu đang sửa)
     public boolean existsByUsername(String username, Integer excludeId) {
         if (username == null || username.trim().isEmpty()) return false;
@@ -125,7 +124,7 @@ public class NhanVienRepository {
             e.printStackTrace();
             return false;
         }
-=======
+    }
 
     public String validateFormat(String cccd, String email, String soDienThoai) {
         String c = cccd != null ? cccd.trim() : "";
@@ -153,7 +152,6 @@ public class NhanVienRepository {
         }
 
         return null;
->>>>>>> 661c874476db0d612f6d08731274b9491b727c4a
     }
 
     public static void main(String[] args) {

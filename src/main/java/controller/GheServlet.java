@@ -181,6 +181,7 @@ public class GheServlet extends HttpServlet {
                 return;
             }
 
+
             Ghe ghe = new Ghe();
             ghe.setPhongChieu(pc);
             ghe.setLoaiGhe(lg);

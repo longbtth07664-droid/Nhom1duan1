@@ -68,7 +68,7 @@ public class NhanVienServlet extends HttpServlet {
     }
 
     private void add(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-<<<<<<< HEAD
+
         String hoTen = trim(req.getParameter("hoTen"));
         String cccd = trim(req.getParameter("cccd"));
         String email = trim(req.getParameter("email"));
@@ -80,33 +80,6 @@ public class NhanVienServlet extends HttpServlet {
         // Ép cứng vai trò là NhanVien và trạng thái mặc định là Đang làm việc khi thêm mới
         String vaiTro = "NhanVien";
         String trangThai = "Đang làm việc";
-=======
-        String hoTen = req.getParameter("hoTen");
-        String cccd = req.getParameter("cccd");
-        String email = req.getParameter("email");
-        String soDienThoai = req.getParameter("soDienThoai");
-        String diaChi = req.getParameter("diaChi");
-        String username = req.getParameter("username");
-        String matKhau = req.getParameter("matKhau");
-
-        String vaiTro = "NhanVien";
-        String trangThai = "Đang làm việc";
-
-        String error = nhanVienRepository.validateFormat(cccd, email, soDienThoai);
-        if (error != null) {
-            req.setAttribute("errorMessage", error);
-            req.setAttribute("openAddModal", true);
-            req.setAttribute("oldHoTen", hoTen);
-            req.setAttribute("oldCccd", cccd);
-            req.setAttribute("oldEmail", email);
-            req.setAttribute("oldSoDienThoai", soDienThoai);
-            req.setAttribute("oldDiaChi", diaChi);
-            req.setAttribute("oldUsername", username);
-            req.setAttribute("listNhanVien", nhanVienRepository.getAll());
-            req.getRequestDispatcher("/nhan-vien/view.jsp").forward(req, resp);
-            return;
-        }
->>>>>>> 661c874476db0d612f6d08731274b9491b727c4a
 
         NhanVien nv = new NhanVien();
         nv.setHoTen(hoTen != null ? hoTen.trim() : null);
@@ -158,29 +131,8 @@ public class NhanVienServlet extends HttpServlet {
         TaiKhoan currentUser = (session != null && session.getAttribute("currentUser") instanceof TaiKhoan)
                 ? (TaiKhoan) session.getAttribute("currentUser") : null;
 
-        String error = nhanVienRepository.validateFormat(cccd, email, soDienThoai);
-        if (error != null) {
-            NhanVien nvForm = new NhanVien();
-            nvForm.setId(id);
-            nvForm.setHoTen(hoTen);
-            nvForm.setCccd(cccd);
-            nvForm.setEmail(email);
-            nvForm.setSoDienThoai(soDienThoai);
-            nvForm.setDiaChi(diaChi);
-            nvForm.setUsername(username);
-            nvForm.setMatKhau(matKhau);
-            nvForm.setVaiTro(vaiTro);
-            nvForm.setTrangThai(trangThai);
-
-            req.setAttribute("nv", nvForm);
-            req.setAttribute("errorMessage", error);
-            req.getRequestDispatcher("/nhan-vien/view-update.jsp").forward(req, resp);
-            return;
-        }
-
         NhanVien nv = new NhanVien();
         nv.setId(id);
-<<<<<<< HEAD
         nv.setHoTen(hoTen);
         nv.setCccd(cccd);
         nv.setEmail(email);
@@ -188,15 +140,6 @@ public class NhanVienServlet extends HttpServlet {
         nv.setDiaChi(diaChi);
         nv.setUsername(username);
         nv.setMatKhau(matKhau.isEmpty() ? oldNv.getMatKhau() : matKhau);
-=======
-        nv.setHoTen(hoTen != null ? hoTen.trim() : null);
-        nv.setCccd(cccd != null ? cccd.trim() : null);
-        nv.setEmail(email != null ? email.trim() : null);
-        nv.setSoDienThoai(soDienThoai != null ? soDienThoai.trim() : null);
-        nv.setDiaChi(diaChi != null ? diaChi.trim() : null);
-        nv.setUsername(username != null ? username.trim() : null);
-        nv.setMatKhau(matKhau);
->>>>>>> 661c874476db0d612f6d08731274b9491b727c4a
         nv.setVaiTro(vaiTro);
         nv.setTrangThai(trangThai.isEmpty() ? oldNv.getTrangThai() : trangThai);
 

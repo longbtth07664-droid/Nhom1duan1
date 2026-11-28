@@ -47,11 +47,8 @@ public class HibernateConfig {
         conf.addAnnotatedClass(entity.LoaiGhe.class);
         conf.addAnnotatedClass(entity.Ghe.class);
         conf.addAnnotatedClass(entity.NhanVien.class);
-<<<<<<< HEAD
         conf.addAnnotatedClass(entity.KhuyenMai.class);
-=======
         conf.addAnnotatedClass(entity.DinhDang.class);
->>>>>>> 661c874476db0d612f6d08731274b9491b727c4a
 
 
         conf.setProperties(properties);
