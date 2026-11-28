@@ -6,7 +6,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lí thể loại - Rạp Chiếu Phim CINEMAX</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=8">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=12">
+    <style>
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-top: 1px solid #f1f5f9;
+            background: #ffffff;
+            border-radius: 0 0 16px 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .pagination-info {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .pagination-info strong {
+            color: #1e293b;
+            font-weight: 700;
+        }
+        .pagination-btns {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto; /* Căn toàn bộ cụm nút sang góc phải */
+        }
+        .pg-btn {
+            min-width: 36px;
+            height: 36px;
+            padding: 0 10px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        .pg-btn:hover:not(.disabled):not(.active) {
+            border-color: #ff385c;
+            color: #ff385c;
+            background: #fff1f2;
+        }
+        .pg-btn.active {
+            background: #ff385c !important;
+            border-color: #ff385c !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(255, 56, 92, 0.4);
+            cursor: default;
+        }
+        .pg-btn.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            background: #ffffff;
+            border-color: #f1f5f9;
+            color: #94a3b8;
+        }
+    </style>
 </head>
 <body>
 <div class="app-shell">
@@ -54,7 +121,8 @@
                         <tbody>
                         <c:forEach items="${listTheLoai}" var="item" varStatus="st">
                             <tr>
-                                <td>${st.index + 1}</td>
+                                <%-- [PHÂN TRANG] STT được tính tiếp nối theo trang: (trang_hiện_tại - 1) * 5 + vị_trí + 1 --%>
+                                <td>${(currentPage != null ? (currentPage - 1) * 5 : 0) + st.index + 1}</td>
                                 <td><strong><c:out value="${item.maTheLoai}"/></strong></td>
                                 <td><c:out value="${item.tenTheLoai}"/></td>
                                 <td>
@@ -76,6 +144,68 @@
                         </tbody>
                     </table>
                 </div>
+
+                <%-- =========================================================================
+                     [PHÂN TRANG - GIAO DIỆN JSP]
+                     Thanh điều hướng chuyển trang: «  ‹  1  2  ›  » căn góc bên phải
+                     ========================================================================= --%>
+                <c:if test="${totalPages > 1}">
+                    <div class="pagination-bar">
+                        <div class="pagination-info">
+                            Trang <strong>${currentPage}</strong> / <strong>${totalPages}</strong> (Tổng cộng: <strong>${totalItems}</strong> thể loại)
+                        </div>
+
+                        <div class="pagination-btns">
+                            <%-- 1. Nút về Trang đầu («) --%>
+                            <c:choose>
+                                <c:when test="${currentPage > 1}">
+                                    <a href="${pageContext.request.contextPath}/the-loai/view?page=1" class="pg-btn" title="Trang đầu">&laquo;</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="pg-btn disabled">&laquo;</span>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <%-- 2. Nút về Trang trước (‹) --%>
+                            <c:choose>
+                                <c:when test="${currentPage > 1}">
+                                    <a href="${pageContext.request.contextPath}/the-loai/view?page=${currentPage - 1}" class="pg-btn" title="Trang trước">&lsaquo;</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="pg-btn disabled">&lsaquo;</span>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <%-- 3. Vòng lặp in các nút số trang (1, 2...) --%>
+                            <c:forEach begin="1" end="${totalPages}" var="p">
+                                <a href="${pageContext.request.contextPath}/the-loai/view?page=${p}"
+                                   class="pg-btn ${currentPage == p ? 'active' : ''}">
+                                    ${p}
+                                </a>
+                            </c:forEach>
+
+                            <%-- 4. Nút sang Trang sau (›) --%>
+                            <c:choose>
+                                <c:when test="${currentPage < totalPages}">
+                                    <a href="${pageContext.request.contextPath}/the-loai/view?page=${currentPage + 1}" class="pg-btn" title="Trang sau">&rsaquo;</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="pg-btn disabled">&rsaquo;</span>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <%-- 5. Nút sang Trang cuối (») --%>
+                            <c:choose>
+                                <c:when test="${currentPage < totalPages}">
+                                    <a href="${pageContext.request.contextPath}/the-loai/view?page=${totalPages}" class="pg-btn" title="Trang cuối">&raquo;</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="pg-btn disabled">&raquo;</span>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+                    </div>
+                </c:if>
             </div>
         </main>
     </div>

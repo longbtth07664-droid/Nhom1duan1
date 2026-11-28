@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 // Ánh xạ bảng "Combo" trong SQL Server — lưu thông tin gói combo bắp nước
 @Entity
 @Table(name = "Combo")
+// [DL-COMBO] Các trường ánh xạ cột SQL; constructor tạo đối tượng, getter/setter đọc và gán giá trị.
 public class Combo {
 
     // Mã combo — INT IDENTITY do SQL Server cấp khi thêm mới.
@@ -56,53 +57,29 @@ public class Combo {
 
     // --- Getter & Setter ---
 
-    public Integer getMaCombo() {
-        return maCombo;
-    }
+    public Integer getMaCombo() { return maCombo; }
 
-    public void setMaCombo(Integer maCombo) {
-        this.maCombo = maCombo;
-    }
+    public void setMaCombo(Integer maCombo) { this.maCombo = maCombo; }
 
-    public String getTenCombo() {
-        return tenCombo;
-    }
+    public String getTenCombo() { return tenCombo; }
 
-    public void setTenCombo(String tenCombo) {
-        this.tenCombo = tenCombo;
-    }
+    public void setTenCombo(String tenCombo) { this.tenCombo = tenCombo; }
 
-    public BigDecimal getGiaCombo() {
-        return giaCombo;
-    }
+    public BigDecimal getGiaCombo() { return giaCombo; }
 
-    public void setGiaCombo(BigDecimal giaCombo) {
-        this.giaCombo = giaCombo;
-    }
+    public void setGiaCombo(BigDecimal giaCombo) { this.giaCombo = giaCombo; }
 
-    public String getMoTa() {
-        return moTa;
-    }
+    public String getMoTa() { return moTa; }
 
-    public void setMoTa(String moTa) {
-        this.moTa = moTa;
-    }
+    public void setMoTa(String moTa) { this.moTa = moTa; }
 
-    public String getHinhAnh() {
-        return hinhAnh;
-    }
+    public String getHinhAnh() { return hinhAnh; }
 
-    public void setHinhAnh(String hinhAnh) {
-        this.hinhAnh = hinhAnh;
-    }
+    public void setHinhAnh(String hinhAnh) { this.hinhAnh = hinhAnh; }
 
-    public String getTrangThai() {
-        return trangThai;
-    }
+    public String getTrangThai() { return trangThai; }
 
-    public void setTrangThai(String trangThai) {
-        this.trangThai = trangThai;
-    }
+    public void setTrangThai(String trangThai) { this.trangThai = trangThai; }
 
     @Override
     public String toString() {

@@ -10,16 +10,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 // Chỉ đọc dữ liệu bán hàng; không sửa giá, trạng thái hay tồn kho của module khác.
-/* TRA CỨU HÀM: ThongKeRepository
- * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
- * Ctrl+F "load(" để tìm phần xử lý.
- * Ctrl+F "query(" để tìm phần xử lý.
- * Ctrl+F "readDays(" để tìm phần xử lý.
- * Ctrl+F "readRanking(" để tìm phần xử lý.
- */
+// Tra cứu chức năng: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt
 public class ThongKeRepository {
-    // 1. ĐIỀU KIỆN CHUNG: chỉ lấy hóa đơn hoàn tất đã thanh toán.
-    // EXISTS không nhân doanh thu khi hóa đơn có nhiều dòng thanh toán.
+    // [TK-HOA-DON-HOP-LE] Điều kiện nào quyết định hóa đơn được tính?
+    // NgayDat nằm trong khoảng, hóa đơn đã hoàn tất và có ít nhất một thanh toán thành công.
+    // EXISTS chỉ kiểm tra có hay không, nên nhiều dòng thanh toán vẫn tính một hóa đơn.
     private static final String PAID =
         " FROM HoaDon h WHERE h.NgayDat >= ? AND h.NgayDat < ? "
         + "AND h.TrangThai = N'Đã hoàn tất' "
@@ -27,8 +22,8 @@ public class ThongKeRepository {
     // [TK-VE-DA-BAN] Thanh toán ghi "Đã bán". Vé cũ vẫn dùng các trạng thái in/soát vé.
     private static final String VALID_TICKET = "v.TrangThai IN (N'Đã bán',N'Chưa in',N'Đã in',N'Đã soát vé',N'Đã check-in')";
 
-    // 2. MỞ KẾT NỐI: dùng cấu hình Hibernate sẵn có của dự án.
-    /** [ThongKeRepository-load] Đầu vào là khoảng ngày. Đọc số liệu ngày, xếp hạng phim và mặt hàng, chuẩn bị biểu đồ rồi trả ThongKeReport. */
+    // [TK-TAI-BAO-CAO] Báo cáo mở kết nối và chạy những truy vấn nào?
+    // load mở Session để lấy kết nối JDBC. Bản load bên dưới đọc tổng ngày, top phim và top sản phẩm/combo.
     public ThongKeReport load(LocalDate from, LocalDate to) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.doReturningWork(new DocBaoCao(from, to));
@@ -37,7 +32,6 @@ public class ThongKeRepository {
 
     // 3. ĐỌC BÁO CÁO: bên truyền kết nối tự quản lý giao dịch của mình.
     // Tuyệt đối không commit, rollback, đóng kết nối hoặc đổi autoCommit tại đây.
-    /** [ThongKeRepository-load] Đầu vào là khoảng ngày. Đọc số liệu ngày, xếp hạng phim và mặt hàng, chuẩn bị biểu đồ rồi trả ThongKeReport. */
     public ThongKeReport load(Connection connection, LocalDate from, LocalDate to) throws SQLException {
         ThongKeReport report = new ThongKeReport();
         readDays(connection, from, to, report);
@@ -48,8 +42,8 @@ public class ThongKeRepository {
         return report;
     }
 
-    // 4. GẮN BỘ LỌC: truyền ngày bằng tham số, không ghép đầu vào vào SQL.
-    /** [ThongKeRepository-query] Tạo PreparedStatement; gắn đầu ngày và đầu ngày kế tiếp ngày cuối. Dấu < lấy đủ mọi giờ của ngày kết thúc. */
+    // [TK-TRUYEN-NGAY] Đoạn nào lấy đủ giao dịch của ngày kết thúc?
+    // Dùng >= đầu ngày bắt đầu và < đầu ngày tiếp theo. Hai mốc được gắn vào dấu ? bằng PreparedStatement.
     private PreparedStatement query(Connection connection, String sql, LocalDate from, LocalDate to) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(sql);
         statement.setTimestamp(1, Timestamp.valueOf(from.atStartOfDay()));
@@ -59,8 +53,9 @@ public class ThongKeRepository {
         return statement;
     }
 
-    // 5. THỐNG KÊ THEO NGÀY: hóa đơn -> tổng vé, tổng món -> tổng từng ngày.
-    /** [ThongKeRepository-readDays] Paid lọc hóa đơn đã trả tiền; Tickets/Items tổng hợp riêng theo hóa đơn; LEFT JOIN rồi GROUP BY ngày để không nhân doanh thu. */
+    // [TK-DOANH-THU] Doanh thu, số vé và số món được tính ở đâu?
+    // readDays lấy doanh thu bằng SUM(TongTien). Tickets đếm vé hợp lệ. Items cộng số lượng từng dòng món/combo.
+    // Gom vé và món theo hóa đơn trước khi nối. Nếu nối thẳng 2 vé với 3 dòng món sẽ tạo 6 dòng và cộng trùng.
     private void readDays(Connection connection, LocalDate from, LocalDate to, ThongKeReport report) throws SQLException {
         // Tổng hợp từng bảng chi tiết theo hóa đơn TRƯỚC khi nối để không nhân vé x món.
         String sql = "WITH Paid AS (SELECT h.MaDatVe,h.NgayDat,h.TongTien,COALESCE(h.TienGiam,0) AS TienGiam" + PAID + "), "
@@ -72,6 +67,7 @@ public class ThongKeRepository {
             + "SELECT CAST(p.NgayDat AS DATE),SUM(p.TongTien),SUM(p.TienGiam),"
             + "SUM(COALESCE(v.Amount,0)),SUM(COALESCE(d.Amount,0)),COUNT_BIG(*),"
             + "SUM(COALESCE(v.Qty,0)),SUM(COALESCE(d.Qty,0)),"
+            // [TK-DOI-CHIEU] Đếm hóa đơn có tổng tiền cộng giảm giá khác tổng tiền vé và món.
             + "SUM(CAST(CASE WHEN p.TongTien+p.TienGiam<>COALESCE(v.Amount,0)+COALESCE(d.Amount,0) THEN 1 ELSE 0 END AS BIGINT)) "
             + "FROM Paid p LEFT JOIN Tickets v ON v.MaDatVe=p.MaDatVe LEFT JOIN Items d ON d.MaDatVe=p.MaDatVe "
             + "GROUP BY CAST(p.NgayDat AS DATE) ORDER BY CAST(p.NgayDat AS DATE)";
@@ -93,19 +89,20 @@ public class ThongKeRepository {
                 values.put(date, day);
             }
         }
-        // Ngày không phát sinh vẫn có mặt trên biểu đồ và bảng.
+        // [TK-BU-NGAY-TRONG] Không bán hàng ngày đó thì hiển thị thế nào?
+        // Duyệt đủ các ngày trong bộ lọc. Ngày vắng trong kết quả SQL được thêm bằng Day.empty.
         for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
             ThongKeReport.Day day = values.get(date);
             if (day == null) {
-                day = new ThongKeReport.Day(date, BigDecimal.ZERO, BigDecimal.ZERO,
-                        BigDecimal.ZERO, BigDecimal.ZERO, 0, 0, 0, 0);
+                day = ThongKeReport.Day.empty(date);
             }
             report.addDay(day);
         }
     }
 
-    // 6. XẾP HẠNG: lấy 10 phim hoặc mặt hàng có giá trị bán cao nhất.
-    /** [ThongKeRepository-readRanking] films=true lấy top phim; false lấy top sản phẩm/combo. Dùng giá đã lưu lúc bán, sắp giảm dần và lấy 10 dòng. */
+    // [TK-XEP-HANG] Top 10 phim và mặt hàng được sắp xếp theo gì?
+    // Phim dùng tổng giá vé đã lưu và nhóm theo phim của suất chiếu. Sản phẩm/combo dùng số lượng × đơn giá hóa đơn.
+    // ORDER BY sắp giá trị bán giảm dần, TOP (10) lấy tối đa 10 dòng cho mỗi bảng.
     private void readRanking(Connection connection, LocalDate from, LocalDate to, ThongKeReport report, boolean films) throws SQLException {
         String sql = "WITH Paid AS (SELECT h.MaDatVe" + PAID + ") ";
         if (films) {

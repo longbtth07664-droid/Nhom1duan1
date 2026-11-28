@@ -1,5 +1,6 @@
 package controller;
 
+import entity.DinhDang;
 import entity.Phim;
 import entity.TheLoai;
 import jakarta.servlet.ServletException;
@@ -7,6 +8,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import repository.DinhDangRepository;
 import repository.PhimRepository;
 import repository.TheLoaiRepository;
 
@@ -26,6 +28,10 @@ public class PhimServlet extends HttpServlet {
 
     private final PhimRepository phimRepo = new PhimRepository();
     private final TheLoaiRepository theLoaiRepo = new TheLoaiRepository();
+    private final DinhDangRepository dinhDangRepo = new DinhDangRepository();
+
+    // [PHÂN TRANG - BACKEND] Số lượng phim hiển thị trên 1 trang (8 phim/trang)
+    private static final int PAGE_SIZE = 8;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -48,28 +54,64 @@ public class PhimServlet extends HttpServlet {
         }
     }
 
-    // 1. Hiển thị danh sách phim mặc định
-    private void hienThiDanhSach(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.setAttribute("listPhim", phimRepo.getAll());
+    // =========================================================================
+    // [PHÂN TRANG - BACKEND] Hàm xử lý tính toán số trang và phân trang danh sách phim
+    // =========================================================================
+    private void hienThiVaPhanTrang(HttpServletRequest req, HttpServletResponse resp, String keyword, String maTheLoai, String trangThai)
+            throws ServletException, IOException {
+        // 1. Nhận số trang hiện tại từ URL (?page=...). Mặc định là trang 1
+        int page = 1;
+        String pageParam = req.getParameter("page");
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            try {
+                page = Integer.parseInt(pageParam.trim());
+            } catch (NumberFormatException e) {
+                page = 1;
+            }
+        }
+
+        // 2. Đếm tổng số phim phù hợp với từ khóa, thể loại và trạng thái đã chọn
+        int totalItems = phimRepo.countSearch(keyword, maTheLoai, trangThai);
+
+        // 3. Tính tổng số trang (totalPages = làm tròn lên của totalItems / PAGE_SIZE)
+        int totalPages = (int) Math.ceil((double) totalItems / PAGE_SIZE);
+        if (totalPages <= 0) totalPages = 1;
+
+        // Giới hạn số trang hợp lệ từ 1 đến totalPages
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+
+        // 4. Lấy danh sách phim của đúng trang hiện tại (tối đa 8 phim)
+        List<Phim> pagedList = phimRepo.searchPaged(keyword, maTheLoai, trangThai, page, PAGE_SIZE);
+
+        // 5. Gửi dữ liệu phân trang và bộ lọc sang JSP
+        req.setAttribute("listPhim", pagedList);
         req.setAttribute("listTheLoai", theLoaiRepo.getAll());
-        req.setAttribute("keyword", "");
-        req.setAttribute("selectedTheLoai", "");
+        req.setAttribute("listDinhDang", dinhDangRepo.getAll());
+        req.setAttribute("currentPage", page);
+        req.setAttribute("totalPages", totalPages);
+        req.setAttribute("totalItems", totalItems);
+        req.setAttribute("keyword", keyword != null ? keyword.trim() : "");
+        req.setAttribute("selectedTheLoai", (maTheLoai != null && !"Tất cả".equalsIgnoreCase(maTheLoai.trim())) ? maTheLoai.trim() : "");
+        req.setAttribute("selectedTrangThai", trangThai != null ? trangThai.trim() : "");
+
         req.getRequestDispatcher("/phim/view.jsp").forward(req, resp);
     }
 
-    // 2. Tìm kiếm và lọc phim tách riêng biệt
+    // 1. Hiển thị danh sách phim mặc định
+    private void hienThiDanhSach(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String keyword = req.getParameter("keyword");
+        String maTheLoai = req.getParameter("maTheLoai");
+        String trangThai = req.getParameter("trangThai");
+        hienThiVaPhanTrang(req, resp, keyword, maTheLoai, trangThai);
+    }
+
+    // 2. Tìm kiếm và lọc phim
     private void timKiemPhim(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String keyword = req.getParameter("keyword");
         String maTheLoai = req.getParameter("maTheLoai");
-
-        List<Phim> list = phimRepo.search(keyword, maTheLoai);
-
-        req.setAttribute("listPhim", list);
-        req.setAttribute("listTheLoai", theLoaiRepo.getAll());
-        req.setAttribute("keyword", keyword != null ? keyword.trim() : "");
-        req.setAttribute("selectedTheLoai", (maTheLoai != null && !"Tất cả".equalsIgnoreCase(maTheLoai.trim())) ? maTheLoai.trim() : "");
-
-        req.getRequestDispatcher("/phim/view.jsp").forward(req, resp);
+        String trangThai = req.getParameter("trangThai");
+        hienThiVaPhanTrang(req, resp, keyword, maTheLoai, trangThai);
     }
 
     // 3. Xử lý thêm mới phim
@@ -103,6 +145,7 @@ public class PhimServlet extends HttpServlet {
         String trailer = trimParam(req, "trailer");
         String moTa = trimParam(req, "moTa");
         String[] maTheLoais = req.getParameterValues("maTheLoais");
+        String[] maDinhDangs = req.getParameterValues("maDinhDangs");
 
         Phim formPhim = new Phim();
         if (isUpdate && !ma.isEmpty()) {
@@ -132,6 +175,19 @@ public class PhimServlet extends HttpServlet {
             }
         }
         formPhim.setTheLoais(selectedTheLoais);
+
+        Set<DinhDang> selectedDinhDangs = new LinkedHashSet<>();
+        if (maDinhDangs != null) {
+            for (String maDd : maDinhDangs) {
+                if (maDd != null && !maDd.trim().isEmpty()) {
+                    DinhDang dd = dinhDangRepo.getOne(maDd.trim());
+                    if (dd != null) {
+                        selectedDinhDangs.add(dd);
+                    }
+                }
+            }
+        }
+        formPhim.setDinhDangs(selectedDinhDangs);
 
         String error = null;
 

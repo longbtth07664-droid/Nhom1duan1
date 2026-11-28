@@ -201,12 +201,23 @@ public class HoaDonRepository {
                 }
             }
 
-            // Lấy danh sách Combo (ChiTietHoaDon)
-            String sqlCombo = "SELECT ct.MaChiTiet, ct.MaDatVe, ct.MaCombo, ct.SoLuong, ct.DonGia, " +
-                    "cb.TenCombo " +
-                    "FROM ChiTietHoaDon ct " +
-                    "LEFT JOIN Combo cb ON ct.MaCombo = cb.MaCombo " +
-                    "WHERE ct.MaDatVe = ?";
+            // Lấy danh sách Combo / Sản phẩm lẻ (ChiTietHoaDon)
+            boolean hasMaSPCol = checkColumnExists(conn, "ChiTietHoaDon", "MaSP");
+            String sqlCombo;
+            if (hasMaSPCol) {
+                sqlCombo = "SELECT ct.MaChiTiet, ct.MaDatVe, ct.MaCombo, ct.MaSP, ct.SoLuong, ct.DonGia, " +
+                        "COALESCE(cb.TenCombo, sp.TenSP, N'Sản phẩm F&B') AS TenCombo " +
+                        "FROM ChiTietHoaDon ct " +
+                        "LEFT JOIN Combo cb ON ct.MaCombo = cb.MaCombo " +
+                        "LEFT JOIN SanPham sp ON ct.MaSP = sp.MaSP " +
+                        "WHERE ct.MaDatVe = ?";
+            } else {
+                sqlCombo = "SELECT ct.MaChiTiet, ct.MaDatVe, ct.MaCombo, ct.SoLuong, ct.DonGia, " +
+                        "cb.TenCombo " +
+                        "FROM ChiTietHoaDon ct " +
+                        "LEFT JOIN Combo cb ON ct.MaCombo = cb.MaCombo " +
+                        "WHERE ct.MaDatVe = ?";
+            }
 
             try (PreparedStatement ps = conn.prepareStatement(sqlCombo)) {
                 ps.setInt(1, maDatVe);
@@ -216,6 +227,10 @@ public class HoaDonRepository {
                         ct.setMaChiTiet(rs.getInt("MaChiTiet"));
                         ct.setMaDatVe(rs.getInt("MaDatVe"));
                         ct.setMaCombo(rs.getInt("MaCombo"));
+                        if (hasMaSPCol) {
+                            Object spObj = rs.getObject("MaSP");
+                            if (spObj != null) ct.setMaSP(((Number) spObj).intValue());
+                        }
                         ct.setSoLuong(rs.getInt("SoLuong"));
                         ct.setDonGia(rs.getBigDecimal("DonGia"));
                         ct.setTenCombo(rs.getString("TenCombo"));
@@ -346,16 +361,41 @@ public class HoaDonRepository {
                 }
             }
 
-            // 3. Insert danh sách ChiTietHoaDon (Combo bắp nước)
+            // 3. Insert danh sách ChiTietHoaDon (Gói Combo & Sản phẩm bán lẻ)
             if (listCombo != null && !listCombo.isEmpty()) {
-                String sqlCombo = "INSERT INTO ChiTietHoaDon (MaDatVe, MaCombo, SoLuong, DonGia) VALUES (?, ?, ?, ?)";
+                boolean hasMaSPCol = checkColumnExists(conn, "ChiTietHoaDon", "MaSP");
+                String sqlCombo;
+                if (hasMaSPCol) {
+                    sqlCombo = "INSERT INTO ChiTietHoaDon (MaDatVe, MaSP, MaCombo, SoLuong, DonGia) VALUES (?, ?, ?, ?, ?)";
+                } else {
+                    sqlCombo = "INSERT INTO ChiTietHoaDon (MaDatVe, MaCombo, SoLuong, DonGia) VALUES (?, ?, ?, ?)";
+                }
+
                 try (PreparedStatement psCombo = conn.prepareStatement(sqlCombo)) {
                     for (ChiTietHoaDon ct : listCombo) {
-                        if (ct.getMaCombo() == null || ct.getSoLuong() == null || ct.getSoLuong() <= 0) continue;
-                        psCombo.setInt(1, generatedMaDatVe);
-                        psCombo.setInt(2, ct.getMaCombo());
-                        psCombo.setInt(3, ct.getSoLuong());
-                        psCombo.setBigDecimal(4, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                        if (ct.getSoLuong() == null || ct.getSoLuong() <= 0) continue;
+                        if (ct.getMaCombo() == null && ct.getMaSP() == null) continue;
+
+                        if (hasMaSPCol) {
+                            psCombo.setInt(1, generatedMaDatVe);
+                            if (ct.getMaSP() != null && ct.getMaSP() > 0) {
+                                psCombo.setInt(2, ct.getMaSP());
+                            } else {
+                                psCombo.setNull(2, java.sql.Types.INTEGER);
+                            }
+                            if (ct.getMaCombo() != null && ct.getMaCombo() > 0) {
+                                psCombo.setInt(3, ct.getMaCombo());
+                            } else {
+                                psCombo.setNull(3, java.sql.Types.INTEGER);
+                            }
+                            psCombo.setInt(4, ct.getSoLuong());
+                            psCombo.setBigDecimal(5, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                        } else {
+                            psCombo.setInt(1, generatedMaDatVe);
+                            psCombo.setInt(2, ct.getMaCombo() != null ? ct.getMaCombo() : 1);
+                            psCombo.setInt(3, ct.getSoLuong());
+                            psCombo.setBigDecimal(4, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                        }
                         psCombo.addBatch();
                     }
                     psCombo.executeBatch();

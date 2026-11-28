@@ -1,4 +1,25 @@
-KẾT QUẢ KIỂM TRA 25/11/2026
+KẾT QUẢ REFACTOR 27/11/2026
+Baseline: b341e61 (main vừa pull).
+- Maven package: BUILD SUCCESS, cập nhật target và WAR.
+- ComboValidationCheck: PASS kiểm tra form combo/sản phẩm, mã, giá, số lượng và phiên bản.
+- CatalogIntegrationCheck: PASS CRUD, tìm kiếm, giá, ảnh, tồn kho, chống ghi đè,
+  chặn xóa và rollback trên bảng tạm SQL Server; không thay đổi bảng nghiệp vụ.
+- ThongKeIntegrationCheck: PASS tổng ngày/tháng/năm, ngày trống, năm nhuận,
+  lọc thanh toán, chống nhân doanh thu, xếp hạng và giao dịch của bên gọi.
+- ComboUiRegressionCheck: PASS đối chiếu lọc tiếng Việt và tính giá với baseline;
+  đã cập nhật test để đọc file JavaScript tách khỏi JSP.
+- ProductImageUiCheck: PASS chọn ảnh, xem trước, bỏ chọn và kiểm tra định dạng/dung lượng.
+- WebSmokeCheck --catalog-only: PASS trên Tomcat 10.1, gồm các trang của ba chức năng,
+  form, chi tiết JSON, bộ lọc thống kê và các tài nguyên JS/CSS mới.
+- Kiểm thử toàn dự án dừng tại /phim/view HTTP 500: database thiếu Phim_DinhDang.
+  Module phim và schema không thuộc phạm vi refactor này.
+- JavaScript kiểm bằng DOM giả lập; kiểm thử Tomcat xác nhận HTTP/JSP,
+  chưa kiểm tra trực quan bằng trình duyệt thật.
+- Log: target/build-refactor.log, catalog-refactor.log, statistics-refactor.log,
+  web-refactor.log, web-catalog-refactor.log.
+- Tra cứu khi bảo vệ: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt.
+
+LỊCH SỬ KIỂM TRA 25/11/2026
 Baseline: a7c658b (origin/main trước refactor).
 - Maven package: BUILD SUCCESS; cập nhật target/classes, thư mục webapp và WAR.
 - ComboValidationCheck: PASS.

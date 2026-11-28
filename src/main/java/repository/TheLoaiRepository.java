@@ -54,6 +54,36 @@ public class TheLoaiRepository {
         }
     }
 
+    // =========================================================================
+    // [PHÂN TRANG - BACKEND] 1. Đếm tổng số lượng bản ghi thể loại trong CSDL
+    // =========================================================================
+    public long countAll() {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            Long count = session.createQuery("SELECT COUNT(tl) FROM TheLoai tl", Long.class).uniqueResult();
+            return count != null ? count : 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    // =========================================================================
+    // [PHÂN TRANG - BACKEND] 2. Lấy danh sách thể loại theo trang và kích thước trang
+    // - setFirstResult: Vị trí bắt đầu (OFFSET = (page - 1) * pageSize)
+    // - setMaxResults: Số bản ghi tối đa lấy ra (LIMIT = pageSize)
+    // =========================================================================
+    public List<TheLoai> getPagination(int page, int pageSize) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            return session.createQuery("FROM TheLoai ORDER BY maTheLoai", TheLoai.class)
+                    .setFirstResult((page - 1) * pageSize)
+                    .setMaxResults(pageSize)
+                    .list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return getAll();
+        }
+    }
+
     public static void main(String[] args) {
         System.out.println(new TheLoaiRepository().getAll().size());
     }

@@ -1,4 +1,5 @@
-// [SP-ANH-KHOI-TAO] Chỉ gắn sự kiện cho ô ảnh sản phẩm, không đổi giao diện combo.
+// [SP-ANH-KHOI-TAO] Trình duyệt tìm ô ảnh sản phẩm ở đâu?
+// Khi trang sẵn sàng, querySelectorAll tìm input có data-sp-anh rồi gọi khoiTaoAnhSanPham cho từng ô.
 document.addEventListener('DOMContentLoaded', function () {
     var inputs = document.querySelectorAll('input[data-sp-anh]');
     for (var i = 0; i < inputs.length; i++) {
@@ -16,14 +17,19 @@ function khoiTaoAnhSanPham(input) {
     var originalName = name.textContent;
     var temporaryUrl = null;
 
-    // [SP-ANH-CHON] Nút Thêm ảnh mở hộp chọn tệp của máy tính.
+    // [SP-ANH-CHON] Nút Thêm ảnh mở hộp chọn tệp ở dòng nào?
+    // Sự kiện click gọi input.click() để mở hộp chọn tệp của trình duyệt.
     input.hidden = true;
     button.addEventListener('click', function () {
         input.click();
     });
 
-    // [SP-ANH-XEM-TRUOC] Kiểm tra tệp và hiện ảnh vừa chọn, chưa ghi vào database.
-    input.addEventListener('change', function () {
+    input.addEventListener('change', capNhatAnhSanPham);
+
+    // [SP-ANH-XEM-TRUOC] Đoạn nào kiểm tra và xem trước ảnh sản phẩm?
+    // capNhatAnhSanPham kiểm tra JPG/PNG tối đa 5 MB. createObjectURL tạo địa chỉ tạm gán vào preview.src.
+    // Nếu ô chọn tệp trống hoặc tệp bị từ chối thì hiện lại ảnh gốc của form.
+    function capNhatAnhSanPham() {
         var file = input.files[0];
         if (file && (file.size > 5 * 1024 * 1024
                 || (file.type !== 'image/jpeg' && file.type !== 'image/png'))) {
@@ -47,5 +53,5 @@ function khoiTaoAnhSanPham(input) {
             else preview.removeAttribute('src');
             preview.hidden = originalHidden;
         }
-    });
+    }
 }

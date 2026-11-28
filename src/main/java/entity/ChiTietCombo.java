@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "ChiTietCombo")
 @IdClass(ChiTietComboId.class)
+// [DL-CHITIETCOMBO] Các trường ánh xạ cột SQL; constructor tạo đối tượng, getter/setter đọc và gán giá trị.
 public class ChiTietCombo {
 
     // Phần 1 của khóa chính — mã combo cha
@@ -52,53 +53,29 @@ public class ChiTietCombo {
 
     // --- Getter & Setter ---
 
-    public Integer getMaCombo() {
-        return maCombo;
-    }
+    public Integer getMaCombo() { return maCombo; }
 
-    public void setMaCombo(Integer maCombo) {
-        this.maCombo = maCombo;
-    }
+    public void setMaCombo(Integer maCombo) { this.maCombo = maCombo; }
 
-    public Integer getMaSP() {
-        return maSP;
-    }
+    public Integer getMaSP() { return maSP; }
 
-    public void setMaSP(Integer maSP) {
-        this.maSP = maSP;
-    }
+    public void setMaSP(Integer maSP) { this.maSP = maSP; }
 
-    public int getSoLuong() {
-        return soLuong;
-    }
+    public int getSoLuong() { return soLuong; }
 
-    public void setSoLuong(int soLuong) {
-        this.soLuong = soLuong;
-    }
+    public void setSoLuong(int soLuong) { this.soLuong = soLuong; }
 
-    public String getGhiChu() {
-        return ghiChu;
-    }
+    public String getGhiChu() { return ghiChu; }
 
-    public void setGhiChu(String ghiChu) {
-        this.ghiChu = ghiChu;
-    }
+    public void setGhiChu(String ghiChu) { this.ghiChu = ghiChu; }
 
-    public SanPham getSanPham() {
-        return sanPham;
-    }
+    public SanPham getSanPham() { return sanPham; }
 
-    public void setSanPham(SanPham sanPham) {
-        this.sanPham = sanPham;
-    }
+    public void setSanPham(SanPham sanPham) { this.sanPham = sanPham; }
 
-    public Combo getCombo() {
-        return combo;
-    }
+    public Combo getCombo() { return combo; }
 
-    public void setCombo(Combo combo) {
-        this.combo = combo;
-    }
+    public void setCombo(Combo combo) { this.combo = combo; }
 
     @Override
     public String toString() {

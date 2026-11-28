@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * Servlet cung cấp ảnh danh mục sản phẩm và combo qua đường dẫn: /anh-danh-muc?ten=...
@@ -27,6 +28,12 @@ public class AnhDanhMucServlet extends HttpServlet {
             return;
         }
         ten = ten.trim();
+        // Chỉ nhận tên tệp ảnh của danh mục trước khi tra trong các thư mục ảnh.
+        if (AnhDanhMuc.laAnhDaTai(ten) || ten.indexOf(':') >= 0 || ten.chars().anyMatch(Character::isISOControl)
+                || !ten.toLowerCase(Locale.ROOT).matches(".+\\.(jpg|jpeg|png|webp)")) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
 
         // 1. Tìm trong thư mục lưu trữ persistent (cinemax.anh.dir hoặc ~/.cinemax/anh-danh-muc)
         Path storageDir = AnhDanhMuc.getDuongDanLuuTru();

@@ -87,7 +87,6 @@
                         <div class="card-subtitle">Quản lý tài khoản và thông tin nhân sự làm việc tại rạp</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <!-- Nút Mở Modal Thêm mới -->
                         <button type="button" class="btn btn-pink" onclick="openAddModal()">+ Thêm</button>
                         <span class="badge-pink">${listNhanVien.size()} nhân viên</span>
                     </div>
@@ -112,20 +111,18 @@
                         <c:forEach items="${listNhanVien}" var="nv" varStatus="status">
                             <tr>
                                 <td>${status.index + 1}</td>
-                                <!-- Sửa từ nv.maTK thành nv.id -->
                                 <td><strong><c:out value="${nv.id}"/></strong></td>
                                 <td><c:out value="${nv.hoTen}"/></td>
                                 <td><c:out value="${nv.username}"/></td>
                                 <td><c:out value="${nv.soDienThoai}"/></td>
                                 <td>
-            <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: ${nv.vaiTro == 'QuanLy' ? '#ffe3e3; color: #c92a2a;' : '#e7f5ff; color: #1864ab;'};">
-                <c:out value="${nv.vaiTro}"/>
-            </span>
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: ${nv.vaiTro == 'QuanLy' ? '#ffe3e3; color: #c92a2a;' : '#e7f5ff; color: #1864ab;'};">
+                                        <c:out value="${nv.vaiTro}"/>
+                                    </span>
                                 </td>
                                 <td><c:out value="${nv.trangThai}"/></td>
                                 <td>
                                     <div class="action-group">
-                                        <!-- Sửa data-id gọi nv.id -->
                                         <button type="button" class="btn btn-ghost btn-sm"
                                                 data-id="<c:out value='${nv.id}'/>"
                                                 data-hoten="<c:out value='${nv.hoTen}'/>"
@@ -138,7 +135,6 @@
                                                 data-trangthai="<c:out value='${nv.trangThai}'/>"
                                                 onclick="openDetailModal(event, this)">Chi tiết</button>
 
-                                        <!-- Sửa nút Sửa gọi nv.id -->
                                         <a href="${pageContext.request.contextPath}/nhan-vien/view-update?id=${nv.id}" class="btn btn-outline btn-sm">Sửa</a>
                                     </div>
                                 </td>

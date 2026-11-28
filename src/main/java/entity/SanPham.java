@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "SanPham") // Khớp tên bảng SanPham trong SQL Server
+// [DL-SANPHAM] Các trường ánh xạ cột SQL; constructor tạo đối tượng, getter/setter đọc và gán giá trị.
 public class SanPham {
 
     @Id

@@ -78,6 +78,7 @@ public class NhanVienRepository {
         }
     }
 
+<<<<<<< HEAD
     // Kiểm tra trùng Username (trừ id hiện tại nếu đang sửa)
     public boolean existsByUsername(String username, Integer excludeId) {
         if (username == null || username.trim().isEmpty()) return false;
@@ -124,6 +125,35 @@ public class NhanVienRepository {
             e.printStackTrace();
             return false;
         }
+=======
+
+    public String validateFormat(String cccd, String email, String soDienThoai) {
+        String c = cccd != null ? cccd.trim() : "";
+        String e = email != null ? email.trim() : "";
+        String s = soDienThoai != null ? soDienThoai.trim() : "";
+
+        // Bắt buộc nhập CCCD
+        if (c.isEmpty()) {
+            return "Vui lòng nhập CCCD!";
+        }
+
+        // CCCD: chỉ gồm chữ số, đúng 12 số, bắt đầu bằng 0 (nếu có nhập)
+        if (!c.isEmpty() && !c.matches("0\\d{11}")) {
+            return "CCCD chỉ được chứa chữ số, gồm 12 số và bắt đầu bằng 0!";
+        }
+
+        // SĐT: chỉ gồm chữ số, 10 - 11 số, bắt đầu bằng 0 (nếu có nhập)
+        if (!s.isEmpty() && !s.matches("0\\d{9,10}")) {
+            return "Số điện thoại chỉ được chứa chữ số (10 - 11 số, bắt đầu bằng 0)!";
+        }
+
+        // Email: đúng định dạng chuẩn (nếu có nhập)
+        if (!e.isEmpty() && !e.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            return "Email không đúng định dạng (ví dụ: ten@gmail.com)!";
+        }
+
+        return null;
+>>>>>>> 661c874476db0d612f6d08731274b9491b727c4a
     }
 
     public static void main(String[] args) {

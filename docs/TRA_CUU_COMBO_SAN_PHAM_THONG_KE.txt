@@ -1,59 +1,204 @@
-TRA CỨU KHI TRÌNH BÀY VỚI GIẢNG VIÊN
-Dùng Ctrl+Shift+F tìm tên hàm hoặc mã ghi chú trong toàn dự án.
+TRA CỨU COMBO - SẢN PHẨM - THỐNG KÊ (27/11/2026)
+
+CÁCH TÌM KHI GIẢNG VIÊN HỎI
+1. IntelliJ: Ctrl+Shift+F, nhập mã trong ngoặc vuông, ví dụ [CB-GIAM-GIA].
+2. Mở kết quả trong file Java ở src/main/java. Ghi chú đặt ngay trước hàm hoặc dòng xử lý.
+3. Chỉ vào dòng thực hiện, rồi nói dòng đó lấy dữ liệu gì và làm gì với dữ liệu.
+4. Nếu đã mở file, Ctrl+F tìm tên hàm hoặc đoạn cần chỉ. Ctrl+B tại lời gọi hàm để nhảy tới định nghĩa.
+
+HỎI ĐÁP THỰC HÀNH TRONG 7 FILE JAVA
 
 1. QUẢN LÝ COMBO
-Controller: src/main/java/controller/ComboServlet.java
-- Danh sách: hienThiDanhSach; tìm kiếm và lọc trạng thái: timKiemCombo.
-- Mở sửa: moFormSua; thêm/sửa: luuCombo; xóa: xoaCombo.
-- Đọc thông tin: docThongTinCombo; chọn món, số lượng, ghi chú: docDanhSachChiTiet.
-- Chi tiết AJAX: traChiTietJson; bảo vệ chuỗi JSON: escapeJson.
-Repository: src/main/java/repository/ComboRepository.java
-- getAll, getOne, search, getChiTiet: đọc dữ liệu.
-- save: lưu combo và thành phần trong một giao dịch.
-- kiemTraVaTinhTongGiaLe: kiểm tra tồn kho, trạng thái và cộng giá món.
-- fingerprint: phát hiện form cũ; delete: chặn xóa combo đã có hóa đơn.
-Giao diện: src/main/webapp/quanLyCombo.jsp
-- locSanPham: lọc món; toggleProductRow: bật số lượng/ghi chú.
-- tinhTongGiaLe: giá xem trước và giảm giá; validateComboForm: kiểm tra nhập.
-- khoiTaoBangSanPham: gắn sự kiện; timTruongBanNhap: tìm dữ liệu nhập trước.
-- DOMContentLoaded: khôi phục bản nháp sau lỗi, kiểm tra mã và phiên bản.
-- xemChiTietCombo: tải chi tiết, bỏ phản hồi cũ; xoaCombo: xác nhận và gửi POST.
+- “Đoạn nào thêm/sửa combo?”
+  ComboServlet.doPost [CB-NHAN-FORM] -> luuCombo [CB-LUU] -> ComboRepository.save [CB-SQL-LUU].
+  Chỉ dòng: comboRepo.save(...), rồi session.persist(combo) hoặc session.merge(combo) [CB-GHI-COMBO].
+  Trả lời: Em đọc món và mức giảm ở Servlet. Repository lưu combo và từng món trong một giao dịch.
+- “Đoạn nào đọc món được tích?”
+  ComboServlet.docDanhSachChiTiet [CB-DOC-MON]. Chỉ req.getParameterValues("ctMaSP") và map.put(maSP, ...).
+  Trả lời: Em duyệt mã đã chọn, đọc số lượng theo từng mã và dùng Map để một mã chỉ có một dòng.
+- “Giá combo và giảm giá được tính ở đâu?”
+  ComboRepository.kiemTraVaTinhTongGiaLe [CB-GIA] -> tinhGiaSauGiam [CB-GIAM-GIA].
+  Chỉ dòng: total.add(...) và tongGiaLe.multiply(...).divide(...).
+  Trả lời: Em lấy giá từng món từ database, nhân số lượng, cộng lại rồi giảm theo phần trăm. 100.000 giảm 10% còn 90.000.
+  Nếu hỏi về giữ giá khi sửa, chỉ nhánh discount == -1 && !adding trong save [CB-GIU-GIA-CU].
+- “Lúc lưu combo có trừ kho chưa?”
+  ComboRepository.kiemTraVaTinhTongGiaLe [CB-GIA]. Chỉ điều kiện so số lượng món với getSoLuongTon().
+  Trả lời: Tạo combo mới chỉ kiểm tra tồn kho và lưu công thức gồm món, số lượng. Tồn kho được xử lý khi bán.
+- “Chi tiết combo lấy ở đâu?”
+  ComboServlet.traChiTietJson [CB-CHI-TIET] -> ComboRepository.getChiTiet [CB-SQL-CHI-TIET].
+  Chỉ WHERE ct.maCombo = :ma và JOIN FETCH ct.sanPham. Trả lời: Lấy món theo mã combo, tải sẵn thông tin món rồi trả JSON.
+- “Vì sao combo đã có trong hóa đơn không xóa được?”
+  ComboRepository.delete [CB-SQL-XOA]. Chỉ câu SELECT COUNT(*) FROM ChiTietHoaDon và điều kiện count.longValue() > 0.
+  Trả lời: Hóa đơn còn tham chiếu đến combo nên báo lỗi và hướng dẫn chuyển sang Ngừng bán.
 
 2. QUẢN LÝ SẢN PHẨM
-Controller: src/main/java/controller/SanPhamServlet.java
-- hienThiDanhSach, timKiemSanPham: xem, tìm theo mã/tên/loại và lọc trạng thái.
-- themSanPham, moFormSua, capNhatSanPham, xoaSanPham: thêm/sửa/xóa.
-- docThongTinSanPham, namTrongDanhSach: kiểm tra giá, tồn kho và danh mục.
-- luuSanPhamCoAnh: lưu ảnh; dọn ảnh mới nếu lưu dữ liệu thất bại.
-Repository: src/main/java/repository/SanPhamRepository.java
-- getAll, getAllDangKinhDoanh, getOne, search: đọc dữ liệu.
-- add, update, delete: ghi dữ liệu; fingerprint: phát hiện thay đổi đồng thời.
-- isSanPhamUsed: kiểm tra sản phẩm đã nằm trong combo/hóa đơn.
-Giao diện: src/main/webapp/quanLySanPham.jsp
-- Form thêm/sửa; goiYDonVi: gợi ý đơn vị; xoaSP: xác nhận xóa.
-- [SP-THEM-ANH], [SP-SUA-ANH]: chọn tệp tepAnh trong form multipart.
-- [SP-HIEN-ANH]: hiển thị ảnh đã lưu trong bảng danh sách sản phẩm.
-- src/main/webapp/assets/js/san-pham-anh.js: khoiTaoAnhSanPham mở hộp chọn,
-  kiểm tra JPG/PNG tối đa 5 MB, xem trước và trở về ảnh cũ khi bỏ lựa chọn.
+- “Đoạn nào thêm/sửa sản phẩm?”
+  SanPhamServlet.luuSanPham [SP-LUU] -> luuSanPhamCoAnh [SP-ANH] -> SanPhamRepository.add/update.
+  Chỉ dòng: if (themMoi), rồi session.persist(sp) [SP-SQL-THEM] hoặc session.merge(sp) [SP-SQL-SUA].
+  Trả lời: Hai thao tác dùng chung phần kiểm tra và xử lý ảnh. Thêm mới lấy mã tự tăng, sửa cập nhật theo mã đã có.
+- “Kiểm tra giá và tồn kho ở đâu?”
+  SanPhamServlet.docThongTinSanPham [SP-KIEM-TRA]. Chỉ điều kiện tại [SP-GIA-TON] và kiểm tra scale sau đó.
+  Trả lời: Giá phải là số nguyên dương. Tồn kho là số nguyên từ 0, thêm mới để trống thì mặc định 0.
+- “Tìm sản phẩm theo tên, mã hoặc loại ở đâu?”
+  SanPhamServlet.timKiemSanPham [SP-TIM-KIEM] -> SanPhamRepository.search [SP-SQL-TIM].
+  Chỉ nhóm điều kiện LIKE :kw và setParameter("kw", ...). Trả lời: Có từ khóa thì tìm theo mã, tên hoặc loại. Có trạng thái thì lọc thêm.
+- “Nếu sản phẩm đang mở form sửa mà kho vừa thay đổi thì sao?”
+  SanPhamRepository.update [SP-CHONG-GHI-DE]. Chỉ điều kiện !fingerprint(existing).equals(version).
+  Trả lời: Dấu version có chứa tồn kho. Nếu kho thay đổi sau khi mở form thì dấu khác, hệ thống yêu cầu tải lại dữ liệu.
+- “Đoạn nào chặn xóa sản phẩm?”
+  SanPhamServlet.xoaSanPham [SP-XOA] -> SanPhamRepository.demSoLanSuDung [SP-DA-SU-DUNG].
+  Chỉ câu đếm ChiTietCombo, ChiTietHoaDon theo MaSP và điều kiện > 0 trong delete.
+  Trả lời: Còn combo hoặc hóa đơn sử dụng sản phẩm thì chặn. Repository kiểm tra lại ngay trong giao dịch xóa.
 
-3. THỐNG KÊ TRONG TỔNG QUAN
-Controller: src/main/java/controller/ThongKeServlet.java
-- doGet: nhận lọc ngày/tháng/năm và trả trang; validateRange: giới hạn khoảng lọc.
-- setQuickDates: hôm nay, 7 ngày qua, tháng này/tháng trước, đầu năm.
-Repository: src/main/java/repository/ThongKeRepository.java
-- load: đọc báo cáo; query: gắn khoảng ngày và thời gian chờ.
-- readDays: tổng doanh thu, giảm giá, giá trị vé/món, số hóa đơn/vé/món, sai lệch.
-- readRanking: top 10 phim và sản phẩm/combo theo giá trị bán.
-- DocBaoCao.execute: đọc nhất quán trong cùng giao dịch.
-Dữ liệu: src/main/java/entity/ThongKeReport.java
-- addDay: cộng tổng; getAverage: trung bình hóa đơn.
-- groupBy: gom tháng/năm; congSoLieu: cộng từng chỉ tiêu của nhóm.
-- prepareChart: tính chiều cao cột biểu đồ.
-Giao diện: src/main/webapp/WEB-INF/views/thongKe.jsp
-- Bộ lọc, thẻ tổng hợp, biểu đồ, bảng xếp hạng và bảng chi tiết theo kỳ.
+3. THỐNG KÊ TỔNG QUAN
+- “Chọn theo ngày, tháng, năm thì code nằm ở đâu?”
+  ThongKeServlet.doGet [TK-CHON-KHOANG]. Chỉ các nhánh mode và validateRange(from, to, mode).
+  Trả lời: Servlet đổi mỗi chế độ thành một khoảng ngày. Repository lấy dữ liệu ngày, groupBy gom theo kỳ hiển thị.
+- “Hóa đơn nào được tính? Có tính hết ngày kết thúc không?”
+  ThongKeRepository.PAID [TK-HOA-DON-HOP-LE] và query [TK-TRUYEN-NGAY]. Chỉ EXISTS và to.plusDays(1).
+  Trả lời: Hóa đơn phải hoàn tất và có thanh toán thành công. So nhỏ hơn 0 giờ ngày kế tiếp để lấy trọn ngày cuối.
+- “Doanh thu, số vé và số món tính ở đâu? Vì sao không bị cộng trùng?”
+  ThongKeRepository.readDays [TK-DOANH-THU]. Chỉ Tickets, Items và SUM(p.TongTien).
+  Trả lời: Doanh thu cộng TongTien. Vé và món được cộng riêng theo hóa đơn, sau đó mới nối với hóa đơn để tránh nhân số dòng.
+- “Top 10 dựa theo gì?”
+  ThongKeRepository.readRanking [TK-XEP-HANG]. Chỉ TOP (10) và ORDER BY ... DESC.
+  Trả lời: Phim xếp theo tổng tiền vé. Sản phẩm và combo xếp theo số lượng nhân đơn giá đã ghi trong hóa đơn.
+- “Gom số liệu tháng/năm ở đâu?”
+  ThongKeReport.groupBy [TK-NHOM]. Chỉ withDayOfMonth(1), withDayOfYear(1) và congSoLieu.
+  Trả lời: Các ngày cùng tháng hoặc năm có chung một khóa, nên cộng vào cùng một nhóm.
+- “Chiều cao cột biểu đồ và trung bình hóa đơn tính ở đâu?”
+  ThongKeReport.prepareChart [TK-BIEU-DO] và getAverage [TK-TRUNG-BINH]. Chỉ hai phép divide tương ứng.
+  Trả lời: Cột cao nhất là 100%, các cột khác chia theo tỷ lệ doanh thu. Trung bình bằng tổng doanh thu chia số hóa đơn.
 
-PHẦN DÙNG CHUNG
-Ảnh gọi util.AnhDanhMuc; kết nối gọi util.HibernateConfig; mã gọi util.DatabaseId.
-Giữ API, URL, câu truy vấn, transaction, khóa dữ liệu và token để tương thích phần bán hàng.
-SQL thống kê tổng hợp vé và món riêng trước khi nối để tránh nhân doanh thu.
-BigDecimal cần thiết cho tính tiền; fetch cần thiết cho tải chi tiết không tải lại trang.
+HỎI ĐÁP JAVASCRIPT TRONG THƯ MỤC assets/js
+
+- “Tích món, lọc món hoặc đổi số lượng thì code nào xử lý?”
+  quan-ly-combo.js: toggleProductRow [CB-CHON-MON], locSanPham [CB-LOC-MON], khoiTaoBangSanPham [CB-GIU-GIA].
+  Chỉ disabled và row.hidden. Trả lời: Tích món thì bật ô nhập. Lọc chỉ ẩn dòng. Đổi món hoặc số lượng thì tính lại giá.
+- “Giá xem trước và kiểm tra trước khi gửi nằm ở đâu?”
+  quan-ly-combo.js: tinhTongGiaLe [CB-GIA-XEM-TRUOC], validateComboForm [CB-KIEM-TRA-FORM].
+  Chỉ Math.round và các nhánh return false. Trả lời: Trình duyệt tính giá để xem trước và báo lỗi nhập sớm. Java tính lại khi lưu.
+- “Nếu lưu combo lỗi thì dữ liệu đã nhập được lấy lại ở đâu?”
+  quan-ly-combo.js: validateComboForm [CB-LUU-NHAP] và sự kiện DOMContentLoaded [CB-KHOI-PHUC-NHAP].
+  Chỉ sessionStorage.setItem và getItem. Trả lời: Các trường dạng chuỗi được giữ trong tab, form sửa chỉ khôi phục khi mã và version khớp.
+- “Bấm Xem chi tiết combo thì danh sách món hiện bằng cách nào?”
+  quan-ly-combo.js: xemChiTietCombo [CB-XEM-CHI-TIET]. Chỉ fetch và td.textContent.
+  Trả lời: Gửi mã combo lên Servlet, nhận JSON rồi tạo từng dòng trong bảng.
+- “Bấm Xóa thì đoạn nào hỏi xác nhận?”
+  quan-ly-combo.js: xoaCombo [CB-XAC-NHAN-XOA]. quan-ly-san-pham.js: xoaSP [SP-XAC-NHAN-XOA].
+  Chỉ confirm và form.submit(). Trả lời: Nếu đồng ý thì điền mã và gửi form POST để Java kiểm tra và xóa.
+- “Chọn loại Bắp thì ô đơn vị vì sao hiện Hộp?”
+  quan-ly-san-pham.js: goiYDonVi [SP-GOI-Y]. Chỉ units[select.value] và dòng gán donViTinh.
+  Trả lời: Hàm tra loại đang chọn trong bảng gợi ý đơn vị rồi điền vào ô trên cùng form.
+- “Đoạn nào mở hộp chọn tệp và hiển thị ảnh xem trước?”
+  san-pham-anh.js: khoiTaoAnhSanPham [SP-ANH-CHON], capNhatAnhSanPham [SP-ANH-XEM-TRUOC].
+  anh-danh-muc.js: khoiTaoAnhCombo [CB-ANH-XEM-TRUOC]. Chỉ input.click(), createObjectURL và dòng gán src tương ứng.
+  Trả lời: Nút bấm mở bộ chọn tệp. Khi có ảnh, trình duyệt tạo URL tạm để xem trước. Ảnh sản phẩm còn được kiểm tra JPG/PNG và 5 MB.
+- “Chọn thống kê theo tháng thì vì sao ô chọn ngày ẩn?”
+  thong-ke.js: doiCheDoThongKe [TK-DOI-CHE-DO]. Chỉ phép so data-mode và dòng gán disabled.
+  Trả lời: Chỉ nhóm khớp chế độ mới hiện và được gửi cùng form. Phần lọc và tính số liệu nằm ở Java.
+
+DANH SÁCH HÀM
+
+java/controller/ComboServlet.java
+  [CB-MO-TRANG] doGet(): Tạo token phiên, nhận yêu cầu xem danh sách, tìm kiếm, sửa hoặc xem chi tiết.
+  [CB-NHAN-FORM] doPost(): Kiểm tra token rồi chuyển action add/update/delete đến hàm tương ứng.
+  [CB-DANH-SACH] hienThiDanhSach(): Lấy combo và sản phẩm đang bán, chuyển sang quanLyCombo.jsp.
+  [CB-TIM-KIEM] timKiemCombo(): Đọc keyword/trangThai, tìm trong database và giữ lại bộ lọc trên form.
+  [CB-MO-SUA] moFormSua(): Đọc combo, thành phần và dấu phiên bản; giữ cả món cũ đã ngừng bán.
+  [CB-LUU] luuCombo(): Đọc form, thành phần, ảnh; gọi save để lưu trong một giao dịch.
+  [CB-XOA] xoaCombo(): Gửi mã combo cho repository kiểm tra và xóa.
+  [CB-CHI-TIET] traChiTietJson(): Trả danh sách món dạng JSON để JavaScript mở hộp chi tiết.
+  [CB-DOC-FORM] docThongTinCombo(): Kiểm tra tên, mô tả, mã, ảnh và trạng thái; sai trả null.
+  [CB-DOC-MON] docDanhSachChiTiet(): Duyệt checkbox, kiểm tra số lượng và ghi chú; Map loại mã sản phẩm lặp.
+  [CB-JSON] escapeJson(): Đổi dấu nháy, gạch chéo và ký tự điều khiển thành chuỗi JSON hợp lệ.
+
+java/controller/SanPhamServlet.java
+  [SP-MO-TRANG] doGet(): Tạo token rồi mở danh sách, kết quả tìm kiếm hoặc form sửa.
+  [SP-NHAN-FORM] doPost(): Kiểm tra token, chọn thao tác thêm/sửa/xóa và xử lý lỗi.
+  [SP-DANH-SACH] hienThiDanhSach(): Đọc sản phẩm từ repository rồi forward sang quanLySanPham.jsp.
+  [SP-TIM-KIEM] timKiemSanPham(): Đọc từ khóa và trạng thái từ form tìm kiếm.
+  [SP-THEM] themSanPham(): Gọi luuSanPham với themMoi=true.
+  [SP-SUA] capNhatSanPham(): Gọi luuSanPham với themMoi=false.
+  [SP-MO-SUA] moFormSua(): Lấy bản hiện có và dấu phiên bản để phát hiện form sửa đã cũ.
+  [SP-XOA] xoaSanPham(): Chặn sản phẩm đã dùng trong combo/hóa đơn trước khi gọi xóa.
+  [SP-KIEM-TRA] docThongTinSanPham(): Kiểm tra tên, danh mục, giá nguyên dương, tồn kho không âm và trạng thái.
+
+java/repository/ComboRepository.java
+  [CB-SQL-DANH-SACH] getAll(): Đọc toàn bộ combo theo mã tăng dần.
+  [CB-SQL-TIM] search(): Tìm mã/tên và trạng thái; truyền đầu vào bằng setParameter.
+  [CB-SQL-CHI-TIET] getChiTiet(): JOIN FETCH tải sẵn tên/giá sản phẩm trước khi đóng session.
+  [CB-SQL-LUU] save(): Khóa bản sửa, kiểm tra phiên bản, tính giá, lưu cha và chi tiết; lỗi thì rollback.
+  [CB-PHIEN-BAN] fingerprint(): Tạo dấu nội dung, so với lúc mở form để tránh ghi đè thay đổi của người khác.
+  [CB-SQL-XOA] delete(): Chặn combo đã có hóa đơn; xóa chi tiết trước rồi xóa combo trong cùng giao dịch.
+
+java/repository/SanPhamRepository.java
+  [SP-SQL-DANH-SACH] getAll(): Đọc danh sách theo mã.
+  [SP-DANG-BAN] getAllDangKinhDoanh(): Chỉ lấy món đang kinh doanh cho form combo.
+  [SP-SQL-TIM] search(): Tìm theo mã, tên, loại; thêm điều kiện trạng thái nếu có chọn.
+  [SP-SQL-THEM] add(): Để SQL cấp mã tự tăng, persist rồi commit; thất bại rollback.
+  [SP-SQL-SUA] update(): Khóa dòng, so phiên bản, giữ ảnh cũ nếu không chọn ảnh mới rồi merge.
+  [SP-PHIEN-BAN] fingerprint(): Ghép các trường có độ dài, gồm tồn kho và ảnh, làm dấu dữ liệu lúc mở form.
+  [SP-SQL-XOA] delete(): Khóa dòng, kiểm tra lại tham chiếu, remove rồi commit.
+
+java/controller/ThongKeServlet.java
+  [TK-BO-LOC] doGet(): Đọc chế độ ngày/tháng/năm, kiểm tra khoảng thời gian, lấy báo cáo và forward JSP.
+  [TK-KIEM-TRA] validateRange(): Giới hạn ngày tối đa 366 ngày, tháng trong một năm, năm tối đa 10 năm.
+  [TK-MOC-NGAY] setQuickDates(): Tạo ngày cho các nút lọc nhanh theo múi giờ Việt Nam.
+
+java/repository/ThongKeRepository.java
+  [TK-TAI-BAO-CAO] load(): Đọc số liệu từng ngày, top phim, top món rồi tính chiều cao biểu đồ.
+  [TK-TRUYEN-NGAY] query(): Truyền từ đầu ngày bắt đầu đến trước đầu ngày kế tiếp ngày kết thúc.
+  [TK-DOANH-THU] readDays(): Paid: hóa đơn hợp lệ; Tickets/Items: tổng riêng từng hóa đơn; cuối cùng cộng theo ngày.
+  [TK-XEP-HANG] readRanking(): Lấy 10 phim hoặc món có giá trị bán cao nhất, dùng giá đã lưu lúc bán.
+
+java/entity/ThongKeReport.java
+  [TK-CONG-TONG] addDay(): Thêm dòng và cộng doanh thu, giảm giá, tiền vé, tiền món, số lượng vào tổng.
+  [TK-TRUNG-BINH] getAverage(): Doanh thu chia số hóa đơn; không có hóa đơn thì trả 0.
+  [TK-BIEU-DO] prepareChart(): Tìm doanh thu lớn nhất, tính chiều cao mỗi cột = doanh thu / lớn nhất × 100.
+
+webapp/assets/js/quan-ly-combo.js
+  [CB-CHON-MON] toggleProductRow(): Bật ô số lượng/ghi chú theo checkbox rồi tính lại giá xem trước.
+  [CB-LOC-MON] locSanPham(): Lọc tên không phân biệt dấu tiếng Việt, giữ món đã chọn khi bị ẩn.
+  [CB-GIA-XEM-TRUOC] tinhTongGiaLe(): Cộng giá × số lượng rồi áp dụng giảm giá; giá lưu thật do server tính.
+  [CB-KIEM-TRA-FORM] validateComboForm(): Kiểm tra món, số lượng, tồn kho và lưu bản nháp trước khi gửi.
+  [CB-XEM-CHI-TIET] xemChiTietCombo(): Gọi JSON chi tiết và tạo từng ô bằng textContent để hiển thị an toàn.
+  [CB-XAC-NHAN-XOA] xoaCombo(): Xác nhận rồi gửi form POST chứa mã và token.
+
+webapp/assets/js/quan-ly-san-pham.js
+  [SP-GOI-Y] goiYDonVi(): Gợi ý đơn vị tính khi đổi loại sản phẩm.
+  [SP-XAC-NHAN-XOA] xoaSP(): Xác nhận rồi gửi form POST xóa.
+
+webapp/assets/js/san-pham-anh.js
+  [SP-ANH-CHON] khoiTaoAnhSanPham(): Gắn nút chọn ảnh vào input file.
+  [SP-ANH-XEM-TRUOC] capNhatAnhSanPham(): Kiểm tra tệp, xem trước hoặc hiện lại ảnh gốc.
+
+webapp/assets/js/anh-danh-muc.js
+  [CB-ANH-XEM-TRUOC] khoiTaoAnhCombo(): Hiện ảnh combo vừa chọn qua URL tạm.
+
+webapp/assets/js/thong-ke.js
+  [TK-DOI-CHE-DO] doiCheDoThongKe(): Hiện ô thuộc chế độ đang chọn, vô hiệu hóa ô thuộc chế độ khác.
+
+CÁC FILE DỮ LIỆU VÀ GIAO DIỆN
+- entity/Combo.java: thông tin combo; entity/SanPham.java: thông tin món và tồn kho.
+- entity/ChiTietCombo.java: số lượng mỗi món trong combo; ChiTietComboId.java: khóa ghép MaCombo + MaSP.
+- quanLyCombo.jsp, quanLySanPham.jsp: bảng, form thêm/sửa, thông báo; không tính giá lưu trong JSP.
+- assets/js/quan-ly-combo.js: chọn món, lọc, giá xem trước, bản nháp, xem chi tiết, xóa.
+- assets/js/quan-ly-san-pham.js: gợi ý đơn vị, xác nhận xóa.
+- assets/js/san-pham-anh.js và assets/js/anh-danh-muc.js: chọn và xem trước ảnh.
+- WEB-INF/views/thongKe.jsp: bộ lọc, chỉ tiêu, biểu đồ, bảng số liệu và xếp hạng.
+- assets/js/thong-ke.js: đổi ô lọc ngày/tháng/năm và thao tác menu.
+- assets/css/quan-ly-combo.css, quan-ly-san-pham.css, thongKe.css: cách trình bày.
+
+NHỮNG ĐIỂM CẦN GIẢI THÍCH ĐÚNG
+- Mã tự tăng do SQL cấp; tạo combo không trừ kho. Bán hàng mới xử lý tồn kho.
+- BigDecimal dùng cho tiền để tránh sai số. JavaScript chỉ cho xem trước.
+- Transaction: nhiều thao tác lưu cùng thành công (commit) hoặc cùng hoàn tác (rollback).
+- Token kiểm tra phiên gửi form; fingerprint kiểm tra dữ liệu có bị người khác sửa không.
+- Thống kê chỉ lấy hóa đơn Đã hoàn tất có thanh toán Thành công.
+- Không nối thẳng vé và món rồi SUM: 2 vé × 3 món sẽ thành 6 dòng và nhân doanh thu.
+  Vì thế SQL cộng vé/món riêng theo hóa đơn rồi mới ghép và cộng theo ngày.
+- Doanh thu là TongTien thực thu; tiền vé và món lấy giá bán lịch sử; giảm giá theo hóa đơn.
+- Ngày không có bán hàng được thêm dòng 0. Không có hóa đơn thì trung bình bằng 0.
+- HQL dùng tên lớp/thuộc tính Java; SQL thống kê dùng tên bảng/cột trong database.
+- Khung chung Hibernate, đăng nhập, menu và nghiệp vụ bán vé vẫn là phần dùng chung của dự án.

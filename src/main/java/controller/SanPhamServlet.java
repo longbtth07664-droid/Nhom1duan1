@@ -15,21 +15,7 @@ import java.math.BigDecimal;
 import java.util.ConcurrentModificationException;
 import java.util.UUID;
 
-/* TRA CỨU HÀM: SanPhamServlet
- * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
- * Ctrl+F "doGet(" để tìm phần xử lý.
- * Ctrl+F "xuLyGet(" để tìm phần xử lý.
- * Ctrl+F "doPost(" để tìm phần xử lý.
- * Ctrl+F "hienThiDanhSach(" để tìm phần xử lý.
- * Ctrl+F "timKiemSanPham(" để tìm phần xử lý.
- * Ctrl+F "themSanPham(" để tìm phần xử lý.
- * Ctrl+F "moFormSua(" để tìm phần xử lý.
- * Ctrl+F "capNhatSanPham(" để tìm phần xử lý.
- * Ctrl+F "luuSanPhamCoAnh(" để tìm phần xử lý.
- * Ctrl+F "xoaSanPham(" để tìm phần xử lý.
- * Ctrl+F "docThongTinSanPham(" để tìm phần xử lý.
- * Ctrl+F "namTrongDanhSach(" để tìm phần xử lý.
- */
+// Tra cứu chức năng: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt
 @WebServlet(name = "SanPhamServlet", urlPatterns = {"/quan-ly-san-pham"})
 @MultipartConfig(maxFileSize = AnhDanhMuc.GIOI_HAN_TEP, maxRequestSize = AnhDanhMuc.GIOI_HAN_YEU_CAU)
 public class SanPhamServlet extends HttpServlet {
@@ -37,7 +23,8 @@ public class SanPhamServlet extends HttpServlet {
     private final SanPhamRepository sanPhamRepo = new SanPhamRepository();
 
     @Override
-    /** [SanPhamServlet-doGet] Nhận yêu cầu mở trang. Đọc bộ lọc, gọi hàm xử lý rồi chuyển dữ liệu sang JSP. */
+    // [SP-MO-TRANG] Bấm vào Quản lý sản phẩm thì code nào chạy đầu tiên?
+    // doGet tạo token nếu phiên chưa có. xuLyGet đọc action để mở danh sách, tìm kiếm hoặc mở form sửa.
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         try {
@@ -81,7 +68,8 @@ public class SanPhamServlet extends HttpServlet {
     }
 
     @Override
-    /** [SanPhamServlet-doPost] Nhận dữ liệu form gửi lên. Xác định action và gọi chức năng thêm, sửa hoặc xóa. */
+    // [SP-NHAN-FORM] Bấm Thêm, Lưu hoặc Xóa thì code nào nhận yêu cầu?
+    // doPost kiểm tra token của phiên rồi chuyển action add/update/delete đến hàm tương ứng.
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
 
@@ -112,13 +100,16 @@ public class SanPhamServlet extends HttpServlet {
         }
     }
 
-    /** [SanPhamServlet-hienThiDanhSach] Lấy danh sách từ repository, đặt vào request bằng setAttribute, forward sang JSP. */
+    // [SP-DANH-SACH] Danh sách sản phẩm được lấy ở đâu?
+    // sanPhamRepo.getAll lấy danh sách. setAttribute đặt dữ liệu vào request để trang đọc được.
     private void hienThiDanhSach(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         req.setAttribute("dsSanPham", sanPhamRepo.getAll());
         req.getRequestDispatcher("/quanLySanPham.jsp").forward(req, resp);
     }
 
+    // [SP-TIM-KIEM] Bấm Tìm kiếm sản phẩm thì vào đâu?
+    // Đọc keyword và trangThai, gọi sanPhamRepo.search rồi gửi kết quả và bộ lọc về trang.
     private void timKiemSanPham(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String keyword = req.getParameter("keyword");
@@ -130,19 +121,15 @@ public class SanPhamServlet extends HttpServlet {
         req.getRequestDispatcher("/quanLySanPham.jsp").forward(req, resp);
     }
 
+    // [SP-THEM] Đoạn nào bắt đầu thêm sản phẩm?
+    // themSanPham gọi luuSanPham với themMoi=true để đi vào nhánh thêm.
     private void themSanPham(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
-        SanPham sp = docThongTinSanPham(req, null);
-        if (sp == null) {
-            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=invalid_data");
-            return;
-        }
-
-        boolean ok = luuSanPhamCoAnh(req, sp, true);
-        resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + (ok ? "add_ok" : "error"));
+        luuSanPham(req, resp, true);
     }
 
-    /** [SanPhamServlet-moFormSua] Lấy bản hiện có và danh sách cho form; đặt editSP/editCombo vào request để JSP mở hộp sửa. */
+    // [SP-MO-SUA] Bấm Sửa thì dữ liệu cũ và version lấy ở đâu?
+    // getOne đọc theo id, fingerprint tạo dấu trạng thái hiện tại để so lại khi bấm Lưu.
     private void moFormSua(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String maSP = req.getParameter("id");
@@ -157,24 +144,36 @@ public class SanPhamServlet extends HttpServlet {
         req.getRequestDispatcher("/quanLySanPham.jsp").forward(req, resp);
     }
 
+    // [SP-SUA] Bấm Lưu sau khi sửa sản phẩm thì vào đâu?
+    // capNhatSanPham gọi luuSanPham với themMoi=false để đi vào nhánh cập nhật.
     private void capNhatSanPham(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
-        String maSP = req.getParameter("maSP");
-        SanPham sp = docThongTinSanPham(req, maSP);
-        if (sp == null) {
-            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=invalid_data");
-            return;
-        }
-
-        try {
-            boolean ok = luuSanPhamCoAnh(req, sp, false);
-            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + (ok ? "update_ok" : "error"));
-        } catch (ConcurrentModificationException e) {
-            resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=stale");
-        }
+        luuSanPham(req, resp, false);
     }
 
-    // [SP-ANH] Dọn tệp mới nếu SQL từ chối lưu, kể cả khi form sửa đã cũ.
+    // [SP-LUU] Đoạn nào dùng chung cho thêm và sửa sản phẩm?
+    // luuSanPham gọi docThongTinSanPham để kiểm tra, rồi luuSanPhamCoAnh để lưu và trả thông báo.
+    private void luuSanPham(HttpServletRequest req, HttpServletResponse resp, boolean themMoi)
+            throws IOException, ServletException {
+        SanPham sp = docThongTinSanPham(req, req.getParameter("maSP"));
+        String thongBao = "invalid_data";
+        if (sp != null) {
+            try {
+                boolean thanhCong = luuSanPhamCoAnh(req, sp, themMoi);
+                thongBao = "error";
+                if (thanhCong) {
+                    if (themMoi) thongBao = "add_ok";
+                    else thongBao = "update_ok";
+                }
+            } catch (ConcurrentModificationException e) {
+                thongBao = "stale";
+            }
+        }
+        resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + thongBao);
+    }
+
+    // [SP-ANH] Đoạn nào lưu ảnh và gọi thêm hoặc cập nhật sản phẩm?
+    // AnhDanhMuc.luu nhận ảnh. themMoi quyết định gọi add hay update. Lưu thất bại thì finally dọn tệp mới.
     private boolean luuSanPhamCoAnh(HttpServletRequest req, SanPham sp, boolean themMoi)
             throws IOException, ServletException {
         String anhMoi = AnhDanhMuc.luu(req);
@@ -189,6 +188,8 @@ public class SanPhamServlet extends HttpServlet {
         }
     }
 
+    // [SP-XOA] Bấm Xóa sản phẩm thì code nào kiểm tra trước?
+    // isSanPhamUsed kiểm tra sản phẩm đã dùng trong combo hoặc hóa đơn. Chưa dùng thì mới gọi delete.
     private void xoaSanPham(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         String maSP = req.getParameter("id");
@@ -200,8 +201,9 @@ public class SanPhamServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/quan-ly-san-pham?msg=" + (ok ? "delete_ok" : "error"));
     }
 
-    // Đọc & kiểm tra dữ liệu sản phẩm từ form
-    /** [SanPhamServlet-docThongTinSanPham] Đọc tên, loại, đơn vị, giá, tồn kho, trạng thái. Kiểm tra bắt buộc, danh mục và giới hạn cột rồi tạo SanPham; sai trả null. */
+    // [SP-KIEM-TRA] Đoạn nào chặn giá hoặc tồn kho không hợp lệ?
+    // Giá là số nguyên dương. Tồn kho là số nguyên từ 0, lúc thêm để trống thì mặc định 0.
+    // Hàm cũng kiểm tra tên, loại, đơn vị và trạng thái trước khi tạo đối tượng SanPham.
     private SanPham docThongTinSanPham(HttpServletRequest req, String maSP) {
         try {
             String tenSP = req.getParameter("tenSP");
@@ -234,11 +236,12 @@ public class SanPhamServlet extends HttpServlet {
 
             BigDecimal giaBan = new BigDecimal(giaStr.trim());
             int soLuongTon;
-            if ((tonStr != null && !tonStr.trim().isEmpty())) {
+               if ((tonStr != null && !tonStr.trim().isEmpty())) {
                 soLuongTon = Integer.parseInt(tonStr.trim());
             } else {
                 soLuongTon = 0;
             }
+            // [SP-GIA-TON] Giá bằng 0 hoặc âm, hay tồn kho âm đều bị từ chối tại đây.
             if (giaBan.compareTo(BigDecimal.ZERO) <= 0 || soLuongTon < 0) {
                 return null;
             }

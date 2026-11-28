@@ -1,4 +1,6 @@
-/* THỐNG KÊ: CSS chỉ áp dụng trong trang báo cáo, dùng bảng màu CINEMAX. */
+/* [TK-CSS] Trình bày thống kê: tiêu đề -> bộ lọc -> chỉ tiêu -> biểu đồ -> bảng.
+ * Dữ liệu và chiều cao cột do ThongKeReport tính; CSS chỉ hiển thị.
+ */
 .thong-ke .content-area {
     max-width:1700px;
     width:100%;

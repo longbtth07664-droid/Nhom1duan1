@@ -1,5 +1,9 @@
 package repository;
 
+import util.DatabaseId;
+
+import jakarta.persistence.LockModeType;
+
 import entity.SanPham;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -10,26 +14,14 @@ import java.util.ConcurrentModificationException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-/* TRA CỨU HÀM: SanPhamRepository
- * JSP gửi form -> Servlet kiểm tra -> Repository đọc/ghi dữ liệu.
- * Ctrl+F "openSession(" để tìm phần xử lý.
- * Ctrl+F "getAll(" để tìm phần xử lý.
- * Ctrl+F "getAllDangKinhDoanh(" để tìm phần xử lý.
- * Ctrl+F "getOne(" để tìm phần xử lý.
- * Ctrl+F "search(" để tìm phần xử lý.
- * Ctrl+F "add(" để tìm phần xử lý.
- * Ctrl+F "update(" để tìm phần xử lý.
- * Ctrl+F "fingerprint(" để tìm phần xử lý.
- * Ctrl+F "isSanPhamUsed(" để tìm phần xử lý.
- * Ctrl+F "delete(" để tìm phần xử lý.
- */
+// Tra cứu chức năng: docs/TRA_CUU_COMBO_SAN_PHAM_THONG_KE.txt
 public class SanPhamRepository {
     protected Session openSession() {
         return HibernateConfig.getFACTORY().openSession();
     }
 
-    // Lấy toàn bộ sản phẩm (dùng cho trang Quản lý sản phẩm)
-    /** [SanPhamRepository-getAll] SELECT toàn bộ danh mục, sắp xếp theo mã. Session tự đóng khi ra khỏi try. */
+    // [SP-SQL-DANH-SACH] Câu truy vấn danh sách sản phẩm ở đâu?
+    // getAll lấy tất cả sản phẩm và ORDER BY sắp theo mã tăng dần.
     public List<SanPham> getAll() {
         try (Session session = openSession()) {
             return session.createQuery("SELECT sp FROM SanPham sp ORDER BY sp.maSP", SanPham.class).list();
@@ -38,7 +30,8 @@ public class SanPhamRepository {
         }
     }
 
-    // Lấy danh sách sản phẩm đang kinh doanh để đưa vào bảng chọn món khi tạo/sửa Combo
+    // [SP-DANG-BAN] Danh sách món đang kinh doanh để chọn khi tạo combo lấy ở đâu?
+    // getAllDangKinhDoanh lọc theo trangThai = Đang kinh doanh.
     public List<SanPham> getAllDangKinhDoanh() {
         try (Session session = openSession()) {
             return session.createQuery(
@@ -51,33 +44,35 @@ public class SanPhamRepository {
     }
 
     // Lấy 1 sản phẩm theo mã
-    /** [SanPhamRepository-getOne] Chuyển mã đầu vào sang số rồi tìm theo khóa chính. Không có bản ghi thì trả null. */
     public SanPham getOne(String maSP) {
+        Integer id = DatabaseId.parse(maSP);
         try (Session session = openSession()) {
-            return session.find(SanPham.class, util.DatabaseId.parse(maSP));
+            return session.find(SanPham.class, id);
         } catch (Exception e) {
             throw new IllegalStateException("Không tải được sản phẩm.", e);
         }
     }
 
-    // Tìm kiếm sản phẩm theo mã/tên và lọc theo trạng thái
-    /** [SanPhamRepository-search] Ghép điều kiện khi có từ khóa/trạng thái. setParameter truyền giá trị riêng để tránh ghép đầu vào vào SQL. */
+    // [SP-SQL-TIM] Đoạn nào tìm sản phẩm theo mã, tên hoặc loại?
+    // search dùng LIKE cho mã, tên và loại. Nếu chọn trạng thái cụ thể thì thêm điều kiện trạng thái.
     public List<SanPham> search(String keyword, String trangThai) {
         try (Session session = openSession()) {
             StringBuilder hql = new StringBuilder("SELECT sp FROM SanPham sp WHERE 1=1");
-            if (keyword != null && !keyword.trim().isEmpty()) {
+            boolean coTuKhoa = keyword != null && !keyword.trim().isEmpty();
+            boolean coTrangThai = trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equals(trangThai);
+            if (coTuKhoa) {
                 hql.append(" AND (cast(sp.maSP as string) LIKE :kw OR sp.tenSP LIKE :kw OR sp.loaiSP LIKE :kw)");
             }
-            if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equals(trangThai)) {
+            if (coTrangThai) {
                 hql.append(" AND sp.trangThai = :tt");
             }
             hql.append(" ORDER BY sp.maSP");
 
             org.hibernate.query.Query<SanPham> query = session.createQuery(hql.toString(), SanPham.class);
-            if (keyword != null && !keyword.trim().isEmpty()) {
+            if (coTuKhoa) {
                 query.setParameter("kw", "%" + keyword.trim() + "%");
             }
-            if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equals(trangThai)) {
+            if (coTrangThai) {
                 query.setParameter("tt", trangThai.trim());
             }
             return query.list();
@@ -86,17 +81,16 @@ public class SanPhamRepository {
         }
     }
 
-    // Thêm sản phẩm mới
-    /** [SanPhamRepository-add] Đặt ID null để SQL Server tự tăng; persist ghi bản mới; commit xác nhận, rollback khi lỗi. */
+    // [SP-SQL-THEM] Dòng nào ghi sản phẩm mới và mã mới lấy từ đâu?
+    // Đặt maSP = null để SQL Server cấp mã tự tăng. persist đưa bản ghi mới vào giao dịch, commit xác nhận lưu.
     public boolean add(SanPham sp) {
-        Transaction tx = null;
         try (Session session = openSession()) {
-            tx = session.beginTransaction();
+            Transaction tx = session.beginTransaction();
             try {
-            sp.setMaSP(null);
-            session.persist(sp); // SQL Server cấp mã IDENTITY, không chèn mã từ form.
-            tx.commit();
-            return true;
+                sp.setMaSP(null);
+                session.persist(sp); // SQL Server cấp mã IDENTITY, không chèn mã từ form.
+                tx.commit();
+                return true;
             } catch (RuntimeException e) {
                 if (tx.isActive()) tx.rollback();
                 e.printStackTrace();
@@ -105,15 +99,16 @@ public class SanPhamRepository {
         }
     }
 
-    // Cập nhật sản phẩm
-    /** [SanPhamRepository-update] Tìm và khóa bản hiện có trước khi merge. Ngăn sửa bản đã bị xóa thành một bản mới. */
+    // [SP-SQL-SUA] Dòng nào cập nhật sản phẩm? Nếu không chọn ảnh mới thì sao?
+    // update khóa bản ghi, kiểm tra version rồi merge để cập nhật. Ảnh để trống thì dùng tên ảnh đang lưu.
     public boolean update(SanPham sp, String version) {
         Transaction tx = null;
         try (Session session = openSession()) {
             tx = session.beginTransaction();
             try {
-                SanPham existing = session.find(SanPham.class, sp.getMaSP(), jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-                // [SP-CHONG-GHI-DE] So sánh bản lúc mở form với bản mới nhất khi đã khóa dòng.
+                SanPham existing = session.find(SanPham.class, sp.getMaSP(), LockModeType.PESSIMISTIC_WRITE);
+                // [SP-CHONG-GHI-DE] Kho đã đổi khi đang mở form thì đoạn nào chặn ghi đè?
+                // Tồn kho nằm trong fingerprint. Dấu mới khác version trên form thì báo dữ liệu đã thay đổi.
                 if (existing == null || !fingerprint(existing).equals(version)) {
                     throw new ConcurrentModificationException("Sản phẩm đã thay đổi hoặc đã bị xóa.");
                 }
@@ -133,7 +128,8 @@ public class SanPhamRepository {
         }
     }
 
-    /** Dấu dữ liệu của form sửa, gồm cả tồn kho để phát hiện bán hàng trong lúc mở form. */
+    // [SP-PHIEN-BAN] Dấu version của sản phẩm được tạo từ đâu?
+    // fingerprint ghép độ dài và giá trị của các trường, gồm tồn kho và ảnh, rồi biểu diễn bằng Base64.
     public String fingerprint(SanPham sp) {
         StringBuilder data = new StringBuilder();
         String[] fields = {sp.getMaSP().toString(), sp.getGiaBan().toPlainString(),
@@ -148,55 +144,45 @@ public class SanPhamRepository {
     }
 
     // Kiểm tra sản phẩm đã nằm trong Combo hoặc Hóa đơn chưa (tránh lỗi khóa ngoại khi xóa)
-    /** [SanPhamRepository-isSanPhamUsed] Đếm tham chiếu trong ChiTietCombo và ChiTietHoaDon. Có ít nhất một tham chiếu thì không cho xóa. */
     public boolean isSanPhamUsed(String maSP) {
-        Integer productId = util.DatabaseId.parse(maSP);
+        Integer productId = DatabaseId.parse(maSP);
         try (Session session = openSession()) {
-            Object cntCombo = session.createNativeQuery("SELECT COUNT(*) FROM ChiTietCombo WHERE MaSP = :ma")
-                    .setParameter("ma", productId).uniqueResult();
-            Object cntHD = session.createNativeQuery("SELECT COUNT(*) FROM ChiTietHoaDon WHERE MaSP = :ma")
-                    .setParameter("ma", productId).uniqueResult();
-            int c1;
-            if ((cntCombo != null)) {
-                c1 = ((Number) cntCombo).intValue();
-            } else {
-                c1 = 0;
-            }
-            int c2;
-            if ((cntHD != null)) {
-                c2 = ((Number) cntHD).intValue();
-            } else {
-                c2 = 0;
-            }
-            return (c1 + c2) > 0;
+            return demSoLanSuDung(session, productId) > 0;
         } catch (Exception e) {
             throw new IllegalStateException("Không kiểm tra được sản phẩm đã được sử dụng hay chưa.", e);
         }
     }
 
-    // Xóa sản phẩm
-    /** [SanPhamRepository-delete] Kiểm tra dữ liệu tham chiếu trước khi xóa. Các bước ghi cùng giao dịch để lỗi không để lại dữ liệu dở dang. */
+    // [SP-SQL-XOA] Dòng nào xóa sản phẩm trong cơ sở dữ liệu?
+    // delete khóa dòng và kiểm tra lại tham chiếu trong giao dịch. Đủ điều kiện thì remove rồi commit.
     public boolean delete(String maSP) {
-        Integer productId = util.DatabaseId.parse(maSP);
+        Integer productId = DatabaseId.parse(maSP);
         Transaction tx = null;
         try (Session session = openSession()) {
             tx = session.beginTransaction();
             try {
-            SanPham sp = session.find(SanPham.class, productId, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-            if (sp == null) throw new IllegalArgumentException("Sản phẩm không còn tồn tại.");
-            Number used = (Number) session.createNativeQuery(
-                "SELECT (SELECT COUNT_BIG(*) FROM ChiTietCombo WHERE MaSP=:ma) "
-                + "+ (SELECT COUNT_BIG(*) FROM ChiTietHoaDon WHERE MaSP=:ma)")
-                .setParameter("ma", productId).uniqueResult();
-            if (used.longValue() > 0) throw new IllegalArgumentException("Sản phẩm đã được sử dụng.");
-            session.remove(sp);
-            tx.commit();
-            return true;
+                SanPham sp = session.find(SanPham.class, productId, LockModeType.PESSIMISTIC_WRITE);
+                if (sp == null) throw new IllegalArgumentException("Sản phẩm không còn tồn tại.");
+                if (demSoLanSuDung(session, productId) > 0)
+                    throw new IllegalArgumentException("Sản phẩm đã được sử dụng.");
+                session.remove(sp);
+                tx.commit();
+                return true;
             } catch (RuntimeException e) {
                 if (tx.isActive()) tx.rollback();
                 e.printStackTrace();
                 return false;
             }
         }
+    }
+
+    // [SP-DA-SU-DUNG] Vì sao sản phẩm nằm trong combo hoặc hóa đơn thì không xóa được?
+    // Hàm đếm theo MaSP trong ChiTietCombo và ChiTietHoaDon. Tổng lớn hơn 0 nghĩa là còn nơi sử dụng.
+    private long demSoLanSuDung(Session session, Integer maSP) {
+        Number count = (Number) session.createNativeQuery(
+                "SELECT (SELECT COUNT_BIG(*) FROM ChiTietCombo WHERE MaSP=:ma) "
+                + "+ (SELECT COUNT_BIG(*) FROM ChiTietHoaDon WHERE MaSP=:ma)")
+                .setParameter("ma", maSP).uniqueResult();
+        return count.longValue();
     }
 }

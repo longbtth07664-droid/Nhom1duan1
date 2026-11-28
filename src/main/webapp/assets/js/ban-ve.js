@@ -1,11 +1,11 @@
 /* ============================================================================
  * FILE: assets/js/ban-ve.js
- * MỤC ĐÍCH: Xử lý logic chọn ghế, tính tiền realtime và tăng giảm combo
+ * MỤC ĐÍCH: Xử lý logic chọn ghế, tính tiền realtime, chọn combo & sản phẩm bán lẻ
  * ============================================================================ */
 
 const POS_STATE = {
     selectedSeats: [],  // [{ maGhe, tenGhe, loaiGhe, gia }]
-    selectedCombos: {}, // { [maCombo]: { maCombo, tenCombo, gia, soLuong } }
+    selectedCombos: {}, // { [itemKey]: { itemKey, maCombo, maSP, tenCombo, gia, soLuong, isProduct } }
     basePrice: 0
 };
 
@@ -17,15 +17,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     initStoredState();
     renderCart();
+
+    // Bảo vệ bước 3: Nếu vào bước 3 (chọn combo/bắp nước) mà chưa có ghế ngồi -> Tự động quay lại bước 2
+    if (window.location.search.includes('step=3')) {
+        const storedSeats = sessionStorage.getItem('pos_selected_seats');
+        if (!storedSeats || JSON.parse(storedSeats).length === 0) {
+            alert('⚠️ Quý khách/Thu ngân chưa chọn ghế ngồi! Vui lòng chọn ghế trước khi chọn bắp nước.');
+            goToStep(2);
+        }
+    }
 });
 
 /**
- * 1. Chuyển bước
+ * 1. Chuyển bước trong quy trình POS
  */
 function goToStep(step) {
     const params = new URLSearchParams(window.location.search);
     params.set('step', step);
     window.location.href = window.location.pathname + '?' + params.toString();
+}
+
+/**
+ * Kiểm tra bắt buộc phải chọn ghế trước khi sang bước Chọn Combo
+ */
+function proceedToCombo(nextUrl) {
+    if (!POS_STATE.selectedSeats || POS_STATE.selectedSeats.length === 0) {
+        alert('⚠️ Vui lòng click chọn ít nhất 1 ghế ngồi trên sơ đồ trước khi tiếp tục!');
+        return false;
+    }
+    window.location.href = nextUrl;
+    return true;
 }
 
 /**
@@ -56,31 +77,91 @@ function toggleSeat(seatEl) {
 }
 
 /**
- * 3. Tăng / Giảm số lượng Combo bắp nước
+ * 3. Xử lý tăng / giảm số lượng Combo & Sản phẩm bán lẻ dùng chung
  */
-function changeComboQty(maCombo, tenCombo, gia, delta) {
-    if (!POS_STATE.selectedCombos[maCombo]) {
-        POS_STATE.selectedCombos[maCombo] = {
-            maCombo: maCombo,
-            tenCombo: tenCombo,
+function changeItemQty(key, id, ten, gia, isProduct, delta) {
+    if (!POS_STATE.selectedCombos[key]) {
+        POS_STATE.selectedCombos[key] = {
+            itemKey: key,
+            maCombo: isProduct ? null : parseInt(id),
+            maSP: isProduct ? parseInt(id) : null,
+            tenCombo: ten,
             gia: parseFloat(gia) || 0,
-            soLuong: 0
+            soLuong: 0,
+            isProduct: !!isProduct
         };
     }
 
-    POS_STATE.selectedCombos[maCombo].soLuong += delta;
+    POS_STATE.selectedCombos[key].soLuong += delta;
 
-    if (POS_STATE.selectedCombos[maCombo].soLuong <= 0) {
-        delete POS_STATE.selectedCombos[maCombo];
+    if (POS_STATE.selectedCombos[key].soLuong <= 0) {
+        delete POS_STATE.selectedCombos[key];
     }
 
-    const counterEl = document.getElementById('combo-qty-' + maCombo);
-    if (counterEl) {
-        counterEl.textContent = POS_STATE.selectedCombos[maCombo] ? POS_STATE.selectedCombos[maCombo].soLuong : 0;
-    }
-
+    updateItemCounterUI(key);
     sessionStorage.setItem('pos_selected_combos', JSON.stringify(POS_STATE.selectedCombos));
     renderCart();
+}
+
+function updateItemCounterUI(key) {
+    const qty = POS_STATE.selectedCombos[key] ? POS_STATE.selectedCombos[key].soLuong : 0;
+    const el = document.getElementById('item-qty-' + key);
+    if (el) el.textContent = qty;
+
+    if (key.startsWith('combo_')) {
+        const legacyEl = document.getElementById('combo-qty-' + key.replace('combo_', ''));
+        if (legacyEl) legacyEl.textContent = qty;
+    }
+}
+
+/**
+ * Tăng / giảm gói Combo
+ */
+function changeComboQty(maCombo, tenCombo, gia, delta) {
+    changeItemQty('combo_' + maCombo, maCombo, tenCombo, gia, false, delta);
+}
+
+/**
+ * Tăng / giảm sản phẩm bán lẻ (Bắp / Nước ngọt / Đồ ăn vặt)
+ */
+function changeSanPhamQty(maSP, tenSP, gia, delta) {
+    changeItemQty('sp_' + maSP, maSP, tenSP, gia, true, delta);
+}
+
+/**
+ * Tìm kiếm nhanh combo & sản phẩm bán lẻ theo từ khóa
+ */
+function searchFnbItems(query) {
+    const q = (query || '').toLowerCase().trim();
+    const cards = document.querySelectorAll('.combo-card[data-search]');
+    let countComboVisible = 0;
+    let countSpVisible = 0;
+
+    cards.forEach(card => {
+        const searchText = (card.getAttribute('data-search') || '').toLowerCase();
+        const matches = !q || searchText.includes(q);
+        card.style.display = matches ? '' : 'none';
+
+        if (matches) {
+            if (card.classList.contains('is-combo-item')) countComboVisible++;
+            if (card.classList.contains('is-sp-item')) countSpVisible++;
+        }
+    });
+
+    // Ẩn/hiện tiêu đề mục nếu không có kết quả phù hợp
+    const secCombos = document.getElementById('sectionCombos');
+    const secProducts = document.getElementById('sectionProducts');
+    const noResultMsg = document.getElementById('fnbNoResultMsg');
+
+    if (secCombos) {
+        secCombos.style.display = (countComboVisible > 0 || !q) ? 'block' : 'none';
+    }
+    if (secProducts) {
+        secProducts.style.display = (countSpVisible > 0 || !q) ? 'block' : 'none';
+    }
+    if (noResultMsg) {
+        noResultMsg.style.display = (q && countComboVisible === 0 && countSpVisible === 0) ? 'block' : 'none';
+    }
 }
 
 /**
@@ -101,12 +182,21 @@ function initStoredState() {
 
         const storedCombos = sessionStorage.getItem('pos_selected_combos');
         if (storedCombos) {
-            POS_STATE.selectedCombos = JSON.parse(storedCombos);
-            Object.values(POS_STATE.selectedCombos).forEach(c => {
-                const counterEl = document.getElementById('combo-qty-' + c.maCombo);
-                if (counterEl) {
-                    counterEl.textContent = c.soLuong;
-                }
+            const parsed = JSON.parse(storedCombos);
+            // Chuẩn hóa dữ liệu cũ nếu lưu theo maCombo trực tiếp
+            Object.keys(parsed).forEach(k => {
+                const item = parsed[k];
+                const key = item.itemKey || (k.startsWith('combo_') || k.startsWith('sp_') ? k : ('combo_' + (item.maCombo || k)));
+                POS_STATE.selectedCombos[key] = {
+                    itemKey: key,
+                    maCombo: item.maCombo !== undefined ? item.maCombo : (!item.isProduct ? parseInt(k) : null),
+                    maSP: item.maSP !== undefined ? item.maSP : (item.isProduct ? parseInt(k) : null),
+                    tenCombo: item.tenCombo || item.ten || '',
+                    gia: parseFloat(item.gia) || 0,
+                    soLuong: parseInt(item.soLuong) || 0,
+                    isProduct: !!item.isProduct
+                };
+                updateItemCounterUI(key);
             });
         }
     } catch (e) {
@@ -123,7 +213,6 @@ function renderCart() {
     const seatTotalText = document.getElementById('cartSeatTotalText');
     const combosListEl = document.getElementById('cartCombosList');
     const totalAmountEl = document.getElementById('cartTotalAmount');
-    const btnNextStep = document.getElementById('btnNextStep');
 
     let totalTienVe = 0;
     let totalTienCombo = 0;
@@ -148,20 +237,23 @@ function renderCart() {
         }
     }
 
-    // B. Cập nhật Combo đã chọn
+    // B. Cập nhật Combo & Sản phẩm lẻ đã chọn
     if (combosListEl) {
-        const comboKeys = Object.keys(POS_STATE.selectedCombos);
-        if (comboKeys.length === 0) {
-            combosListEl.innerHTML = '<div style="color:#94a3b8; font-size:12px; font-style:italic;">Chưa chọn combo bắp nước</div>';
+        const itemKeys = Object.keys(POS_STATE.selectedCombos);
+        if (itemKeys.length === 0) {
+            combosListEl.innerHTML = '<div style="color:#94a3b8; font-size:12px; font-style:italic;">Chưa chọn bắp nước / combo</div>';
         } else {
             let html = '';
-            comboKeys.forEach(k => {
+            itemKeys.forEach(k => {
                 const c = POS_STATE.selectedCombos[k];
                 const subTotal = c.gia * c.soLuong;
                 totalTienCombo += subTotal;
+                const badge = c.isProduct
+                    ? '<span style="font-size:10px; background:#e0f2fe; color:#0369a1; padding:1px 5px; border-radius:4px; margin-right:4px; font-weight:600;">Lẻ</span>'
+                    : '<span style="font-size:10px; background:#fce7f3; color:#db2777; padding:1px 5px; border-radius:4px; margin-right:4px; font-weight:600;">Combo</span>';
                 html += `
                     <div class="cart-line-row">
-                        <span class="label-light"><strong>${c.soLuong}x</strong> ${c.tenCombo}:</span>
+                        <span class="label-light"><strong>${c.soLuong}x</strong> ${badge}${c.tenCombo}:</span>
                         <span class="value-bold">${formatVND(subTotal)}</span>
                     </div>
                 `;
@@ -176,21 +268,26 @@ function renderCart() {
         totalAmountEl.textContent = formatVND(grandTotal);
     }
 
-    // D. Nút chuyển tiếp
-    if (btnNextStep) {
-        const currentStep = parseInt(btnNextStep.dataset.currentStep) || 1;
-        if (currentStep === 2 && POS_STATE.selectedSeats.length === 0) {
-            btnNextStep.disabled = true;
-            btnNextStep.style.opacity = '0.5';
-            btnNextStep.style.cursor = 'not-allowed';
-            btnNextStep.title = 'Vui lòng chọn ít nhất 1 ghế để tiếp tục';
-        } else {
-            btnNextStep.disabled = false;
-            btnNextStep.style.opacity = '1';
-            btnNextStep.style.cursor = 'pointer';
-            btnNextStep.title = '';
+    // D. Nút chuyển tiếp sang bước 3 (Kiểm tra ghế)
+    const hasSeats = POS_STATE.selectedSeats && POS_STATE.selectedSeats.length > 0;
+    const btnStep2Combo = document.getElementById('btnContinueToCombo');
+    const btnCartCombo = document.getElementById('btnCartProceedToCombo');
+
+    [btnStep2Combo, btnCartCombo].forEach(btn => {
+        if (btn) {
+            if (!hasSeats) {
+                btn.classList.add('disabled-btn');
+                btn.style.opacity = '0.55';
+                btn.style.cursor = 'not-allowed';
+                btn.title = 'Vui lòng chọn ít nhất 1 ghế ngồi trên sơ đồ để tiếp tục';
+            } else {
+                btn.classList.remove('disabled-btn');
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.title = '';
+            }
         }
-    }
+    });
 }
 
 function formatVND(number) {
