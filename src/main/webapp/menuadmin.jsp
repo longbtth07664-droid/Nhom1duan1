@@ -77,6 +77,11 @@
             <span>Quản lí combo</span>
         </a>
 
+        <%-- 9.5 Khuyến mãi & Mã giảm giá --%>
+        <a href="${pageContext.request.contextPath}/quan-ly-khuyen-mai" class="nav-item">
+            <span>Quản lí khuyến mãi</span>
+        </a>
+
         <%-- 10. Khách hàng thành viên --%>
         <a href="${pageContext.request.contextPath}/khach-hang/view" class="nav-item">
             <span>Quản lí khách hàng</span>

@@ -193,7 +193,16 @@ public class SuatChieuServlet extends HttpServlet {
         req.setAttribute("totalItems", totalItems);
         req.setAttribute("fromIndex", totalItems > 0 ? (fromIndex + 1) : 0);
         req.setAttribute("toIndex", toIndex);
-        req.setAttribute("listPhim", phimRepo.getAll());
+        List<Phim> allPhim = phimRepo.getAll();
+        List<Phim> listPhimDangChieu = new java.util.ArrayList<>();
+        for (Phim p : allPhim) {
+            if (p.getTrangThai() != null && "Đang chiếu".equalsIgnoreCase(p.getTrangThai().trim())) {
+                listPhimDangChieu.add(p);
+            }
+        }
+
+        req.setAttribute("listPhim", allPhim);
+        req.setAttribute("listPhimDangChieu", listPhimDangChieu);
         req.setAttribute("listPhong", phongChieuRepo.getAll());
 
         req.setAttribute("statTotal", total);
@@ -294,6 +303,13 @@ public class SuatChieuServlet extends HttpServlet {
                 error = "Phim đã chọn không tồn tại!";
             } else if (phong == null) {
                 error = "Phòng chiếu đã chọn không tồn tại!";
+            } else {
+                String ttPhim = phim.getTrangThai() != null ? phim.getTrangThai().trim() : "";
+                if (!"Đang chiếu".equalsIgnoreCase(ttPhim)) {
+                    error = "Không thể xếp suất chiếu cho phim '" + phim.getTenPhim()
+                            + "' vì phim đang ở trạng thái [" + (ttPhim.isEmpty() ? "Không xác định" : ttPhim)
+                            + "]. Chỉ được chọn phim Đang chiếu!";
+                }
             }
         }
 

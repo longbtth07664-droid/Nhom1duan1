@@ -236,13 +236,18 @@ public class HoaDonRepository {
      */
     public int taoHoaDonThanhToan(int maTK, String maKH, BigDecimal tongTien, BigDecimal tienGiam,
                                   String phuongThuc, List<Ve> listVe, List<ChiTietHoaDon> listCombo) {
-        return taoHoaDonThanhToan(maTK, maKH, tongTien, tienGiam, phuongThuc, listVe, listCombo, false);
+        return taoHoaDonThanhToan(maTK, maKH, null, tongTien, tienGiam, phuongThuc, listVe, listCombo, false);
+    }
+
+    public int taoHoaDonThanhToan(int maTK, String maKH, BigDecimal tongTien, BigDecimal tienGiam,
+                                  String phuongThuc, List<Ve> listVe, List<ChiTietHoaDon> listCombo, boolean isPending) {
+        return taoHoaDonThanhToan(maTK, maKH, null, tongTien, tienGiam, phuongThuc, listVe, listCombo, isPending);
     }
 
     /**
-     * Tạo hóa đơn với tùy chọn Lưu tạm (Chờ thanh toán) hoặc Hoàn tất ngay
+     * Tạo hóa đơn với tùy chọn Lưu tạm (Chờ thanh toán) hoặc Hoàn tất ngay, hỗ trợ lưu Mã Khuyến Mãi (MaKM)
      */
-    public int taoHoaDonThanhToan(int maTK, String maKH, BigDecimal tongTien, BigDecimal tienGiam,
+    public int taoHoaDonThanhToan(int maTK, String maKH, Integer maKM, BigDecimal tongTien, BigDecimal tienGiam,
                                   String phuongThuc, List<Ve> listVe, List<ChiTietHoaDon> listCombo, boolean isPending) {
         Connection conn = null;
         int generatedMaDatVe = -1;
@@ -257,14 +262,17 @@ public class HoaDonRepository {
 
             boolean hasMaKH = checkColumnExists(conn, "HoaDon", "MaKH");
             boolean hasTienGiam = checkColumnExists(conn, "HoaDon", "TienGiam");
+            boolean hasMaKM = checkColumnExists(conn, "HoaDon", "MaKM");
 
             // 1. Insert vào HoaDon
             StringBuilder insertHd = new StringBuilder("INSERT INTO HoaDon (MaTK, NgayDat, TongTien");
             if (hasTienGiam) insertHd.append(", TienGiam");
             if (hasMaKH && maKH != null && !maKH.trim().isEmpty()) insertHd.append(", MaKH");
+            if (hasMaKM && maKM != null && maKM > 0) insertHd.append(", MaKM");
             insertHd.append(", TrangThai) VALUES (?, ?, ?");
             if (hasTienGiam) insertHd.append(", ?");
             if (hasMaKH && maKH != null && !maKH.trim().isEmpty()) insertHd.append(", ?");
+            if (hasMaKM && maKM != null && maKM > 0) insertHd.append(", ?");
             insertHd.append(", ?)");
 
             try (PreparedStatement psHd = conn.prepareStatement(insertHd.toString(), Statement.RETURN_GENERATED_KEYS)) {
@@ -277,6 +285,9 @@ public class HoaDonRepository {
                 }
                 if (hasMaKH && maKH != null && !maKH.trim().isEmpty()) {
                     psHd.setString(col++, maKH.trim());
+                }
+                if (hasMaKM && maKM != null && maKM > 0) {
+                    psHd.setInt(col++, maKM);
                 }
                 psHd.setString(col++, trangThaiHD);
 
@@ -450,20 +461,28 @@ public class HoaDonRepository {
      */
     public KhachHang timKhachHangTheoSDT(String sdt) {
         if (sdt == null || sdt.trim().isEmpty()) return null;
-        String sql = "SELECT MaKH, HoTen, SDT, DiemTichLuy, GioiTinh FROM KhachHang WHERE SDT = ? OR MaKH = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, sdt.trim());
-            ps.setString(2, sdt.trim());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    KhachHang kh = new KhachHang();
-                    kh.setMaKH(rs.getString("MaKH"));
-                    kh.setHoTen(rs.getString("HoTen"));
-                    kh.setSdt(rs.getString("SDT"));
-                    kh.setDiemTichLuy(rs.getInt("DiemTichLuy"));
-                    kh.setGioiTinh(rs.getString("GioiTinh"));
-                    return kh;
+        try (Connection conn = getConnection()) {
+            boolean hasNgaySinh = checkColumnExists(conn, "KhachHang", "NgaySinh");
+            String sql = hasNgaySinh
+                    ? "SELECT MaKH, HoTen, SDT, DiemTichLuy, GioiTinh, NgaySinh FROM KhachHang WHERE SDT = ? OR MaKH = ?"
+                    : "SELECT MaKH, HoTen, SDT, DiemTichLuy, GioiTinh FROM KhachHang WHERE SDT = ? OR MaKH = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, sdt.trim());
+                ps.setString(2, sdt.trim());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        KhachHang kh = new KhachHang();
+                        kh.setMaKH(rs.getString("MaKH"));
+                        kh.setHoTen(rs.getString("HoTen"));
+                        kh.setSdt(rs.getString("SDT"));
+                        kh.setDiemTichLuy(rs.getInt("DiemTichLuy"));
+                        kh.setGioiTinh(rs.getString("GioiTinh"));
+                        if (hasNgaySinh) {
+                            java.sql.Date ns = rs.getDate("NgaySinh");
+                            if (ns != null) kh.setNgaySinh(ns.toLocalDate());
+                        }
+                        return kh;
+                    }
                 }
             }
         } catch (Exception e) {

@@ -654,8 +654,52 @@
                         </div>
                     </div>
 
+                    <!-- MÃ GIẢM GIÁ / KHUYẾN MÃI TẠI QUẦY -->
+                    <div style="margin-top:18px; padding:14px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:800; color:#0f172a;">
+                                🎟️ MÃ GIẢM GIÁ / KHUYẾN MÃI
+                            </span>
+                            <span style="font-size:11px; color:#64748b;">Theo giờ chiếu / Độ tuổi / Ngày</span>
+                        </div>
+
+                        <c:if test="${not empty activeVouchers}">
+                            <select id="voucherQuickSelect" class="member-input"
+                                    style="width:100%; height:36px; background:#fff; font-size:12px; font-weight:600; color:#0f172a; margin-bottom:8px; border:1px solid var(--border-strong); box-sizing:border-box;"
+                                    onchange="onQuickSelectVoucher(this.value)">
+                                <option value="">-- Chọn nhanh chương trình khuyến mãi đang chạy --</option>
+                                <c:forEach items="${activeVouchers}" var="km">
+                                    <option value="${km.maCode}">
+                                        [${km.maCode}] ${km.tenKM} (-${km.phanTramGiam.intValue()}%)
+                                    </option>
+                                </c:forEach>
+                            </select>
+                        </c:if>
+
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <input type="text" id="voucherCodeInput" class="member-input"
+                                   style="flex:1; height:38px; background:#fff; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;"
+                                   placeholder="Nhập mã (VD: U22_STUDENT, EARLY_BIRD)...">
+                            <input type="number" id="voucherBirthYear" class="member-input"
+                                   style="width:110px; height:38px; background:#fff; font-size:12px;"
+                                   placeholder="Năm sinh" title="Nhập năm sinh trên CCCD/Thẻ HSSV nếu là khách lẻ">
+                            <button type="button" id="btnApplyVoucher" class="btn btn-pink"
+                                    style="height:38px; padding:0 14px; font-size:12.5px; font-weight:700; white-space:nowrap;"
+                                    onclick="applyVoucherCode()">
+                                Áp dụng
+                            </button>
+                            <button type="button" id="btnRemoveVoucher" class="btn btn-outline"
+                                    style="display:none; height:38px; padding:0 12px; font-size:12px; color:#dc2626; border-color:#fecaca; white-space:nowrap;"
+                                    onclick="removeVoucher()">
+                                Gỡ mã
+                            </button>
+                        </div>
+
+                        <div id="voucherStatusMsg" style="display:none; margin-top:8px; font-size:12px; font-weight:600; padding:8px 10px; border-radius:8px;"></div>
+                    </div>
+
                     <!-- TỔNG KẾT TIỀN ĐƠN HÀNG -->
-                    <div class="order-sum-box" style="margin-top:20px;">
+                    <div class="order-sum-box" style="margin-top:16px;">
                         <div class="sum-line">
                             <span>Tạm tính tiền vé:</span>
                             <span id="sumTicket">0 đ</span>
@@ -665,7 +709,7 @@
                             <span id="sumCombo">0 đ</span>
                         </div>
                         <div class="sum-line" id="discountRow" style="display:none; color:#16a34a;">
-                            <span>Giảm giá (Điểm tích lũy):</span>
+                            <span id="discountLabel">Giảm giá:</span>
                             <span id="sumDiscount">-0 đ</span>
                         </div>
                         <div class="sum-line total">
@@ -801,6 +845,10 @@
         ticketTotal: 0,
         comboTotal: 0,
         discount: 0,
+        pointDiscount: 0,
+        voucherDiscount: 0,
+        maKM: null,
+        voucherCode: null,
         grandTotal: 0,
         customer: null,
         maSuat: ${selectedSuat != null ? selectedSuat.maSuat : 1}
@@ -926,6 +974,7 @@
 
     function updateTotals() {
         const rawTotal = CHECKOUT_STATE.ticketTotal + CHECKOUT_STATE.comboTotal;
+        CHECKOUT_STATE.discount = Math.min(rawTotal, (CHECKOUT_STATE.pointDiscount || 0) + (CHECKOUT_STATE.voucherDiscount || 0));
         CHECKOUT_STATE.grandTotal = Math.max(0, rawTotal - CHECKOUT_STATE.discount);
 
         document.getElementById('sumTicket').textContent = formatVND(CHECKOUT_STATE.ticketTotal);
@@ -933,8 +982,16 @@
         document.getElementById('sumGrandTotal').textContent = formatVND(CHECKOUT_STATE.grandTotal);
 
         const discountRow = document.getElementById('discountRow');
+        const discountLabel = document.getElementById('discountLabel');
         if (CHECKOUT_STATE.discount > 0) {
             discountRow.style.display = 'flex';
+            if (CHECKOUT_STATE.voucherDiscount > 0 && CHECKOUT_STATE.pointDiscount > 0) {
+                discountLabel.textContent = 'Giảm giá (Voucher ' + CHECKOUT_STATE.voucherCode + ' + Điểm):';
+            } else if (CHECKOUT_STATE.voucherDiscount > 0) {
+                discountLabel.textContent = 'Giảm giá (Voucher ' + CHECKOUT_STATE.voucherCode + '):';
+            } else {
+                discountLabel.textContent = 'Giảm giá (Điểm tích lũy):';
+            }
             document.getElementById('sumDiscount').textContent = '-' + formatVND(CHECKOUT_STATE.discount);
         } else {
             discountRow.style.display = 'none';
@@ -1058,7 +1115,7 @@
 
     function clearSelectedCustomer() {
         CHECKOUT_STATE.customer = null;
-        CHECKOUT_STATE.discount = 0;
+        CHECKOUT_STATE.pointDiscount = 0;
         const resCard = document.getElementById('memberResultCard');
         if (resCard) resCard.style.display = 'none';
         const newBox = document.getElementById('newMemberBox');
@@ -1162,14 +1219,106 @@
 
     function toggleUsePoints(use) {
         if (!use || !CHECKOUT_STATE.customer) {
-            CHECKOUT_STATE.discount = 0;
+            CHECKOUT_STATE.pointDiscount = 0;
         } else {
             // 1 điểm = 1.000 đ, tối đa 50% đơn hàng
             const maxAllowed = (CHECKOUT_STATE.ticketTotal + CHECKOUT_STATE.comboTotal) * 0.5;
             const pointValue = (CHECKOUT_STATE.customer.diemTichLuy || 0) * 1000;
-            CHECKOUT_STATE.discount = Math.min(maxAllowed, pointValue);
+            CHECKOUT_STATE.pointDiscount = Math.min(maxAllowed, pointValue);
         }
         updateTotals();
+    }
+
+    function onQuickSelectVoucher(code) {
+        const input = document.getElementById('voucherCodeInput');
+        if (input && code) {
+            input.value = code;
+            applyVoucherCode();
+        }
+    }
+
+    function applyVoucherCode() {
+        const codeInput = document.getElementById('voucherCodeInput');
+        const statusEl = document.getElementById('voucherStatusMsg');
+        const code = codeInput ? codeInput.value.trim() : '';
+
+        if (!code) {
+            showVoucherStatus(false, 'Vui lòng nhập hoặc chọn mã khuyến mãi!');
+            if (codeInput) codeInput.focus();
+            return;
+        }
+
+        const rawTotal = CHECKOUT_STATE.ticketTotal + CHECKOUT_STATE.comboTotal;
+        const seatsCount = CHECKOUT_STATE.selectedSeats ? CHECKOUT_STATE.selectedSeats.length : 1;
+        const sdt = (CHECKOUT_STATE.customer && CHECKOUT_STATE.customer.sdt)
+            ? CHECKOUT_STATE.customer.sdt
+            : (document.getElementById('memberPhone') ? document.getElementById('memberPhone').value.trim() : '');
+        const namSinh = document.getElementById('voucherBirthYear') ? document.getElementById('voucherBirthYear').value.trim() : '';
+
+        const url = '${pageContext.request.contextPath}/thanh-toan?action=applyVoucher'
+            + '&code=' + encodeURIComponent(code)
+            + '&maSuat=' + encodeURIComponent(CHECKOUT_STATE.maSuat)
+            + '&sdt=' + encodeURIComponent(sdt)
+            + '&namSinh=' + encodeURIComponent(namSinh)
+            + '&tongTien=' + encodeURIComponent(rawTotal)
+            + '&seatsCount=' + encodeURIComponent(seatsCount);
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    CHECKOUT_STATE.maKM = data.maKM;
+                    CHECKOUT_STATE.voucherCode = data.maCode;
+                    CHECKOUT_STATE.voucherDiscount = parseFloat(data.tienGiam) || 0;
+                    showVoucherStatus(true, data.message || ('Áp dụng mã ' + data.maCode + ' thành công!'));
+                    const btnRemove = document.getElementById('btnRemoveVoucher');
+                    if (btnRemove) btnRemove.style.display = 'inline-flex';
+                } else {
+                    CHECKOUT_STATE.maKM = null;
+                    CHECKOUT_STATE.voucherCode = null;
+                    CHECKOUT_STATE.voucherDiscount = 0;
+                    showVoucherStatus(false, data.message || 'Mã giảm giá không hợp lệ!');
+                    const btnRemove = document.getElementById('btnRemoveVoucher');
+                    if (btnRemove) btnRemove.style.display = 'none';
+                }
+                updateTotals();
+            })
+            .catch(err => {
+                console.error(err);
+                showVoucherStatus(false, 'Lỗi kết nối khi kiểm tra mã giảm giá!');
+            });
+    }
+
+    function removeVoucher() {
+        CHECKOUT_STATE.maKM = null;
+        CHECKOUT_STATE.voucherCode = null;
+        CHECKOUT_STATE.voucherDiscount = 0;
+        const codeInput = document.getElementById('voucherCodeInput');
+        if (codeInput) codeInput.value = '';
+        const quickSelect = document.getElementById('voucherQuickSelect');
+        if (quickSelect) quickSelect.value = '';
+        const statusEl = document.getElementById('voucherStatusMsg');
+        if (statusEl) statusEl.style.display = 'none';
+        const btnRemove = document.getElementById('btnRemoveVoucher');
+        if (btnRemove) btnRemove.style.display = 'none';
+        updateTotals();
+    }
+
+    function showVoucherStatus(isSuccess, msg) {
+        const statusEl = document.getElementById('voucherStatusMsg');
+        if (!statusEl) return;
+        statusEl.style.display = 'block';
+        if (isSuccess) {
+            statusEl.style.background = '#dcfce7';
+            statusEl.style.color = '#166534';
+            statusEl.style.border = '1px solid #86efac';
+            statusEl.innerHTML = '<i class="fa-solid fa-circle-check" style="margin-right:6px;"></i>' + msg;
+        } else {
+            statusEl.style.background = '#fee2e2';
+            statusEl.style.color = '#991b1b';
+            statusEl.style.border = '1px solid #fca5a5';
+            statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="margin-right:6px;"></i>' + msg;
+        }
     }
 
     function executeCheckout() {
@@ -1231,6 +1380,7 @@
 
         const payload = {
             maSuat: CHECKOUT_STATE.maSuat,
+            maKM: CHECKOUT_STATE.maKM,
             sdt: phone,
             hoTen: hoTen,
             phuongThuc: CHECKOUT_STATE.currentMethod,
@@ -1324,6 +1474,7 @@
         const payload = {
             isPending: true,
             maSuat: CHECKOUT_STATE.maSuat,
+            maKM: CHECKOUT_STATE.maKM,
             sdt: phone,
             hoTen: hoTen,
             phuongThuc: CHECKOUT_STATE.currentMethod,

@@ -77,6 +77,16 @@ public class BanVeServlet extends HttpServlet {
             Phim p = sc.getPhim();
             if (p == null) continue;
 
+            // Chỉ hiển thị phim đang chiếu và suất chiếu chưa bị hủy/đóng bán
+            String ttPhim = p.getTrangThai() != null ? p.getTrangThai().trim() : "";
+            if (!"Đang chiếu".equalsIgnoreCase(ttPhim)) {
+                continue;
+            }
+            String ttSuat = sc.getTrangThai() != null ? sc.getTrangThai().trim() : "";
+            if ("Đã hủy".equalsIgnoreCase(ttSuat) || "Đã đóng bán".equalsIgnoreCase(ttSuat)) {
+                continue;
+            }
+
             // Nếu có từ khóa tìm kiếm tên phim thì lọc
             if (!kwLower.isEmpty() && !p.getTenPhim().toLowerCase().contains(kwLower)) {
                 continue;

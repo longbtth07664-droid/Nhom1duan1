@@ -5,6 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.LocalDate;
+import java.time.Period;
+
 // Thực thể ánh xạ bảng Khách hàng thành viên của rạp chiếu phim trong CSDL
 @Entity
 @Table(name = "KhachHang")
@@ -31,16 +34,33 @@ public class KhachHang {
     @Column(name = "GioiTinh", length = 10)
     private String gioiTinh;
 
-    // Khởi tạo đối tượng khách hàng rỗng theo yêu cầu bắt buộc của Hibernate
+    // Ngày sinh (phục vụ ưu đãi sinh nhật và phân loại độ tuổi HSSV / Trẻ em / Người cao tuổi)
+    @Column(name = "NgaySinh")
+    private LocalDate ngaySinh;
+
     public KhachHang() {}
 
-    // Khởi tạo đối tượng khách hàng với đầy đủ các thuộc tính thông tin
     public KhachHang(String maKH, String hoTen, String sdt, Integer diemTichLuy, String gioiTinh) {
         this.maKH = maKH;
         this.hoTen = hoTen;
         this.sdt = sdt;
         this.diemTichLuy = diemTichLuy != null ? diemTichLuy : 0;
         this.gioiTinh = gioiTinh;
+    }
+
+    public KhachHang(String maKH, String hoTen, String sdt, Integer diemTichLuy, String gioiTinh, LocalDate ngaySinh) {
+        this.maKH = maKH;
+        this.hoTen = hoTen;
+        this.sdt = sdt;
+        this.diemTichLuy = diemTichLuy != null ? diemTichLuy : 0;
+        this.gioiTinh = gioiTinh;
+        this.ngaySinh = ngaySinh;
+    }
+
+    // Tính tuổi khách hàng dựa trên ngày sinh
+    public int getTuoi() {
+        if (ngaySinh == null) return 0;
+        return Period.between(ngaySinh, LocalDate.now()).getYears();
     }
 
     // Tự động phân loại hạng thành viên của khách hàng dựa trên số điểm tích lũy
@@ -52,7 +72,7 @@ public class KhachHang {
         return "Chuẩn";
     }
 
-    // Các hàm getter và setter truy xuất dữ liệu thuộc tính
+    // Các hàm getter và setter
     public String getMaKH() { return maKH; }
     public void setMaKH(String maKH) { this.maKH = maKH; }
 
@@ -67,4 +87,7 @@ public class KhachHang {
 
     public String getGioiTinh() { return gioiTinh; }
     public void setGioiTinh(String gioiTinh) { this.gioiTinh = gioiTinh; }
+
+    public LocalDate getNgaySinh() { return ngaySinh; }
+    public void setNgaySinh(LocalDate ngaySinh) { this.ngaySinh = ngaySinh; }
 }

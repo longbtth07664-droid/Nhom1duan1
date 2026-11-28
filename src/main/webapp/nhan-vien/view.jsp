@@ -7,6 +7,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý nhân viên - Rạp Chiếu Phim CINEMAX</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cinema-theme.css?v=7">
+    <style>
+        .nv-modal-compact {
+            max-width: 640px !important;
+            width: 94vw !important;
+            padding: 18px 22px !important;
+        }
+        .nv-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 14px;
+        }
+        .nv-grid-2 .full-col {
+            grid-column: 1 / -1;
+        }
+        .nv-grid-2 .form-group {
+            margin-bottom: 0;
+        }
+        .nv-grid-2 .form-group label {
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .nv-grid-2 .form-control {
+            height: 36px;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+        @media (max-width: 600px) {
+            .nv-grid-2 { grid-template-columns: 1fr; }
+        }
+        .alert-error-box {
+            background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626;
+            padding: 9px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-bottom: 12px;
+        }
+        .alert-success-box {
+            background: #ECFDF5; border: 1px solid #A7F3D0; color: #047857;
+            padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 14px;
+        }
+    </style>
 </head>
 <body>
 <div class="app-shell">
@@ -36,6 +74,12 @@
         </header>
 
         <main class="content-area">
+            <c:if test="${param.msg == 'add_ok'}">
+                <div class="alert-success-box">Thêm nhân viên mới thành công!</div>
+            </c:if>
+            <c:if test="${param.msg == 'update_ok'}">
+                <div class="alert-success-box">Cập nhật thông tin nhân viên thành công!</div>
+            </c:if>
             <div class="card">
                 <div class="card-header">
                     <div>
@@ -109,59 +153,60 @@
 </div>
 
 <!-- ================= MODAL THÊM NHÂN VIÊN ================= -->
-<div class="modal-backdrop" id="addModal">
-    <div class="modal-box">
-        <div class="modal-header">
+<div class="modal-backdrop ${openAddModal ? 'open' : ''}" id="addModal">
+    <div class="modal-box nv-modal-compact">
+        <div class="modal-header" style="margin-bottom:12px;">
             <h3>Thêm nhân viên mới</h3>
             <button type="button" class="modal-close" onclick="closeModal('addModal')">&times;</button>
         </div>
+        <c:if test="${not empty addError}">
+            <div class="alert-error-box"><c:out value="${addError}"/></div>
+        </c:if>
         <form action="${pageContext.request.contextPath}/nhan-vien/add" method="post">
-            <div class="form-stack">
-                <div class="form-group">
+            <div class="nv-grid-2">
+                <div class="form-group full-col">
                     <label>Họ Tên <span class="required-star">*</span></label>
-                    <input type="text" name="hoTen" class="form-control" placeholder="Nhập họ tên" required>
+                    <input type="text" name="hoTen" class="form-control" value="${formNv.hoTen}" placeholder="Nhập họ tên" required minlength="2" maxlength="100">
                 </div>
                 <div class="form-group">
-                    <label>CCCD</label>
-                    <input type="text" name="cccd" class="form-control" placeholder="Nhập số CCCD">
+                    <label>CCCD (12 số) <span class="required-star">*</span></label>
+                    <input type="text" name="cccd" class="form-control" value="${formNv.cccd}" placeholder="12 chữ số" required pattern="\d{12}" title="CCCD gồm đúng 12 chữ số">
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" class="form-control" placeholder="Nhập email">
+                    <label>Số Điện Thoại <span class="required-star">*</span></label>
+                    <input type="text" name="soDienThoai" class="form-control" value="${formNv.soDienThoai}" placeholder="VD: 0912345678" required pattern="0\d{9}" title="10 số bắt đầu bằng 0">
                 </div>
                 <div class="form-group">
-                    <label>Số Điện Thoại</label>
-                    <input type="text" name="soDienThoai" class="form-control" placeholder="Số điện thoại">
+                    <label>Email <span class="required-star">*</span></label>
+                    <input type="email" name="email" class="form-control" value="${formNv.email}" placeholder="VD: nv@cinemax.vn" required>
                 </div>
                 <div class="form-group">
                     <label>Địa Chỉ</label>
-                    <input type="text" name="diaChi" class="form-control" placeholder="Nhập địa chỉ">
+                    <input type="text" name="diaChi" class="form-control" value="${formNv.diaChi}" placeholder="Nhập địa chỉ" maxlength="255">
                 </div>
                 <div class="form-group">
                     <label>Username <span class="required-star">*</span></label>
-                    <input type="text" name="username" class="form-control" placeholder="Tên đăng nhập" required>
+                    <input type="text" name="username" class="form-control" value="${formNv.username}" placeholder="Tên đăng nhập" required pattern="[a-zA-Z0-9_]{3,50}" title="3-50 ký tự chữ, số hoặc _">
                 </div>
                 <div class="form-group">
                     <label>Password <span class="required-star">*</span></label>
-                    <input type="password" name="matKhau" class="form-control" placeholder="Mật khẩu" required>
+                    <input type="password" name="matKhau" class="form-control" placeholder="Tối thiểu 6 ký tự" required minlength="6">
                 </div>
                 <div class="form-group">
                     <label>Vai Trò</label>
-                    <select name="vaiTro" class="form-control" style="background:var(--bg-card, #fff);">
-                        <option value="NhanVien" selected>Nhân Viên</option>
-                    </select>
+                    <input type="text" class="form-control" value="Nhân Viên" readonly style="background:var(--bg-input);">
+                    <input type="hidden" name="vaiTro" value="NhanVien">
                 </div>
                 <div class="form-group">
                     <label>Trạng Thái</label>
-                    <!-- Thêm input hidden để chắc chắn gửi giá trị "Đang làm việc" qua Servlet, bỏ disabled đi -->
-                    <input type="text" class="form-control" value="Đang làm việc" disabled style="background:var(--bg-input);">
+                    <input type="text" class="form-control" value="Đang làm việc" readonly style="background:var(--bg-input);">
                     <input type="hidden" name="trangThai" value="Đang làm việc">
                 </div>
-                <div style="font-size:12px; color:var(--text-secondary);">
+                <div class="full-col" style="font-size:11.5px; color:var(--text-secondary);">
                     (<span class="required-star">*</span>) Trường bắt buộc nhập
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="margin-top:14px;">
                 <button type="button" class="btn btn-ghost" onclick="closeModal('addModal')">Hủy</button>
                 <button type="submit" class="btn btn-pink">Thêm</button>
             </div>
@@ -171,12 +216,12 @@
 
 <!-- ================= MODAL CHI TIẾT NHÂN VIÊN ================= -->
 <div class="modal-backdrop" id="detailModal">
-    <div class="modal-box">
-        <div class="modal-header">
+    <div class="modal-box nv-modal-compact">
+        <div class="modal-header" style="margin-bottom:12px;">
             <h3>Chi tiết nhân viên</h3>
             <button type="button" class="modal-close" onclick="closeModal('detailModal')">&times;</button>
         </div>
-        <div class="form-stack">
+        <div class="nv-grid-2">
             <div class="form-group">
                 <label>Mã tài khoản</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailId"></div>
@@ -190,12 +235,12 @@
                 <div class="form-control" style="background:var(--bg-input);" id="detailCccd"></div>
             </div>
             <div class="form-group">
-                <label>Email</label>
-                <div class="form-control" style="background:var(--bg-input);" id="detailEmail"></div>
-            </div>
-            <div class="form-group">
                 <label>Số Điện Thoại</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailSoDienThoai"></div>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <div class="form-control" style="background:var(--bg-input);" id="detailEmail"></div>
             </div>
             <div class="form-group">
                 <label>Địa Chỉ</label>
@@ -209,12 +254,12 @@
                 <label>Vai Trò</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailVaiTro"></div>
             </div>
-            <div class="form-group">
+            <div class="form-group full-col">
                 <label>Trạng Thái</label>
                 <div class="form-control" style="background:var(--bg-input);" id="detailTrangThai"></div>
             </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="margin-top:14px;">
             <button type="button" class="btn btn-pink" onclick="closeModal('detailModal')">Đóng</button>
         </div>
     </div>

@@ -17,13 +17,21 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- PHẦN 1: KHỞI TẠO CƠ SỞ DỮ LIỆU
+-- PHẦN 1: XÓA DATABASE CŨ (NẾU CÓ) & TẠO LẠI DATABASE MỚI HOÀN TOÀN TỪ ĐẦU
 -- ----------------------------------------------------------------------------
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = N'QuanLyDatVeRapPhim')
+USE master;
+GO
+
+IF EXISTS (SELECT 1 FROM sys.databases WHERE name = N'QuanLyDatVeRapPhim')
 BEGIN
-    CREATE DATABASE QuanLyDatVeRapPhim;
-    PRINT N'==> Đã khởi tạo mới Cơ sở dữ liệu: QuanLyDatVeRapPhim';
+    ALTER DATABASE QuanLyDatVeRapPhim SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE QuanLyDatVeRapPhim;
+    PRINT N'==> Đã xóa sạch Database cũ: QuanLyDatVeRapPhim';
 END
+GO
+
+CREATE DATABASE QuanLyDatVeRapPhim;
+PRINT N'==> Đã khởi tạo mới hoàn toàn Cơ sở dữ liệu: QuanLyDatVeRapPhim';
 GO
 
 USE QuanLyDatVeRapPhim;
@@ -125,9 +133,11 @@ CREATE TABLE LoaiPhong (
 );
 
 -- 7. BẢNG PHÒNG CHIẾU (PhongChieu)
+-- Giữ cả LoaiPhong (code hiện tại đang map) và MaLoaiPhong (mở rộng) để không lỗi bất kỳ chức năng nào
 CREATE TABLE PhongChieu (
     MaPhong INT IDENTITY(1,1) PRIMARY KEY,
     TenPhong NVARCHAR(100) NOT NULL,                  -- 'Phòng 01 - Tiêu Chuẩn'
+    LoaiPhong NVARCHAR(50) NULL DEFAULT N'2D',        -- Khớp PhongChieu.java (@Column LoaiPhong)
     MaLoaiPhong VARCHAR(50) NULL,
     SucChua INT NOT NULL DEFAULT 0,
     CONSTRAINT FK_Phong_LoaiPhong FOREIGN KEY (MaLoaiPhong) REFERENCES LoaiPhong(MaLoaiPhong) ON DELETE SET NULL
@@ -179,11 +189,13 @@ CREATE TABLE Ghe (
 );
 
 -- 13. BẢNG SUẤT CHIẾU (SuatChieu)
+-- Giữ cả DinhDang (code hiện tại đang map) và MaDinhDang NULL (cho phần nâng cấp)
 CREATE TABLE SuatChieu (
     MaSuat INT IDENTITY(1,1) PRIMARY KEY,
     MaPhim INT NOT NULL,
     MaPhong INT NOT NULL,
-    MaDinhDang INT NOT NULL,
+    DinhDang NVARCHAR(20) NOT NULL DEFAULT N'2D',     -- Khớp SuatChieu.java (@Column DinhDang)
+    MaDinhDang INT NULL,
     NgayChieu DATE NOT NULL,
     GioBatDau TIME(0) NOT NULL,
     GioKetThuc TIME(0) NOT NULL,
@@ -195,7 +207,7 @@ CREATE TABLE SuatChieu (
     CONSTRAINT FK_Suat_DinhDang FOREIGN KEY (MaDinhDang) REFERENCES DinhDang(MaDinhDang)
 );
 
--- 14. BẢNG KHUYẾN MÃI / VOUCHER (KhuyenMai)
+-- 14. BẢNG KHUYẾN MÃI / VOUCHER (KhuyenMai) - NÂNG CẤP ĐIỀU KIỆN THEO GIỜ VÀ ĐỘ TUỔI
 CREATE TABLE KhuyenMai (
     MaKM INT IDENTITY(1,1) PRIMARY KEY,
     TenKM NVARCHAR(100) NOT NULL,
@@ -203,6 +215,22 @@ CREATE TABLE KhuyenMai (
     PhanTramGiam DECIMAL(5,2) NOT NULL DEFAULT 0,
     SoTienGiamToiDa DECIMAL(18,2) NOT NULL DEFAULT 0,
     DonToiThieu DECIMAL(18,2) NOT NULL DEFAULT 0,
+    
+    -- Điều kiện Khung giờ chiếu (Theo giờ)
+    GioChieuTu TIME NULL,                             -- Khung giờ từ (VD: 08:00 cho Early Bird)
+    GioChieuDen TIME NULL,                            -- Khung giờ đến (VD: 12:00)
+    
+    -- Điều kiện Thứ trong tuần ('2,3,4,5,6,7,CN' hoặc 'ALL')
+    ThuTrongTuan VARCHAR(50) NULL DEFAULT 'ALL',
+    
+    -- Điều kiện Độ tuổi (Theo tuổi khách hàng)
+    TuoiToiThieu INT NULL,                            -- Tuổi từ (VD: 12 tuổi)
+    TuoiToiDa INT NULL,                               -- Tuổi đến (VD: 22 tuổi cho HSSV/U22)
+    
+    -- Điều kiện Số lượng vé tối thiểu & Định dạng
+    SoVeToiThieu INT NOT NULL DEFAULT 1,
+    MaDinhDangApDung INT NULL,                        -- NULL = Áp dụng mọi định dạng
+    
     NgayBatDau DATETIME NOT NULL,
     NgayKetThuc DATETIME NOT NULL,
     TrangThai NVARCHAR(30) NOT NULL DEFAULT N'Đang áp dụng'
@@ -297,4 +325,131 @@ CREATE TABLE ThanhToan (
 GO
 
 PRINT N'==> Đã tạo thành công toàn bộ 21 BẢNG THỰC THỂ chuẩn 100%!';
+GO
+
+-- ----------------------------------------------------------------------------
+-- PHẦN 4: DỮ LIỆU MẪU CHUẨN ĐẦY ĐỦ (CHẠY XONG LÀ TEST ĐƯỢC MỌI CHỨC NĂNG NGAY)
+-- ----------------------------------------------------------------------------
+
+-- 1. Tài khoản đăng nhập (Admin & Nhân viên)
+INSERT INTO TaiKhoan (HoTen, CCCD, Email, SoDienThoai, DiaChi, VaiTro, Username, Password, TrangThai) VALUES
+(N'Nguyễn Quản Lý', '001200000001', 'admin@cinemax.vn', '0901000001', N'Hà Nội', N'QuanLy', 'admin', '123456', N'Hoạt động'),
+(N'Trần Thu Ngân',  '001200000002', 'nv1@cinemax.vn',   '0901000002', N'Hà Nội', N'NhanVien', 'nv1',   '123456', N'Hoạt động'),
+(N'Lê Soát Vé',     '001200000003', 'nv2@cinemax.vn',   '0901000003', N'Hà Nội', N'NhanVien', 'nv2',   '123456', N'Hoạt động');
+
+-- 2. Khách hàng thành viên (Có sẵn Ngày sinh để test Voucher U22 & Người cao tuổi)
+INSERT INTO KhachHang (MaKH, HoTen, SDT, DiemTichLuy, GioiTinh, NgaySinh) VALUES
+(N'KH001', N'Phạm Sinh Viên (U22)', '0911111111', 50,  N'Nam', '2005-05-15'),
+(N'KH002', N'Nguyễn Khách VIP',     '0922222222', 200, N'Nữ',  '1995-08-20'),
+(N'KH003', N'Lê Cao Tuổi (60+)',    '0933333333', 80,  N'Nam', '1960-01-10');
+
+-- 3. Thể loại phim
+INSERT INTO TheLoai (TenTheLoai) VALUES
+(N'Hành Động'), (N'Tình Cảm'), (N'Hoạt Hình'), (N'Kinh Dị'), (N'Khoa Học Viễn Tưởng'), (N'Hài Hước');
+
+-- 4. Phim (Gồm Đang chiếu, Sắp chiếu, Ngừng chiếu)
+INSERT INTO Phim (TenPhim, MoTa, ThoiLuong, NgayKhoiChieu, NgayKetThuc, DaoDien, DienVien, QuocGia, Poster, Trailer, DoTuoi, TrangThai) VALUES
+(N'Avatar: Dòng Chảy Của Nước', N'Siêu phẩm hành động viễn tưởng thế giới Pandora.', 192, DATEADD(day, -10, GETDATE()), DATEADD(day, 30, GETDATE()), N'James Cameron', N'Sam Worthington, Zoe Saldana', N'Mỹ', 'avatar2.jpg', '', 'P', N'Đang chiếu'),
+(N'Mai', N'Phim tâm lý tình cảm Việt Nam.', 131, DATEADD(day, -7, GETDATE()), DATEADD(day, 25, GETDATE()), N'Trấn Thành', N'Phương Anh Đào, Tuấn Trần', N'Việt Nam', 'mai.jpg', '', 'T18', N'Đang chiếu'),
+(N'Kung Fu Panda 4', N'Chú gấu trúc Po trở lại với hành trình mới.', 94, DATEADD(day, -5, GETDATE()), DATEADD(day, 20, GETDATE()), N'Mike Mitchell', N'Jack Black', N'Mỹ', 'panda4.jpg', '', 'P', N'Đang chiếu'),
+(N'The Odyssey (Sắp chiếu)', N'Bom tấn sử thi Hy Lạp.', 173, DATEADD(day, 15, GETDATE()), DATEADD(day, 60, GETDATE()), N'Christopher Nolan', N'Matt Damon', N'Mỹ', 'odyssey.jpg', '', 'T13', N'Sắp chiếu'),
+(N'Kẻ Hồi Sinh (Ngừng chiếu)', N'Phim hành động đã hết hạn chiếu.', 101, DATEADD(day, -60, GETDATE()), DATEADD(day, -10, GETDATE()), N'Jong-Yeol Baek', N'Lee Dong-Wook', N'Hàn Quốc', 'kehoisinh.jpg', '', 'T16', N'Ngừng chiếu');
+
+-- Gán thể loại cho phim
+INSERT INTO Phim_TheLoai (MaPhim, MaTheLoai) VALUES (1, 1), (1, 5), (2, 2), (3, 3), (3, 6), (4, 1), (5, 1);
+
+-- 5. Loại phòng & Phòng chiếu
+INSERT INTO LoaiPhong (MaLoaiPhong, TenLoaiPhong) VALUES
+('STANDARD',   N'Phòng Tiêu Chuẩn'),
+('3D_ROOM',    N'Phòng Chiếu 3D'),
+('IMAX',       N'Phòng Công Nghệ IMAX');
+
+INSERT INTO PhongChieu (TenPhong, LoaiPhong, MaLoaiPhong, SucChua) VALUES
+(N'Phòng 01 - Standard', N'2D',   'STANDARD', 40),
+(N'Phòng 02 - 3D',       N'3D',   '3D_ROOM',  40),
+(N'Phòng 03 - IMAX',     N'IMAX', 'IMAX',     40);
+
+-- 6. Định dạng trình chiếu & Liên kết Phòng - Định dạng, Phim - Định dạng
+INSERT INTO DinhDang (TenDinhDang, PhuThu) VALUES
+(N'2D',      0),
+(N'3D',      30000),
+(N'IMAX 2D', 50000),
+(N'IMAX 3D', 80000);
+
+INSERT INTO Phong_DinhDang (MaPhong, MaDinhDang) VALUES
+(1, 1),          -- Phòng 1: 2D
+(2, 1), (2, 2),  -- Phòng 2: 2D, 3D
+(3, 3), (3, 4);  -- Phòng 3: IMAX 2D, IMAX 3D
+
+INSERT INTO Phim_DinhDang (MaPhim, MaDinhDang) VALUES
+(1, 1), (1, 2), (1, 4), -- Avatar: 2D, 3D, IMAX 3D
+(2, 1),                 -- Mai: chỉ 2D
+(3, 1), (3, 2);         -- Panda 4: 2D, 3D
+
+-- 7. Loại ghế & Tự động sinh 40 ghế/phòng (Hàng A, B, C, D, E - mỗi hàng 8 ghế)
+INSERT INTO LoaiGhe (TenLoaiGhe, PhuThu) VALUES
+(N'Thường',           0),
+(N'VIP',              20000),
+(N'Đôi (Sweetbox)',   50000);
+
+DECLARE @p INT = 1;
+WHILE @p <= 3
+BEGIN
+    DECLARE @rowIdx INT = 1;
+    WHILE @rowIdx <= 5
+    BEGIN
+        DECLARE @hang VARCHAR(5) = CHAR(64 + @rowIdx); -- A, B, C, D, E
+        DECLARE @maLoaiGhe INT = CASE WHEN @rowIdx IN (3, 4) THEN 2 WHEN @rowIdx = 5 THEN 3 ELSE 1 END;
+        DECLARE @so INT = 1;
+        WHILE @so <= 8
+        BEGIN
+            INSERT INTO Ghe (MaPhong, MaLoaiGhe, HangGhe, SoGhe, TrangThai)
+            VALUES (@p, @maLoaiGhe, @hang, @so, N'Hoạt động');
+            SET @so = @so + 1;
+        END
+        SET @rowIdx = @rowIdx + 1;
+    END
+    SET @p = @p + 1;
+END
+
+-- 8. Suất chiếu mẫu cho Hôm nay và Ngày mai (bao gồm cả suất sáng sớm & khuya để test Voucher)
+DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+DECLARE @Tomorrow DATE = DATEADD(day, 1, @Today);
+
+INSERT INTO SuatChieu (MaPhim, MaPhong, DinhDang, MaDinhDang, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+(3, 1, N'2D',   1, @Today,    '09:30:00', '11:20:00', 75000,  N'Đang mở bán'),
+(2, 1, N'2D',   1, @Today,    '14:00:00', '16:25:00', 85000,  N'Đang mở bán'),
+(1, 2, N'3D',   2, @Today,    '19:30:00', '22:55:00', 110000, N'Đang mở bán'),
+(1, 3, N'IMAX', 4, @Today,    '22:30:00', '01:55:00', 150000, N'Đang mở bán'),
+(2, 1, N'2D',   1, @Tomorrow, '10:00:00', '12:25:00', 80000,  N'Đang mở bán'),
+(1, 2, N'3D',   2, @Tomorrow, '20:00:00', '23:25:00', 110000, N'Đang mở bán');
+
+-- 9. Sản phẩm F&B (Lưu ý: TrangThai = N'Đang kinh doanh' để khớp SanPhamRepository)
+INSERT INTO SanPham (TenSP, LoaiSP, DonViTinh, GiaBan, SoLuongTon, TrangThai, HinhAnh) VALUES
+(N'Bắp Rang Bơ Lớn', N'Bắp rang', N'Hộp',  55000, 100, N'Đang kinh doanh', 'bap_lon.jpg'),
+(N'Pepsi Tươi Lớn',  N'Nước ngọt', N'Ly',  35000, 150, N'Đang kinh doanh', 'pepsi.jpg'),
+(N'Coca-Cola Lớn',   N'Nước ngọt', N'Ly',  35000, 150, N'Đang kinh doanh', 'coca.jpg'),
+(N'Nước Suối',       N'Nước suối', N'Chai', 20000, 200, N'Đang kinh doanh', 'nuoc_suoi.jpg');
+
+-- 10. Combo & Chi tiết Combo
+INSERT INTO Combo (TenCombo, GiaCombo, MoTa, HinhAnh, TrangThai) VALUES
+(N'Combo Solo',   79000,  N'1 Bắp Rang Bơ Lớn + 1 Pepsi Tươi Lớn', 'combo_solo.jpg', N'Đang bán'),
+(N'Combo Couple', 109000, N'1 Bắp Rang Bơ Lớn + 2 Pepsi Tươi Lớn', 'combo_couple.jpg', N'Đang bán');
+
+INSERT INTO ChiTietCombo (MaCombo, MaSP, SoLuong, GhiChu) VALUES
+(1, 1, 1, N'Vị phô mai hoặc caramel'),
+(1, 2, 1, N'Ít đá'),
+(2, 1, 1, N'Vị bơ truyền thống'),
+(2, 2, 2, N'2 ly lớn');
+
+-- 11. Khuyến mãi / Voucher (Theo Giờ chiếu, Thứ, Độ tuổi)
+INSERT INTO KhuyenMai (TenKM, MaCode, PhanTramGiam, SoTienGiamToiDa, DonToiThieu, GioChieuTu, GioChieuDen, ThuTrongTuan, TuoiToiThieu, TuoiToiDa, SoVeToiThieu, NgayBatDau, NgayKetThuc, TrangThai) VALUES
+(N'Ưu Đãi HSSV / U22',       'U22_STUDENT', 20.00, 50000,  0,      NULL,       NULL,       'ALL', 12,   22,   1, GETDATE(), DATEADD(year, 1, GETDATE()), N'Đang áp dụng'),
+(N'Suất Chiếu Sớm Early Bird','EARLY_BIRD',  15.00, 40000,  0,      '08:00:00', '12:00:00', 'ALL', NULL, NULL, 1, GETDATE(), DATEADD(year, 1, GETDATE()), N'Đang áp dụng'),
+(N'Suất Chiếu Khuya Midnight','MIDNIGHT',    25.00, 60000,  0,      '22:00:00', '23:59:59', 'ALL', NULL, NULL, 1, GETDATE(), DATEADD(year, 1, GETDATE()), N'Đang áp dụng'),
+(N'Thứ 3 Vui Vẻ',             'HAPPY_TUE',   20.00, 50000,  0,      NULL,       NULL,       '3',   NULL, NULL, 1, GETDATE(), DATEADD(year, 1, GETDATE()), N'Đang áp dụng'),
+(N'Tri Ân Người Cao Tuổi',    'SENIOR_60',   30.00, 70000,  0,      NULL,       NULL,       'ALL', 60,   120,  1, GETDATE(), DATEADD(year, 1, GETDATE()), N'Đang áp dụng');
+GO
+
+PRINT N'==> Đã khởi tạo toàn bộ 21 BẢNG + DỮ LIỆU MẪU ĐẦY ĐỦ thành công!';
 GO

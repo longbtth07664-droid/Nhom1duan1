@@ -9,11 +9,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import repository.ComboRepository;
 import repository.HoaDonRepository;
+import repository.KhuyenMaiRepository;
 import repository.SuatChieuRepository;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -26,6 +28,7 @@ public class ThanhToanServlet extends HttpServlet {
     private final SuatChieuRepository suatChieuRepo = new SuatChieuRepository();
     private final ComboRepository comboRepo = new ComboRepository();
     private final repository.KhachHangRepository khachHangRepo = new repository.KhachHangRepository();
+    private final KhuyenMaiRepository khuyenMaiRepo = new KhuyenMaiRepository();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -128,6 +131,79 @@ public class ThanhToanServlet extends HttpServlet {
             return;
         }
 
+        // 1.3 API AJAX kiểm tra và áp dụng mã giảm giá (Voucher)
+        if ("applyVoucher".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            String code = req.getParameter("code");
+            String maSuatStr = req.getParameter("maSuat");
+            String sdt = req.getParameter("sdt");
+            String tongTienStr = req.getParameter("tongTien");
+            String seatsCountStr = req.getParameter("seatsCount");
+            String namSinhStr = req.getParameter("namSinh");
+
+            if (code == null || code.trim().isEmpty()) {
+                resp.getWriter().write("{\"success\":false,\"message\":\"Vui lòng nhập mã giảm giá!\"}");
+                return;
+            }
+
+            KhuyenMai km = khuyenMaiRepo.getByCode(code.trim());
+            if (km == null) {
+                resp.getWriter().write("{\"success\":false,\"message\":\"Mã giảm giá [" + escapeJson(code.trim().toUpperCase()) + "] không tồn tại trong hệ thống!\"}");
+                return;
+            }
+
+            SuatChieu sc = null;
+            if (maSuatStr != null && !maSuatStr.trim().isEmpty()) {
+                try {
+                    sc = suatChieuRepo.getOne(Integer.parseInt(maSuatStr.trim()));
+                } catch (Exception ignored) {}
+            }
+
+            KhachHang kh = null;
+            if (sdt != null && !sdt.trim().isEmpty()) {
+                kh = hoaDonRepo.timKhachHangTheoSDT(sdt.trim());
+            }
+            // Hỗ trợ nhân viên nhập nhanh năm sinh của khách vãng lai sau khi xem CCCD/Thẻ HSSV
+            if ((kh == null || kh.getNgaySinh() == null) && namSinhStr != null && !namSinhStr.trim().isEmpty()) {
+                try {
+                    int namSinh = Integer.parseInt(namSinhStr.trim());
+                    if (namSinh >= 1920 && namSinh <= LocalDate.now().getYear()) {
+                        if (kh == null) kh = new KhachHang();
+                        kh.setNgaySinh(LocalDate.of(namSinh, 1, 1));
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            int seatsCount = 1;
+            if (seatsCountStr != null && !seatsCountStr.trim().isEmpty()) {
+                try {
+                    seatsCount = Math.max(1, Integer.parseInt(seatsCountStr.trim()));
+                } catch (Exception ignored) {}
+            }
+
+            BigDecimal tongTienVal = BigDecimal.ZERO;
+            if (tongTienStr != null && !tongTienStr.trim().isEmpty()) {
+                try {
+                    tongTienVal = new BigDecimal(tongTienStr.replaceAll("[^0-9.]", ""));
+                } catch (Exception ignored) {}
+            }
+
+            KhuyenMai.ValidationResult res = km.validate(sc, kh, seatsCount, tongTienVal);
+            if (res.isValid()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("{\"success\":true,");
+                sb.append("\"maKM\":").append(km.getMaKM()).append(",");
+                sb.append("\"maCode\":\"").append(escapeJson(km.getMaCode())).append("\",");
+                sb.append("\"tenKM\":\"").append(escapeJson(km.getTenKM())).append("\",");
+                sb.append("\"tienGiam\":").append(res.getTienGiam()).append(",");
+                sb.append("\"message\":\"").append(escapeJson(res.getMessage())).append("\"}");
+                resp.getWriter().write(sb.toString());
+            } else {
+                resp.getWriter().write("{\"success\":false,\"message\":\"" + escapeJson(res.getMessage()) + "\"}");
+            }
+            return;
+        }
+
         // 2. Màn hình hoàn tất thanh toán / Xem in vé & hóa đơn
         String completedIdStr = req.getParameter("completedId");
         if (completedIdStr != null && !completedIdStr.trim().isEmpty()) {
@@ -158,6 +234,8 @@ public class ThanhToanServlet extends HttpServlet {
         req.setAttribute("listCombo", comboRepo.getAll());
         // Danh sách toàn bộ khách hàng có sẵn trong cơ sở dữ liệu để chọn trên dropdown
         req.setAttribute("danhSachKhachHang", khachHangRepo.getAll());
+        // Danh sách mã giảm giá đang hoạt động để nhân viên chọn nhanh tại quầy
+        req.setAttribute("activeVouchers", khuyenMaiRepo.getActiveVouchers());
 
         req.getRequestDispatcher("/thanh-toan/view.jsp").forward(req, resp);
     }
@@ -190,6 +268,7 @@ public class ThanhToanServlet extends HttpServlet {
         String seatsData = req.getParameter("seatsData");
         String combosData = req.getParameter("combosData");
         String maSuatStr = req.getParameter("maSuat");
+        String maKMStr = req.getParameter("maKM");
         String isPendingStr = req.getParameter("isPending");
 
         // Nếu gửi qua Content-Type application/json thì đọc từ body
@@ -211,6 +290,7 @@ public class ThanhToanServlet extends HttpServlet {
             seatsData = extractJsonArray(jsonBody, "seatsData");
             combosData = extractJsonArray(jsonBody, "combosData");
             maSuatStr = extractJsonField(jsonBody, "maSuat");
+            maKMStr = extractJsonField(jsonBody, "maKM");
             if (isPendingStr == null) {
                 isPendingStr = extractJsonField(jsonBody, "isPending");
             }
@@ -240,6 +320,14 @@ public class ThanhToanServlet extends HttpServlet {
         if (maSuatStr != null && !maSuatStr.trim().isEmpty()) {
             try {
                 maSuat = Integer.parseInt(maSuatStr.trim());
+            } catch (Exception ignored) {}
+        }
+
+        Integer maKM = null;
+        if (maKMStr != null && !maKMStr.trim().isEmpty() && !"null".equalsIgnoreCase(maKMStr.trim())) {
+            try {
+                int parsedKm = Integer.parseInt(maKMStr.trim());
+                if (parsedKm > 0) maKM = parsedKm;
             } catch (Exception ignored) {}
         }
 
@@ -274,7 +362,7 @@ public class ThanhToanServlet extends HttpServlet {
         }
 
         // Gọi Repository tạo hóa đơn và thanh toán (có cờ isPending để lưu Chờ thanh toán)
-        int maDatVe = hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, tongTien, tienGiam, phuongThuc, listVe, listCombo, isPending);
+        int maDatVe = hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, maKM, tongTien, tienGiam, phuongThuc, listVe, listCombo, isPending);
 
         if (maDatVe > 0) {
             if (isPending) {

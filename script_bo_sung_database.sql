@@ -1,9 +1,11 @@
 -- ==============================================================================
 -- SCRIPT BỔ SUNG DATABASE DỰ ÁN CINEMAX (KHÔNG LÀM MẤT DỮ LIỆU CŨ)
--- Chạy trên SQL Server Management Studio (SSMS)
+-- ĐÃ NÂNG CẤP MÃ GIẢM GIÁ THEO GIỜ CHIẾU, THỨ TRONG TUẦN VÀ ĐỘ TUỔI
 -- ==============================================================================
+USE QuanLyDatVeRapPhim;
+GO
 
--- 1. TẠO BẢNG KhuyenMai (NẾU CHƯA CÓ)
+-- 1. BỔ SUNG HOẶC CẬP NHẬT BẢNG KhuyenMai
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'KhuyenMai')
 BEGIN
     CREATE TABLE KhuyenMai (
@@ -13,142 +15,92 @@ BEGIN
         PhanTramGiam DECIMAL(5,2) NOT NULL DEFAULT 0,
         SoTienGiamToiDa DECIMAL(18,2) NOT NULL DEFAULT 0,
         DonToiThieu DECIMAL(18,2) NOT NULL DEFAULT 0,
+        GioChieuTu TIME NULL,
+        GioChieuDen TIME NULL,
+        ThuTrongTuan VARCHAR(50) NULL DEFAULT 'ALL',
+        TuoiToiThieu INT NULL,
+        TuoiToiDa INT NULL,
+        SoVeToiThieu INT NOT NULL DEFAULT 1,
+        MaDinhDangApDung INT NULL,
         NgayBatDau DATETIME NOT NULL,
         NgayKetThuc DATETIME NOT NULL,
         TrangThai NVARCHAR(30) NOT NULL DEFAULT N'Đang áp dụng'
     );
-    PRINT N'Đã tạo bảng KhuyenMai thành công!';
+    PRINT N'==> Đã tạo bảng KhuyenMai nâng cao thành công!';
 END
-GO
-
--- 2. TẠO BẢNG DinhDang (Định dạng trình chiếu: 2D, 3D, IMAX 2D, IMAX 3D, 4DX...)
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DinhDang')
+ELSE
 BEGIN
-    CREATE TABLE DinhDang (
-        MaDinhDang INT IDENTITY(1,1) PRIMARY KEY,
-        TenDinhDang NVARCHAR(50) NOT NULL UNIQUE,
-        PhuThu DECIMAL(18,2) NOT NULL DEFAULT 0
-    );
-    PRINT N'Đã tạo bảng DinhDang thành công!';
+    -- Nếu bảng KhuyenMai đã có, bổ sung các cột điều kiện nâng cao nếu chưa có
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KhuyenMai') AND name = 'GioChieuTu')
+        ALTER TABLE KhuyenMai ADD GioChieuTu TIME NULL;
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KhuyenMai') AND name = 'GioChieuDen')
+        ALTER TABLE KhuyenMai ADD GioChieuDen TIME NULL;
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KhuyenMai') AND name = 'ThuTrongTuan')
+        ALTER TABLE KhuyenMai ADD ThuTrongTuan VARCHAR(50) NULL DEFAULT 'ALL';
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KhuyenMai') AND name = 'TuoiToiThieu')
+        ALTER TABLE KhuyenMai ADD TuoiToiThieu INT NULL;
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KhuyenMai') AND name = 'TuoiToiDa')
+        ALTER TABLE KhuyenMai ADD TuoiToiDa INT NULL;
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KhuyenMai') AND name = 'SoVeToiThieu')
+        ALTER TABLE KhuyenMai ADD SoVeToiThieu INT NOT NULL DEFAULT 1;
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KhuyenMai') AND name = 'MaDinhDangApDung')
+        ALTER TABLE KhuyenMai ADD MaDinhDangApDung INT NULL;
+    PRINT N'==> Đã nâng cấp các cột điều kiện giờ chiếu và độ tuổi cho bảng KhuyenMai!';
 END
 GO
 
--- 3. TẠO BẢNG Phong_DinhDang (Phòng chiếu hỗ trợ các định dạng nào)
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Phong_DinhDang')
-BEGIN
-    CREATE TABLE Phong_DinhDang (
-        MaPhong INT NOT NULL,
-        MaDinhDang INT NOT NULL,
-        CONSTRAINT PK_Phong_DinhDang PRIMARY KEY (MaPhong, MaDinhDang),
-        CONSTRAINT FK_PDD_Phong FOREIGN KEY (MaPhong) REFERENCES PhongChieu(MaPhong) ON DELETE CASCADE,
-        CONSTRAINT FK_PDD_DinhDang FOREIGN KEY (MaDinhDang) REFERENCES DinhDang(MaDinhDang) ON DELETE CASCADE
-    );
-    PRINT N'Đã tạo bảng Phong_DinhDang thành công!';
-END
-GO
-
--- 4. TẠO BẢNG Phim_DinhDang (Phim phát hành có các định dạng nào)
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Phim_DinhDang')
-BEGIN
-    CREATE TABLE Phim_DinhDang (
-        MaPhim INT NOT NULL,
-        MaDinhDang INT NOT NULL,
-        CONSTRAINT PK_Phim_DinhDang PRIMARY KEY (MaPhim, MaDinhDang),
-        CONSTRAINT FK_PhimDD_Phim FOREIGN KEY (MaPhim) REFERENCES Phim(MaPhim) ON DELETE CASCADE,
-        CONSTRAINT FK_PhimDD_DinhDang FOREIGN KEY (MaDinhDang) REFERENCES DinhDang(MaDinhDang) ON DELETE CASCADE
-    );
-    PRINT N'Đã tạo bảng Phim_DinhDang thành công!';
-END
-GO
-
--- 5. CẬP NHẬT BẢNG SuatChieu (THÊM CỘT MaDinhDang VÀ KHÓA NGOẠI)
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SuatChieu') AND name = 'MaDinhDang')
-BEGIN
-    ALTER TABLE SuatChieu ADD MaDinhDang INT NULL;
-    PRINT N'Đã thêm cột MaDinhDang vào bảng SuatChieu!';
-END
-GO
-
-IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Suat_DinhDang')
-BEGIN
-    ALTER TABLE SuatChieu
-    ADD CONSTRAINT FK_Suat_DinhDang FOREIGN KEY (MaDinhDang) REFERENCES DinhDang(MaDinhDang);
-    PRINT N'Đã thêm khóa ngoại FK_Suat_DinhDang!';
-END
-GO
-
--- 6. BỔ SUNG KHÓA NGOẠI GIỮA HoaDon VÀ KhuyenMai
+-- 2. TẠO KHÓA NGOẠI GIỮA HoaDon VÀ KhuyenMai
 IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_HD_KhuyenMai')
 BEGIN
     ALTER TABLE HoaDon
     ADD CONSTRAINT FK_HD_KhuyenMai FOREIGN KEY (MaKM) REFERENCES KhuyenMai(MaKM);
-    PRINT N'Đã thêm khóa ngoại FK_HD_KhuyenMai!';
+    PRINT N'==> Đã thêm khóa ngoại FK_HD_KhuyenMai vào bảng HoaDon!';
 END
 GO
 
--- 7. BỔ SUNG CỘT SoTien VÀO BẢNG ThanhToan
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ThanhToan') AND name = 'SoTien')
-BEGIN
-    ALTER TABLE ThanhToan ADD SoTien DECIMAL(18,2) NOT NULL DEFAULT 0;
-    PRINT N'Đã thêm cột SoTien vào bảng ThanhToan!';
-END
-GO
-
--- 8. BỔ SUNG CỘT NgaySinh VÀO BẢNG KhachHang
+-- 3. BỔ SUNG CỘT NgaySinh VÀO BẢNG KhachHang (DÙNG ĐỂ TÍNH TUỔI)
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KhachHang') AND name = 'NgaySinh')
 BEGIN
     ALTER TABLE KhachHang ADD NgaySinh DATE NULL;
-    PRINT N'Đã thêm cột NgaySinh vào bảng KhachHang!';
+    PRINT N'==> Đã thêm cột NgaySinh vào bảng KhachHang!';
 END
 GO
 
--- 9. CHUẨN HÓA KHÓA NGOẠI BẢNG PhongChieu VỚI LoaiPhong
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PhongChieu') AND name = 'MaLoaiPhong')
+-- 4. BỔ SUNG CÁC MÃ KHUYẾN MÃI MẪU VỀ GIỜ CHIẾU VÀ ĐỘ TUỔI (SEED DATA)
+-- Mã 1: U22_STUDENT (Học sinh - Sinh viên từ 12 đến 22 tuổi, giảm 20% tối đa 30.000đ)
+IF NOT EXISTS (SELECT * FROM KhuyenMai WHERE MaCode = 'U22_STUDENT')
 BEGIN
-    IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PhongChieu') AND name = 'LoaiPhong')
-    BEGIN
-        EXEC sp_rename 'PhongChieu.LoaiPhong', 'MaLoaiPhong', 'COLUMN';
-    END
-    ELSE
-    BEGIN
-        ALTER TABLE PhongChieu ADD MaLoaiPhong VARCHAR(50) NULL;
-    END
-    PRINT N'Đã chuẩn hóa cột MaLoaiPhong trong PhongChieu!';
+    INSERT INTO KhuyenMai (TenKM, MaCode, PhanTramGiam, SoTienGiamToiDa, DonToiThieu, TuoiToiThieu, TuoiToiDa, NgayBatDau, NgayKetThuc, TrangThai)
+    VALUES (N'Ưu đãi HSSV & U22 (12-22 tuổi)', 'U22_STUDENT', 20.00, 30000, 50000, 12, 22, '2026-01-01', '2026-12-31', N'Đang áp dụng');
 END
-GO
 
-IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Phong_LoaiPhong')
+-- Mã 2: EARLY_BIRD (Suất chiếu sớm từ 08:00 đến 12:00, giảm 25% tối đa 40.000đ)
+IF NOT EXISTS (SELECT * FROM KhuyenMai WHERE MaCode = 'EARLY_BIRD')
 BEGIN
-    ALTER TABLE PhongChieu
-    ADD CONSTRAINT FK_Phong_LoaiPhong FOREIGN KEY (MaLoaiPhong) REFERENCES LoaiPhong(MaLoaiPhong);
-    PRINT N'Đã tạo khóa ngoại FK_Phong_LoaiPhong!';
+    INSERT INTO KhuyenMai (TenKM, MaCode, PhanTramGiam, SoTienGiamToiDa, DonToiThieu, GioChieuTu, GioChieuDen, NgayBatDau, NgayKetThuc, TrangThai)
+    VALUES (N'Suất Chiếu Sớm (Trước 12h)', 'EARLY_BIRD', 25.00, 40000, 70000, '08:00:00', '12:00:00', '2026-01-01', '2026-12-31', N'Đang áp dụng');
+END
+
+-- Mã 3: MIDNIGHT (Suất chiếu khuya sau 22:00, giảm 20% tối đa 35.000đ)
+IF NOT EXISTS (SELECT * FROM KhuyenMai WHERE MaCode = 'MIDNIGHT')
+BEGIN
+    INSERT INTO KhuyenMai (TenKM, MaCode, PhanTramGiam, SoTienGiamToiDa, DonToiThieu, GioChieuTu, GioChieuDen, NgayBatDau, NgayKetThuc, TrangThai)
+    VALUES (N'Suất Chiếu Khuya (Sau 22h)', 'MIDNIGHT', 20.00, 35000, 60000, '22:00:00', '23:59:59', '2026-01-01', '2026-12-31', N'Đang áp dụng');
+END
+
+-- Mã 4: HAPPY_TUE (Thứ Ba vui vẻ, giảm 30% tối đa 50.000đ)
+IF NOT EXISTS (SELECT * FROM KhuyenMai WHERE MaCode = 'HAPPY_TUE')
+BEGIN
+    INSERT INTO KhuyenMai (TenKM, MaCode, PhanTramGiam, SoTienGiamToiDa, DonToiThieu, ThuTrongTuan, NgayBatDau, NgayKetThuc, TrangThai)
+    VALUES (N'Thứ Ba Vui Vẻ (Happy Tuesday)', 'HAPPY_TUE', 30.00, 50000, 80000, '3', '2026-01-01', '2026-12-31', N'Đang áp dụng');
+END
+
+-- Mã 5: SENIOR_60 (Người cao tuổi >= 60 tuổi, giảm 30% tối đa 50.000đ)
+IF NOT EXISTS (SELECT * FROM KhuyenMai WHERE MaCode = 'SENIOR_60')
+BEGIN
+    INSERT INTO KhuyenMai (TenKM, MaCode, PhanTramGiam, SoTienGiamToiDa, DonToiThieu, TuoiToiThieu, NgayBatDau, NgayKetThuc, TrangThai)
+    VALUES (N'Ưu đãi Người Cao Tuổi (>= 60 tuổi)', 'SENIOR_60', 30.00, 50000, 50000, 60, '2026-01-01', '2026-12-31', N'Đang áp dụng');
 END
 GO
-
--- ==============================================================================
--- DỮ LIỆU MẪU BAN ĐẦU (SEED DATA)
--- ==============================================================================
--- Thêm dữ liệu mẫu định dạng chiếu
-IF NOT EXISTS (SELECT * FROM DinhDang WHERE TenDinhDang = N'2D')
-    INSERT INTO DinhDang (TenDinhDang, PhuThu) VALUES (N'2D', 0);
-IF NOT EXISTS (SELECT * FROM DinhDang WHERE TenDinhDang = N'3D')
-    INSERT INTO DinhDang (TenDinhDang, PhuThu) VALUES (N'3D', 30000);
-IF NOT EXISTS (SELECT * FROM DinhDang WHERE TenDinhDang = N'IMAX 2D')
-    INSERT INTO DinhDang (TenDinhDang, PhuThu) VALUES (N'IMAX 2D', 50000);
-IF NOT EXISTS (SELECT * FROM DinhDang WHERE TenDinhDang = N'IMAX 3D')
-    INSERT INTO DinhDang (TenDinhDang, PhuThu) VALUES (N'IMAX 3D', 80000);
-IF NOT EXISTS (SELECT * FROM DinhDang WHERE TenDinhDang = N'4DX 2D')
-    INSERT INTO DinhDang (TenDinhDang, PhuThu) VALUES (N'4DX 2D', 60000);
-IF NOT EXISTS (SELECT * FROM DinhDang WHERE TenDinhDang = N'4DX 3D')
-    INSERT INTO DinhDang (TenDinhDang, PhuThu) VALUES (N'4DX 3D', 90000);
-
--- Cập nhật dữ liệu mặc định cho SuatChieu nếu MaDinhDang đang NULL
-UPDATE SuatChieu 
-SET MaDinhDang = (SELECT TOP 1 MaDinhDang FROM DinhDang WHERE TenDinhDang = N'2D')
-WHERE MaDinhDang IS NULL;
-
--- Thêm voucher khuyến mãi mẫu
-IF NOT EXISTS (SELECT * FROM KhuyenMai WHERE MaCode = 'CHAOMUNG')
-    INSERT INTO KhuyenMai (TenKM, MaCode, PhanTramGiam, SoTienGiamToiDa, DonToiThieu, NgayBatDau, NgayKetThuc, TrangThai)
-    VALUES (N'Chào Mừng Thành Viên Mới', 'CHAOMUNG', 10.00, 50000, 100000, '2026-01-01', '2026-12-31', N'Đang áp dụng');
+PRINT N'==> Đã hoàn tất bổ sung toàn bộ hệ thống Khuyến mãi thông minh!';
 GO

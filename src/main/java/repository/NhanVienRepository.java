@@ -78,6 +78,54 @@ public class NhanVienRepository {
         }
     }
 
+    // Kiểm tra trùng Username (trừ id hiện tại nếu đang sửa)
+    public boolean existsByUsername(String username, Integer excludeId) {
+        if (username == null || username.trim().isEmpty()) return false;
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String hql = "SELECT COUNT(n) FROM NhanVien n WHERE LOWER(n.username) = :val";
+            if (excludeId != null) hql += " AND n.id <> :id";
+            var q = session.createQuery(hql, Long.class).setParameter("val", username.trim().toLowerCase());
+            if (excludeId != null) q.setParameter("id", excludeId);
+            Long c = q.uniqueResult();
+            return c != null && c > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Kiểm tra trùng CCCD
+    public boolean existsByCccd(String cccd, Integer excludeId) {
+        if (cccd == null || cccd.trim().isEmpty()) return false;
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String hql = "SELECT COUNT(n) FROM NhanVien n WHERE n.cccd = :val";
+            if (excludeId != null) hql += " AND n.id <> :id";
+            var q = session.createQuery(hql, Long.class).setParameter("val", cccd.trim());
+            if (excludeId != null) q.setParameter("id", excludeId);
+            Long c = q.uniqueResult();
+            return c != null && c > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Kiểm tra trùng Email
+    public boolean existsByEmail(String email, Integer excludeId) {
+        if (email == null || email.trim().isEmpty()) return false;
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String hql = "SELECT COUNT(n) FROM NhanVien n WHERE LOWER(n.email) = :val";
+            if (excludeId != null) hql += " AND n.id <> :id";
+            var q = session.createQuery(hql, Long.class).setParameter("val", email.trim().toLowerCase());
+            if (excludeId != null) q.setParameter("id", excludeId);
+            Long c = q.uniqueResult();
+            return c != null && c > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public static void main(String[] args) {
         System.out.println(new NhanVienRepository().getAll());
     }

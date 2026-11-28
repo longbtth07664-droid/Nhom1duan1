@@ -1053,8 +1053,8 @@
                 <div class="form-group full-col">
                     <label>Bộ Phim <span class="required-star">*</span></label>
                     <select id="addMaPhim" name="maPhim" class="form-control" required onchange="calculateEndTime('add')">
-                        <option value="">-- Chọn phim chiếu --</option>
-                        <c:forEach items="${listPhim}" var="p">
+                        <option value="">-- Chọn phim đang chiếu --</option>
+                        <c:forEach items="${listPhimDangChieu}" var="p">
                             <option value="${p.maPhim}" data-duration="${p.thoiLuong}" ${p.maPhim == rawMaPhim ? 'selected' : ''}>
                                 ${p.tenPhim} (${p.thoiLuong} phút)
                             </option>
@@ -1171,7 +1171,7 @@
                     <label>Bộ Phim <span class="required-star">*</span></label>
                     <select id="editMaPhim" name="maPhim" class="form-control" required onchange="calculateEndTime('edit')">
                         <c:set var="curPhimId" value="${scUpdate != null ? scUpdate.phim.maPhim : (formSc != null ? formSc.phim.maPhim : rawMaPhim)}" />
-                        <c:forEach items="${listPhim}" var="p">
+                        <c:forEach items="${listPhimDangChieu}" var="p">
                             <option value="${p.maPhim}" data-duration="${p.thoiLuong}" ${p.maPhim == curPhimId ? 'selected' : ''}>
                                 ${p.tenPhim} (${p.thoiLuong} phút)
                             </option>
