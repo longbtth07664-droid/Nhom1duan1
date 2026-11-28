@@ -68,7 +68,6 @@ public class NhanVienServlet extends HttpServlet {
     }
 
     private void add(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
         String hoTen = trim(req.getParameter("hoTen"));
         String cccd = trim(req.getParameter("cccd"));
         String email = trim(req.getParameter("email"));
@@ -77,7 +76,6 @@ public class NhanVienServlet extends HttpServlet {
         String username = trim(req.getParameter("username"));
         String matKhau = trim(req.getParameter("matKhau"));
 
-        // Ép cứng vai trò là NhanVien và trạng thái mặc định là Đang làm việc khi thêm mới
         String vaiTro = "NhanVien";
         String trangThai = "Đang làm việc";
 
@@ -165,31 +163,31 @@ public class NhanVienServlet extends HttpServlet {
     }
 
     private String validateNhanVien(NhanVien nv, Integer excludeId) {
-        if (nv.getHoTen().isEmpty() || nv.getHoTen().length() < 2 || nv.getHoTen().length() > 100) {
+        if (nv.getHoTen() == null || nv.getHoTen().isEmpty() || nv.getHoTen().length() < 2 || nv.getHoTen().length() > 100) {
             return "Họ tên phải từ 2 đến 100 ký tự!";
         }
-        if (!Pattern.matches("^\\d{12}$", nv.getCccd())) {
+        if (nv.getCccd() == null || !Pattern.matches("^\\d{12}$", nv.getCccd())) {
             return "CCCD bắt buộc phải gồm đúng 12 chữ số!";
         }
         if (nhanVienRepository.existsByCccd(nv.getCccd(), excludeId)) {
             return "Số CCCD [" + nv.getCccd() + "] đã tồn tại trên hệ thống!";
         }
-        if (!Pattern.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", nv.getEmail())) {
+        if (nv.getEmail() == null || !Pattern.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", nv.getEmail())) {
             return "Email không đúng định dạng hợp lệ!";
         }
         if (nhanVienRepository.existsByEmail(nv.getEmail(), excludeId)) {
             return "Email [" + nv.getEmail() + "] đã được tài khoản khác sử dụng!";
         }
-        if (!Pattern.matches("^0\\d{9}$", nv.getSoDienThoai())) {
+        if (nv.getSoDienThoai() == null || !Pattern.matches("^0\\d{9}$", nv.getSoDienThoai())) {
             return "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0!";
         }
-        if (!Pattern.matches("^[a-zA-Z0-9_]{3,50}$", nv.getUsername())) {
+        if (nv.getUsername() == null || !Pattern.matches("^[a-zA-Z0-9_]{3,50}$", nv.getUsername())) {
             return "Username phải từ 3-50 ký tự, chỉ gồm chữ, số và dấu gạch dưới (_), không chứa khoảng trắng!";
         }
         if (nhanVienRepository.existsByUsername(nv.getUsername(), excludeId)) {
             return "Username [" + nv.getUsername() + "] đã tồn tại! Vui lòng chọn tên đăng nhập khác.";
         }
-        if (nv.getMatKhau().length() < 6) {
+        if (nv.getMatKhau() == null || nv.getMatKhau().length() < 6) {
             return "Mật khẩu phải có ít nhất 6 ký tự!";
         }
         return null;

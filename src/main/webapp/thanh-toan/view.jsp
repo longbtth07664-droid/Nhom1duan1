@@ -1224,8 +1224,10 @@
         if (!use || !CHECKOUT_STATE.customer) {
             CHECKOUT_STATE.pointDiscount = 0;
         } else {
-            // 1 điểm = 1.000 đ, tối đa 50% đơn hàng
-            const maxAllowed = (CHECKOUT_STATE.ticketTotal + CHECKOUT_STATE.comboTotal) * 0.5;
+            // Tính Voucher trước, sau đó dùng điểm giảm tối đa 50% phần tiền còn lại (1 điểm = 1.000đ)
+            const rawTotal = CHECKOUT_STATE.ticketTotal + CHECKOUT_STATE.comboTotal;
+            const afterVoucher = Math.max(0, rawTotal - (CHECKOUT_STATE.voucherDiscount || 0));
+            const maxAllowed = Math.floor(afterVoucher * 0.5);
             const pointValue = (CHECKOUT_STATE.customer.diemTichLuy || 0) * 1000;
             CHECKOUT_STATE.pointDiscount = Math.min(maxAllowed, pointValue);
         }
@@ -1284,7 +1286,9 @@
                     const btnRemove = document.getElementById('btnRemoveVoucher');
                     if (btnRemove) btnRemove.style.display = 'none';
                 }
-                updateTotals();
+                const chkPts = document.getElementById('chkUsePoints');
+                if (chkPts && chkPts.checked) toggleUsePoints(true);
+                else updateTotals();
             })
             .catch(err => {
                 console.error(err);
@@ -1304,7 +1308,9 @@
         if (statusEl) statusEl.style.display = 'none';
         const btnRemove = document.getElementById('btnRemoveVoucher');
         if (btnRemove) btnRemove.style.display = 'none';
-        updateTotals();
+        const chkPts = document.getElementById('chkUsePoints');
+        if (chkPts && chkPts.checked) toggleUsePoints(true);
+        else updateTotals();
     }
 
     function showVoucherStatus(isSuccess, msg) {
@@ -1389,6 +1395,7 @@
             phuongThuc: CHECKOUT_STATE.currentMethod,
             tongTien: CHECKOUT_STATE.grandTotal,
             tienGiam: CHECKOUT_STATE.discount,
+            tienGiamDiem: CHECKOUT_STATE.pointDiscount || 0,
             seatsData: JSON.stringify(CHECKOUT_STATE.selectedSeats),
             combosData: JSON.stringify(Object.values(CHECKOUT_STATE.selectedCombos))
         };
@@ -1483,6 +1490,7 @@
             phuongThuc: CHECKOUT_STATE.currentMethod,
             tongTien: CHECKOUT_STATE.grandTotal,
             tienGiam: CHECKOUT_STATE.discount,
+            tienGiamDiem: CHECKOUT_STATE.pointDiscount || 0,
             seatsData: JSON.stringify(CHECKOUT_STATE.selectedSeats),
             combosData: JSON.stringify(Object.values(CHECKOUT_STATE.selectedCombos))
         };

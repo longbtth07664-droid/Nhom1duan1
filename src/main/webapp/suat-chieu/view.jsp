@@ -1052,7 +1052,7 @@
             <div class="modal-form-grid">
                 <div class="form-group full-col">
                     <label>Bộ Phim <span class="required-star">*</span></label>
-                    <select id="addMaPhim" name="maPhim" class="form-control" required onchange="calculateEndTime('add')">
+                    <select id="addMaPhim" name="maPhim" class="form-control" required onchange="calculateEndTime('add'); loadCommonFormats('add');">
                         <option value="">-- Chọn phim đang chiếu --</option>
                         <c:forEach items="${listPhimDangChieu}" var="p">
                             <option value="${p.maPhim}" data-duration="${p.thoiLuong}" ${p.maPhim == rawMaPhim ? 'selected' : ''}>
@@ -1169,7 +1169,7 @@
 
                 <div class="form-group full-col">
                     <label>Bộ Phim <span class="required-star">*</span></label>
-                    <select id="editMaPhim" name="maPhim" class="form-control" required onchange="calculateEndTime('edit')">
+                    <select id="editMaPhim" name="maPhim" class="form-control" required onchange="calculateEndTime('edit'); loadCommonFormats('edit');">
                         <c:set var="curPhimId" value="${scUpdate != null ? scUpdate.phim.maPhim : (formSc != null ? formSc.phim.maPhim : rawMaPhim)}" />
                         <c:forEach items="${listPhimDangChieu}" var="p">
                             <option value="${p.maPhim}" data-duration="${p.thoiLuong}" ${p.maPhim == curPhimId ? 'selected' : ''}>
@@ -1362,6 +1362,7 @@
         document.getElementById('editTrangThai').value = trangthai;
 
         calculateEndTime('edit');
+        loadCommonFormats('edit', dinhdang);
         openModal('editSuatChieuModal');
     }
 
@@ -1406,23 +1407,44 @@
         }
     }
 
-    // Tự động chọn định dạng chiếu khi chọn phòng (Phòng 2D ra 2D, 3D ra 3D, IMAX ra IMAX)
+    // Tự động chọn định dạng chiếu giao nhau giữa Phim và Phòng
     function onPhongChange(prefix) {
-        const phongSelect = document.getElementById(prefix === 'edit' ? 'editMaPhong' : 'addMaPhong');
-        const dinhDangSelect = document.getElementById(prefix === 'edit' ? 'editDinhDang' : 'addDinhDang');
-        if (!phongSelect || !dinhDangSelect) return;
+        loadCommonFormats(prefix);
+    }
 
-        const opt = phongSelect.options[phongSelect.selectedIndex];
-        if (!opt || !opt.value) return;
+    function loadCommonFormats(prefix, preferredVal) {
+        const isEdit = prefix === 'edit';
+        const phimSelect = document.getElementById(isEdit ? 'editMaPhim' : 'addMaPhim');
+        const phongSelect = document.getElementById(isEdit ? 'editMaPhong' : 'addMaPhong');
+        const dinhDangSelect = document.getElementById(isEdit ? 'editDinhDang' : 'addDinhDang');
+        if (!dinhDangSelect) return;
 
-        const loaiPhong = (opt.getAttribute('data-loai') || opt.text || '').toUpperCase();
-        if (loaiPhong.includes('IMAX')) {
-            dinhDangSelect.value = 'IMAX';
-        } else if (loaiPhong.includes('3D')) {
-            dinhDangSelect.value = '3D';
-        } else {
-            dinhDangSelect.value = '2D';
-        }
+        const maPhim = phimSelect ? phimSelect.value : '';
+        const maPhong = phongSelect ? phongSelect.value : '';
+        const curVal = preferredVal || dinhDangSelect.value;
+
+        fetch('${pageContext.request.contextPath}/suat-chieu?action=getCommonFormats&maPhim=' + encodeURIComponent(maPhim) + '&maPhong=' + encodeURIComponent(maPhong))
+            .then(r => r.json())
+            .then(list => {
+                dinhDangSelect.innerHTML = '';
+                if (!list || list.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = '-- Phim và Phòng không có định dạng chung --';
+                    dinhDangSelect.appendChild(opt);
+                    return;
+                }
+                list.forEach(dd => {
+                    const opt = document.createElement('option');
+                    opt.value = dd.tenDinhDang;
+                    opt.textContent = dd.tenDinhDang + (dd.phuThu > 0 ? ' (+' + Number(dd.phuThu).toLocaleString('vi-VN') + 'đ)' : '');
+                    if (curVal && dd.tenDinhDang.toUpperCase() === curVal.toUpperCase()) {
+                        opt.selected = true;
+                    }
+                    dinhDangSelect.appendChild(opt);
+                });
+            })
+            .catch(console.error);
     }
 
     // Tự tính giờ kết thúc dựa trên thời lượng phim + thời gian dọn dẹp do người dùng nhập

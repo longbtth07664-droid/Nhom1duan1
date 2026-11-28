@@ -1,5 +1,6 @@
 package controller;
 
+import entity.DinhDang;
 import entity.Phim;
 import entity.PhongChieu;
 import entity.SuatChieu;
@@ -8,6 +9,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import repository.DinhDangRepository;
 import repository.PhimRepository;
 import repository.PhongChieuRepository;
 import repository.SuatChieuRepository;
@@ -34,9 +36,30 @@ public class SuatChieuServlet extends HttpServlet {
     private final SuatChieuRepository suatChieuRepo = new SuatChieuRepository();
     private final PhimRepository phimRepo = new PhimRepository();
     private final PhongChieuRepository phongChieuRepo = new PhongChieuRepository();
+    private final DinhDangRepository dinhDangRepo = new DinhDangRepository();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String action = req.getParameter("action");
+        if ("getCommonFormats".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            Integer maPhimId = parseIntOrNull(req.getParameter("maPhim"));
+            Integer maPhongId = parseIntOrNull(req.getParameter("maPhong"));
+            List<DinhDang> list = dinhDangRepo.getCommonFormats(maPhimId, maPhongId);
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < list.size(); i++) {
+                DinhDang dd = list.get(i);
+                if (i > 0) sb.append(",");
+                sb.append("{\"maDinhDang\":").append(dd.getMaDinhDang())
+                  .append(",\"tenDinhDang\":\"").append(dd.getTenDinhDang() != null ? dd.getTenDinhDang().replace("\"", "\\\"") : "").append("\"")
+                  .append(",\"phuThu\":").append(dd.getPhuThu() != null ? dd.getPhuThu() : 0)
+                  .append("}");
+            }
+            sb.append("]");
+            resp.getWriter().write(sb.toString());
+            return;
+        }
+
         String uri = req.getRequestURI();
         if (uri.contains("cancel")) {
             String idStr = req.getParameter("id");
@@ -318,6 +341,29 @@ public class SuatChieuServlet extends HttpServlet {
             gioKetThuc = gioBatDau.plusMinutes(tongPhut);
         }
 
+        if (error == null && phim != null && phong != null) {
+            List<DinhDang> phimFormats = dinhDangRepo.getByPhim(phim.getMaPhim());
+            List<DinhDang> phongFormats = dinhDangRepo.getByPhong(phong.getMaPhong());
+            if (!phimFormats.isEmpty() && !phongFormats.isEmpty()) {
+                List<DinhDang> common = dinhDangRepo.getCommonFormats(phim.getMaPhim(), phong.getMaPhong());
+                if (common.isEmpty()) {
+                    error = "Phim '" + phim.getTenPhim() + "' và Phòng '" + phong.getTenPhong()
+                            + "' không có định dạng trình chiếu nào trùng khớp!";
+                } else {
+                    boolean matched = false;
+                    for (DinhDang dd : common) {
+                        if (dd.getTenDinhDang() != null && dd.getTenDinhDang().equalsIgnoreCase(dinhDang)) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) {
+                        error = "Định dạng '" + dinhDang + "' không nằm trong danh sách định dạng chung của Phim và Phòng!";
+                    }
+                }
+            }
+        }
+
         if (error == null) {
             boolean trungLich = suatChieuRepo.checkTrungLich(maPhong, ngayChieu, gioBatDau, gioKetThuc, maSuat);
             if (trungLich) {
@@ -374,5 +420,14 @@ public class SuatChieuServlet extends HttpServlet {
     private String trimParam(HttpServletRequest req, String name) {
         String val = req.getParameter(name);
         return val == null ? "" : val.trim();
+    }
+
+    private Integer parseIntOrNull(String s) {
+        if (s == null || s.trim().isEmpty()) return null;
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

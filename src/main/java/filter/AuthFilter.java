@@ -70,7 +70,8 @@ public class AuthFilter implements Filter {
                         || path.startsWith("/suat-chieu")
                         || path.startsWith("/ghe")
                         || path.equals("/menuadmin.jsp")
-                        || path.startsWith("/khach-hang");
+                        || path.startsWith("/khach-hang")
+                        || path.startsWith("/nhan-vien");
 
         if (isAdminUrl) {
 

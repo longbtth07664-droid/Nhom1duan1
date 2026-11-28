@@ -176,9 +176,16 @@
                     <label>Email <span class="required-star">*</span></label>
                     <input type="email" name="email" class="form-control" value="${formNv.email}" placeholder="VD: nv@cinemax.vn" required>
                 </div>
-                <div class="form-group">
-                    <label>Địa Chỉ</label>
-                    <input type="text" name="diaChi" class="form-control" value="${formNv.diaChi}" placeholder="Nhập địa chỉ" maxlength="255">
+                <div class="form-group full-col">
+                    <label>Địa Chỉ (34 Tỉnh/Thành mới)</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                        <select id="addProvince" class="form-control"></select>
+                        <select id="addWard" class="form-control">
+                            <option value="">-- Phường / Xã --</option>
+                        </select>
+                        <input type="text" id="addAddressDetail" class="form-control" placeholder="Số nhà, đường..." maxlength="150">
+                    </div>
+                    <input type="hidden" name="diaChi" id="addDiaChiHidden" value="${formNv.diaChi}">
                 </div>
                 <div class="form-group">
                     <label>Username <span class="required-star">*</span></label>
@@ -262,7 +269,18 @@
 </div>
 
 <script src="${pageContext.request.contextPath}/assets/js/cinema-mock.js?v=5"></script>
+<script src="${pageContext.request.contextPath}/assets/js/vn-address-34.js?v=1"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initVnAddress34({
+            contextPath: '${pageContext.request.contextPath}',
+            provinceSelectId: 'addProvince',
+            wardSelectId: 'addWard',
+            detailInputId: 'addAddressDetail',
+            hiddenInputId: 'addDiaChiHidden',
+            initialAddress: '${formNv.diaChi}'
+        });
+    });
     function openAddModal(event) {
         if (event) event.preventDefault();
         document.getElementById('addModal').classList.add('open');

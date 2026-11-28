@@ -1,5 +1,6 @@
 package controller;
 
+import entity.DinhDang;
 import entity.LoaiPhong;
 import entity.PhongChieu;
 import jakarta.servlet.ServletException;
@@ -7,10 +8,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import repository.DinhDangRepository;
 import repository.LoaiPhongRepository;
 import repository.PhongChieuRepository;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,6 +31,7 @@ public class PhongChieuServlet extends HttpServlet {
 
     private final PhongChieuRepository repo = new PhongChieuRepository();
     private final LoaiPhongRepository loaiPhongRepo = new LoaiPhongRepository();
+    private final DinhDangRepository dinhDangRepo = new DinhDangRepository();
 
     private static final String VIEW = "/Phong-Chieu/view.jsp";
     private static final String VIEW_UPDATE = "/Phong-Chieu/view-update.jsp";
@@ -75,6 +79,10 @@ public class PhongChieuServlet extends HttpServlet {
             }
 
             request.setAttribute("pc", pc);
+            List<DinhDang> phongDD = dinhDangRepo.getByPhong(pc.getMaPhong());
+            List<Integer> selectedDDIds = new ArrayList<>();
+            for (DinhDang d : phongDD) selectedDDIds.add(d.getMaDinhDang());
+            request.setAttribute("selectedDinhDangIds", selectedDDIds);
             loadDataPaging(request);
             request.getRequestDispatcher(VIEW_UPDATE).forward(request, response);
 
@@ -200,6 +208,9 @@ public class PhongChieuServlet extends HttpServlet {
             forwardToView(request, response, pc, "add", "Thêm phòng chiếu thất bại! Vui lòng kiểm tra kết nối cơ sở dữ liệu.");
             return;
         }
+        if (pc.getMaPhong() != null) {
+            dinhDangRepo.savePhongDinhDang(pc.getMaPhong(), parseDinhDangIds(request));
+        }
 
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view");
     }
@@ -262,6 +273,7 @@ public class PhongChieuServlet extends HttpServlet {
             forwardToView(request, response, pc, "update", "Cập nhật phòng chiếu thất bại! Vui lòng kiểm tra cơ sở dữ liệu.");
             return;
         }
+        dinhDangRepo.savePhongDinhDang(maPhong, parseDinhDangIds(request));
 
         response.sendRedirect(request.getContextPath() + "/phong-chieu/view");
     }
@@ -302,6 +314,20 @@ public class PhongChieuServlet extends HttpServlet {
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalItems", totalItems);
         request.setAttribute("listLoaiPhong", new LoaiPhongRepository().getAll());
+        request.setAttribute("listDinhDang", dinhDangRepo.getAll());
+    }
+
+    private List<Integer> parseDinhDangIds(HttpServletRequest request) {
+        List<Integer> ids = new ArrayList<>();
+        String[] vals = request.getParameterValues("dinhDangIds");
+        if (vals != null) {
+            for (String v : vals) {
+                try {
+                    ids.add(Integer.parseInt(v.trim()));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return ids;
     }
 
     // Đọc tham số request, trả về chuỗi rỗng nếu null, cắt khoảng trắng hai đầu.

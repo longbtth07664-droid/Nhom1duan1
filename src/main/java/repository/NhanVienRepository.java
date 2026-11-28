@@ -94,7 +94,6 @@ public class NhanVienRepository {
         }
     }
 
-    // Kiểm tra trùng CCCD
     public boolean existsByCccd(String cccd, Integer excludeId) {
         if (cccd == null || cccd.trim().isEmpty()) return false;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -110,7 +109,6 @@ public class NhanVienRepository {
         }
     }
 
-    // Kiểm tra trùng Email
     public boolean existsByEmail(String email, Integer excludeId) {
         if (email == null || email.trim().isEmpty()) return false;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -127,30 +125,12 @@ public class NhanVienRepository {
     }
 
     public String validateFormat(String cccd, String email, String soDienThoai) {
-        String c = cccd != null ? cccd.trim() : "";
-        String e = email != null ? email.trim() : "";
-        String s = soDienThoai != null ? soDienThoai.trim() : "";
-
-        // Bắt buộc nhập CCCD
-        if (c.isEmpty()) {
-            return "Vui lòng nhập CCCD!";
-        }
-
-        // CCCD: chỉ gồm chữ số, đúng 12 số, bắt đầu bằng 0 (nếu có nhập)
-        if (!c.isEmpty() && !c.matches("0\\d{11}")) {
-            return "CCCD chỉ được chứa chữ số, gồm 12 số và bắt đầu bằng 0!";
-        }
-
-        // SĐT: chỉ gồm chữ số, 10 - 11 số, bắt đầu bằng 0 (nếu có nhập)
-        if (!s.isEmpty() && !s.matches("0\\d{9,10}")) {
-            return "Số điện thoại chỉ được chứa chữ số (10 - 11 số, bắt đầu bằng 0)!";
-        }
-
-        // Email: đúng định dạng chuẩn (nếu có nhập)
-        if (!e.isEmpty() && !e.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            return "Email không đúng định dạng (ví dụ: ten@gmail.com)!";
-        }
-
+        String c = cccd == null ? "" : cccd.trim();
+        String e = email == null ? "" : email.trim();
+        String s = soDienThoai == null ? "" : soDienThoai.trim();
+        if (!c.matches("0\\d{11}")) return "CCCD chỉ được chứa 12 chữ số và bắt đầu bằng 0!";
+        if (!s.matches("0\\d{9,10}")) return "Số điện thoại phải gồm 10-11 số và bắt đầu bằng 0!";
+        if (!e.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) return "Email không đúng định dạng!";
         return null;
     }
 

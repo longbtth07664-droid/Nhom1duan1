@@ -264,6 +264,12 @@ public class HoaDonRepository {
      */
     public int taoHoaDonThanhToan(int maTK, String maKH, Integer maKM, BigDecimal tongTien, BigDecimal tienGiam,
                                   String phuongThuc, List<Ve> listVe, List<ChiTietHoaDon> listCombo, boolean isPending) {
+        BigDecimal tienGiamDiem = (maKM == null || maKM <= 0) ? tienGiam : BigDecimal.ZERO;
+        return taoHoaDonThanhToan(maTK, maKH, maKM, tongTien, tienGiam, tienGiamDiem, phuongThuc, listVe, listCombo, isPending);
+    }
+
+    public int taoHoaDonThanhToan(int maTK, String maKH, Integer maKM, BigDecimal tongTien, BigDecimal tienGiam, BigDecimal tienGiamDiem,
+                                  String phuongThuc, List<Ve> listVe, List<ChiTietHoaDon> listCombo, boolean isPending) {
         Connection conn = null;
         int generatedMaDatVe = -1;
 
@@ -412,11 +418,11 @@ public class HoaDonRepository {
                 psTT.executeUpdate();
             }
 
-            // 5. Cập nhật điểm tích lũy Khách hàng (chỉ khi hoàn tất thanh toán)
+            // 5. Cập nhật điểm tích lũy Khách hàng (chỉ khi hoàn tất thanh toán, và chỉ trừ điểm theo tienGiamDiem - không trừ nhầm tiền giảm Voucher)
             if (!isPending && maKH != null && !maKH.trim().isEmpty()) {
                 try {
                     int diemCong = (tongTien != null) ? tongTien.intValue() / 10000 : 0;
-                    int diemTru = (tienGiam != null) ? tienGiam.intValue() / 1000 : 0;
+                    int diemTru = (tienGiamDiem != null) ? tienGiamDiem.intValue() / 1000 : 0;
                     int delta = diemCong - diemTru;
 
                     String sqlKh = "UPDATE KhachHang SET DiemTichLuy = CASE WHEN DiemTichLuy + ? < 0 THEN 0 ELSE DiemTichLuy + ? END WHERE MaKH = ?";
@@ -462,9 +468,15 @@ public class HoaDonRepository {
         int tongHoaDon = 0;
         int hoaDonHomNay = 0;
 
-        String sqlTong = "SELECT COUNT(*) AS TongHD, SUM(TongTien) AS TongTien FROM HoaDon WHERE TrangThai IS NULL OR TrangThai <> N'Đã hủy'";
+        // Chỉ tính hóa đơn đã hoàn tất và có thanh toán thành công.
+        // Hóa đơn "Chờ thanh toán" không được tính vào doanh thu dù chưa bị hủy.
+        String paidInvoiceCondition = "TrangThai = N'Đã hoàn tất' " +
+                "AND EXISTS (SELECT 1 FROM ThanhToan tt " +
+                "WHERE tt.MaDatVe = HoaDon.MaDatVe AND tt.TrangThai = N'Thành công')";
+        String sqlTong = "SELECT COUNT(*) AS TongHD, SUM(TongTien) AS TongTien FROM HoaDon WHERE " +
+                paidInvoiceCondition;
         String sqlToday = "SELECT COUNT(*) AS HDToday, SUM(TongTien) AS TienToday FROM HoaDon " +
-                "WHERE (TrangThai IS NULL OR TrangThai <> N'Đã hủy') " +
+                "WHERE " + paidInvoiceCondition + " " +
                 "AND CONVERT(date, NgayDat) = CONVERT(date, GETDATE())";
 
         try (Connection conn = getConnection()) {
@@ -599,9 +611,12 @@ public class HoaDonRepository {
                 }
             }
 
-            // 4. Cộng điểm tích lũy cho khách hàng (nếu có MaKH)
+            // 4. Cộng điểm tích lũy cho khách hàng (nếu có MaKH, chỉ trừ điểm nếu không dùng Voucher)
             try {
-                String sqlGetKh = "SELECT MaKH, TongTien, TienGiam FROM HoaDon WHERE MaDatVe = ?";
+                boolean hasMaKM = checkColumnExists(conn, "HoaDon", "MaKM");
+                String sqlGetKh = hasMaKM
+                        ? "SELECT MaKH, TongTien, TienGiam, MaKM FROM HoaDon WHERE MaDatVe = ?"
+                        : "SELECT MaKH, TongTien, TienGiam FROM HoaDon WHERE MaDatVe = ?";
                 try (PreparedStatement psGet = conn.prepareStatement(sqlGetKh)) {
                     psGet.setInt(1, maDatVe);
                     try (ResultSet rs = psGet.executeQuery()) {
@@ -609,9 +624,10 @@ public class HoaDonRepository {
                             String maKh = rs.getString("MaKH");
                             BigDecimal tongTien = rs.getBigDecimal("TongTien");
                             BigDecimal tienGiam = rs.getBigDecimal("TienGiam");
+                            Integer maKm = hasMaKM ? (Integer) rs.getObject("MaKM") : null;
                             if (maKh != null && !maKh.trim().isEmpty()) {
                                 int diemCong = (tongTien != null) ? tongTien.intValue() / 10000 : 0;
-                                int diemTru = (tienGiam != null) ? tienGiam.intValue() / 1000 : 0;
+                                int diemTru = (maKm == null && tienGiam != null) ? tienGiam.intValue() / 1000 : 0;
                                 int delta = diemCong - diemTru;
                                 String sqlKh = "UPDATE KhachHang SET DiemTichLuy = CASE WHEN DiemTichLuy + ? < 0 THEN 0 ELSE DiemTichLuy + ? END WHERE MaKH = ?";
                                 try (PreparedStatement psKh = conn.prepareStatement(sqlKh)) {
@@ -652,6 +668,43 @@ public class HoaDonRepository {
             conn = getConnection();
             conn.setAutoCommit(false);
 
+            // Kiểm tra hóa đơn trước khi hủy để hoàn/thu hồi điểm tích lũy nếu đơn đã hoàn tất
+            try {
+                boolean hasMaKM = checkColumnExists(conn, "HoaDon", "MaKM");
+                String sqlCheck = hasMaKM
+                        ? "SELECT MaKH, TongTien, TienGiam, TrangThai, MaKM FROM HoaDon WHERE MaDatVe = ?"
+                        : "SELECT MaKH, TongTien, TienGiam, TrangThai FROM HoaDon WHERE MaDatVe = ?";
+                try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
+                    psCheck.setInt(1, maDatVe);
+                    try (ResultSet rs = psCheck.executeQuery()) {
+                        if (rs.next()) {
+                            String maKh = rs.getString("MaKH");
+                            String tt = rs.getString("TrangThai");
+                            BigDecimal tongTien = rs.getBigDecimal("TongTien");
+                            BigDecimal tienGiam = rs.getBigDecimal("TienGiam");
+                            Integer maKm = hasMaKM ? (Integer) rs.getObject("MaKM") : null;
+                            if (maKh != null && !maKh.trim().isEmpty() && "Đã hoàn tất".equalsIgnoreCase(tt)) {
+                                int diemDaCong = (tongTien != null) ? tongTien.intValue() / 10000 : 0;
+                                int diemDaTru = (maKm == null && tienGiam != null) ? tienGiam.intValue() / 1000 : 0;
+                                // Hoàn lại điểm đã tiêu và thu hồi điểm đã cộng
+                                int deltaHoan = diemDaTru - diemDaCong;
+                                if (deltaHoan != 0) {
+                                    String sqlKh = "UPDATE KhachHang SET DiemTichLuy = CASE WHEN DiemTichLuy + ? < 0 THEN 0 ELSE DiemTichLuy + ? END WHERE MaKH = ?";
+                                    try (PreparedStatement psKh = conn.prepareStatement(sqlKh)) {
+                                        psKh.setInt(1, deltaHoan);
+                                        psKh.setInt(2, deltaHoan);
+                                        psKh.setString(3, maKh.trim());
+                                        psKh.executeUpdate();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("Bỏ qua lỗi hoàn điểm khi hủy hóa đơn: " + ex.getMessage());
+            }
+
             String sqlHd = "UPDATE HoaDon SET TrangThai = N'Đã hủy' WHERE MaDatVe = ?";
             try (PreparedStatement ps = conn.prepareStatement(sqlHd)) {
                 ps.setInt(1, maDatVe);
@@ -668,6 +721,165 @@ public class HoaDonRepository {
             try (PreparedStatement ps = conn.prepareStatement(sqlTT)) {
                 ps.setInt(1, maDatVe);
                 ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    /**
+     * Lấy thông tin hóa đơn và danh sách suất chiếu thay thế cùng phim (Phương án B: Đổi suất / Bảo lưu vé)
+     */
+    public Map<String, Object> getExchangeInfo(int maDatVe) {
+        Map<String, Object> res = new HashMap<>();
+        List<Map<String, Object>> showtimes = new ArrayList<>();
+        int ticketCount = 0;
+        int currentMaSuat = 0;
+        int maPhim = 0;
+        String tenPhim = "";
+
+        try (Connection conn = getConnection()) {
+            String sqlInfo = "SELECT COUNT(v.MaVe) AS TicketCount, MIN(v.MaSuat) AS MaSuat, MIN(sc.MaPhim) AS MaPhim, MIN(p.TenPhim) AS TenPhim " +
+                    "FROM Ve v JOIN SuatChieu sc ON v.MaSuat = sc.MaSuat JOIN Phim p ON sc.MaPhim = p.MaPhim " +
+                    "WHERE v.MaDatVe = ? AND (v.TrangThai IS NULL OR v.TrangThai <> N'Đã hủy')";
+            try (PreparedStatement ps = conn.prepareStatement(sqlInfo)) {
+                ps.setInt(1, maDatVe);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        ticketCount = rs.getInt("TicketCount");
+                        currentMaSuat = rs.getInt("MaSuat");
+                        maPhim = rs.getInt("MaPhim");
+                        tenPhim = rs.getString("TenPhim");
+                    }
+                }
+            }
+
+            if (maPhim > 0 && ticketCount > 0) {
+                String sqlSuat = "SELECT sc.MaSuat, sc.NgayChieu, sc.GioBatDau, pc.TenPhong, sc.DinhDang " +
+                        "FROM SuatChieu sc JOIN PhongChieu pc ON sc.MaPhong = pc.MaPhong " +
+                        "WHERE sc.MaPhim = ? AND sc.MaSuat <> ? AND (sc.TrangThai IS NULL OR sc.TrangThai NOT IN (N'Đã hủy', N'Đã đóng bán')) " +
+                        "AND sc.NgayChieu >= CAST(GETDATE() AS DATE) " +
+                        "ORDER BY sc.NgayChieu ASC, sc.GioBatDau ASC";
+                try (PreparedStatement ps = conn.prepareStatement(sqlSuat)) {
+                    ps.setInt(1, maPhim);
+                    ps.setInt(2, currentMaSuat);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            Map<String, Object> item = new HashMap<>();
+                            item.put("maSuat", rs.getInt("MaSuat"));
+                            item.put("ngayChieu", rs.getDate("NgayChieu").toString());
+                            Time t = rs.getTime("GioBatDau");
+                            item.put("gioBatDau", t != null ? t.toString().substring(0, 5) : "");
+                            item.put("tenPhong", rs.getString("TenPhong"));
+                            item.put("dinhDang", rs.getString("DinhDang"));
+                            showtimes.add(item);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        res.put("ticketCount", ticketCount);
+        res.put("currentMaSuat", currentMaSuat);
+        res.put("tenPhim", tenPhim);
+        res.put("showtimes", showtimes);
+        return res;
+    }
+
+    /**
+     * Lấy danh sách ghế còn trống của một suất chiếu để đổi vé
+     */
+    public List<Map<String, Object>> getFreeSeatsForShowtime(int maSuat) {
+        List<Map<String, Object>> seats = new ArrayList<>();
+        String sql = "SELECT g.MaGhe, g.HangGhe, g.SoGhe, lg.TenLoaiGhe " +
+                "FROM Ghe g " +
+                "JOIN SuatChieu sc ON g.MaPhong = sc.MaPhong " +
+                "LEFT JOIN LoaiGhe lg ON g.MaLoaiGhe = lg.MaLoaiGhe " +
+                "WHERE sc.MaSuat = ? AND (g.TrangThai IS NULL OR g.TrangThai = N'Hoạt động') " +
+                "AND g.MaGhe NOT IN (SELECT v.MaGhe FROM Ve v WHERE v.MaSuat = ? AND (v.TrangThai IS NULL OR v.TrangThai <> N'Đã hủy')) " +
+                "ORDER BY g.HangGhe ASC, g.SoGhe ASC";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, maSuat);
+            ps.setInt(2, maSuat);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> s = new HashMap<>();
+                    s.put("maGhe", rs.getInt("MaGhe"));
+                    s.put("tenGhe", rs.getString("HangGhe") + rs.getInt("SoGhe"));
+                    s.put("loaiGhe", rs.getString("TenLoaiGhe"));
+                    seats.add(s);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return seats;
+    }
+
+    /**
+     * Thực hiện đổi suất chiếu & ghế mới cho toàn bộ vé của hóa đơn (giữ nguyên tiền & điểm tích lũy)
+     */
+    public boolean doiSuatChieu(int maDatVe, int newMaSuat, List<Integer> newSeatIds) {
+        if (newSeatIds == null || newSeatIds.isEmpty()) return false;
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+
+            List<Integer> veIds = new ArrayList<>();
+            String sqlVe = "SELECT MaVe FROM Ve WHERE MaDatVe = ? AND (TrangThai IS NULL OR TrangThai <> N'Đã hủy') ORDER BY MaVe ASC";
+            try (PreparedStatement ps = conn.prepareStatement(sqlVe)) {
+                ps.setInt(1, maDatVe);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) veIds.add(rs.getInt("MaVe"));
+                }
+            }
+
+            if (veIds.isEmpty() || veIds.size() != newSeatIds.size()) {
+                conn.rollback();
+                return false;
+            }
+
+            String sqlCheckSeat = "SELECT COUNT(*) FROM Ve WHERE MaSuat = ? AND MaGhe = ? AND (TrangThai IS NULL OR TrangThai <> N'Đã hủy')";
+            String sqlUpdateVe = "UPDATE Ve SET MaSuat = ?, MaGhe = ?, MaQR = ?, TrangThai = N'Đã bán' WHERE MaVe = ?";
+            for (int i = 0; i < veIds.size(); i++) {
+                int seatId = newSeatIds.get(i);
+                int veId = veIds.get(i);
+
+                try (PreparedStatement psChk = conn.prepareStatement(sqlCheckSeat)) {
+                    psChk.setInt(1, newMaSuat);
+                    psChk.setInt(2, seatId);
+                    try (ResultSet rs = psChk.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            conn.rollback();
+                            return false;
+                        }
+                    }
+                }
+
+                String newQr = "CINEMAX-HD" + maDatVe + "-S" + newMaSuat + "-G" + seatId + "-" +
+                        UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+                try (PreparedStatement psUp = conn.prepareStatement(sqlUpdateVe)) {
+                    psUp.setInt(1, newMaSuat);
+                    psUp.setInt(2, seatId);
+                    psUp.setString(3, newQr);
+                    psUp.setInt(4, veId);
+                    psUp.executeUpdate();
+                }
             }
 
             conn.commit();
@@ -716,7 +928,7 @@ public class HoaDonRepository {
 
         String sql = "SELECT v.MaVe, v.MaDatVe, v.MaSuat, v.MaGhe, v.GiaVe, v.MaQR, v.TrangThai AS TrangThaiVe, " +
                 "g.HangGhe, g.SoGhe, " +
-                "p.TenPhim, pc.TenPhong, sc.NgayChieu, sc.GioBatDau, " +
+                "p.TenPhim, pc.TenPhong, sc.NgayChieu, sc.GioBatDau, sc.TrangThai AS TrangThaiSuat, sc.LyDoHuy, " +
                 "hd.TrangThai AS TrangThaiHD, hd.TongTien " +
                 "FROM Ve v " +
                 "LEFT JOIN Ghe g ON v.MaGhe = g.MaGhe " +
@@ -733,6 +945,8 @@ public class HoaDonRepository {
             Ve ve = null;
             String trangThaiVe = "";
             String trangThaiHD = "";
+            String trangThaiSuat = "";
+            String lyDoHuySuat = "";
             java.sql.Date sqlNgayChieu = null;
             Time sqlGioBatDau = null;
 
@@ -761,6 +975,8 @@ public class HoaDonRepository {
                         ve.setTrangThai(trangThaiVe);
 
                         trangThaiHD = rs.getString("TrangThaiHD");
+                        trangThaiSuat = rs.getString("TrangThaiSuat");
+                        lyDoHuySuat = rs.getString("LyDoHuy");
 
                         String hang = rs.getString("HangGhe");
                         int so = rs.getInt("SoGhe");
@@ -785,6 +1001,15 @@ public class HoaDonRepository {
             }
 
             result.put("ve", ve);
+
+            // 0. Kiểm tra nếu Suất chiếu đã bị HỦY / Tạm ngừng đột xuất
+            if ("Đã hủy".equalsIgnoreCase(trangThaiSuat)) {
+                result.put("success", false);
+                result.put("statusCode", "SHOWTIME_CANCELLED");
+                String lyDo = (lyDoHuySuat != null && !lyDoHuySuat.trim().isEmpty()) ? " (Lý do: " + lyDoHuySuat + ")" : "";
+                result.put("message", "Suất chiếu của vé này đã bị HỦY" + lyDo + "! Vui lòng hướng dẫn khách ra quầy để hoàn tiền hoặc đổi suất.");
+                return result;
+            }
 
             // 1. Kiểm tra nếu vé hoặc đơn đặt vé đã bị hủy
             if ("Đã hủy".equalsIgnoreCase(trangThaiVe) || "Đã hủy".equalsIgnoreCase(trangThaiHD)) {

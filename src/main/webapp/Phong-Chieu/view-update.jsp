@@ -115,6 +115,21 @@
                             <input type="number" id="sucChua" name="sucChua" class="form-control" min="1"
                                    value="${pc.sucChua}">
                         </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Định dạng trình chiếu hỗ trợ</label>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px; padding:6px 0;">
+                                <c:forEach items="${listDinhDang}" var="dd">
+                                    <c:set var="isChecked" value="false" />
+                                    <c:forEach items="${selectedDinhDangIds}" var="sid">
+                                        <c:if test="${sid == dd.maDinhDang}"><c:set var="isChecked" value="true" /></c:if>
+                                    </c:forEach>
+                                    <label style="display:inline-flex; align-items:center; gap:5px; padding:5px 10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; font-weight:600; cursor:pointer;">
+                                        <input type="checkbox" name="dinhDangIds" value="${dd.maDinhDang}" ${isChecked ? 'checked' : ''}>
+                                        <span>${dd.tenDinhDang}</span>
+                                    </label>
+                                </c:forEach>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-pink">Lưu cập nhật</button>

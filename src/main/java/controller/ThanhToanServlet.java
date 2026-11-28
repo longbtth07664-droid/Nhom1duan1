@@ -265,6 +265,7 @@ public class ThanhToanServlet extends HttpServlet {
         String phuongThuc = req.getParameter("phuongThuc");
         String tongTienStr = req.getParameter("tongTien");
         String tienGiamStr = req.getParameter("tienGiam");
+        String tienGiamDiemStr = req.getParameter("tienGiamDiem");
         String seatsData = req.getParameter("seatsData");
         String combosData = req.getParameter("combosData");
         String maSuatStr = req.getParameter("maSuat");
@@ -287,6 +288,7 @@ public class ThanhToanServlet extends HttpServlet {
             phuongThuc = extractJsonField(jsonBody, "phuongThuc");
             tongTienStr = extractJsonField(jsonBody, "tongTien");
             tienGiamStr = extractJsonField(jsonBody, "tienGiam");
+            tienGiamDiemStr = extractJsonField(jsonBody, "tienGiamDiem");
             seatsData = extractJsonArray(jsonBody, "seatsData");
             combosData = extractJsonArray(jsonBody, "combosData");
             maSuatStr = extractJsonField(jsonBody, "maSuat");
@@ -313,6 +315,13 @@ public class ThanhToanServlet extends HttpServlet {
         if (tienGiamStr != null && !tienGiamStr.trim().isEmpty()) {
             try {
                 tienGiam = new BigDecimal(tienGiamStr.replaceAll("[^0-9.]", ""));
+            } catch (Exception ignored) {}
+        }
+
+        BigDecimal tienGiamDiem = null;
+        if (tienGiamDiemStr != null && !tienGiamDiemStr.trim().isEmpty()) {
+            try {
+                tienGiamDiem = new BigDecimal(tienGiamDiemStr.replaceAll("[^0-9.]", ""));
             } catch (Exception ignored) {}
         }
 
@@ -362,7 +371,9 @@ public class ThanhToanServlet extends HttpServlet {
         }
 
         // Gọi Repository tạo hóa đơn và thanh toán (có cờ isPending để lưu Chờ thanh toán)
-        int maDatVe = hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, maKM, tongTien, tienGiam, phuongThuc, listVe, listCombo, isPending);
+        int maDatVe = (tienGiamDiem != null)
+                ? hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, maKM, tongTien, tienGiam, tienGiamDiem, phuongThuc, listVe, listCombo, isPending)
+                : hoaDonRepo.taoHoaDonThanhToan(maTK, maKH, maKM, tongTien, tienGiam, phuongThuc, listVe, listCombo, isPending);
 
         if (maDatVe > 0) {
             if (isPending) {

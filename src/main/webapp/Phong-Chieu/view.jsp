@@ -189,6 +189,17 @@
                            value="${openModal == 'add' ? pc.sucChua : ''}"
                            placeholder="VD: 120">
                 </div>
+                <div class="form-group">
+                    <label>Định dạng trình chiếu hỗ trợ</label>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; padding:6px 0;">
+                        <c:forEach items="${listDinhDang}" var="dd">
+                            <label style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; font-weight:600; cursor:pointer;">
+                                <input type="checkbox" name="dinhDangIds" value="${dd.maDinhDang}">
+                                <span>${dd.tenDinhDang}</span>
+                            </label>
+                        </c:forEach>
+                    </div>
+                </div>
                 <div style="font-size:12px; color:var(--text-secondary);">
                     (<span class="required-star">*</span>) Trường bắt buộc nhập
                 </div>
@@ -248,6 +259,17 @@
                     <label for="editSucChua">Sức chứa<span class="required-star">*</span></label>
                     <input type="number" id="editSucChua" name="sucChua" class="form-control" min="1"
                            value="${openModal == 'update' ? pc.sucChua : ''}">
+                </div>
+                <div class="form-group">
+                    <label>Định dạng trình chiếu hỗ trợ</label>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; padding:6px 0;">
+                        <c:forEach items="${listDinhDang}" var="dd">
+                            <label style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; font-weight:600; cursor:pointer;">
+                                <input type="checkbox" name="dinhDangIds" value="${dd.maDinhDang}">
+                                <span>${dd.tenDinhDang}</span>
+                            </label>
+                        </c:forEach>
+                    </div>
                 </div>
                 <div style="font-size:12px; color:var(--text-secondary);">
                     (<span class="required-star">*</span>) Trường bắt buộc nhập

@@ -50,9 +50,22 @@
                     <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
                     <input type="email" name="email" class="form-control" value="${nv.email}" required>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Địa Chỉ</label>
-                    <input type="text" name="diaChi" class="form-control" value="${nv.diaChi}" maxlength="255">
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Địa Chỉ (34 Tỉnh/Thành mới)</label>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <select id="editProvince" class="form-select"></select>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="editWard" class="form-select">
+                                <option value="">-- Phường / Xã --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" id="editAddressDetail" class="form-control" placeholder="Số nhà, đường..." maxlength="150">
+                        </div>
+                    </div>
+                    <input type="hidden" name="diaChi" id="editDiaChiHidden" value="${nv.diaChi}">
                 </div>
 
                 <div class="col-md-6">
@@ -60,8 +73,8 @@
                     <input type="text" name="username" class="form-control" value="${nv.username}" required pattern="[a-zA-Z0-9_]{3,50}" title="3-50 ký tự chữ, số hoặc dấu _">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-bold">Password <span class="text-danger">*</span></label>
-                    <input type="password" name="matKhau" class="form-control" value="${nv.matKhau}" required minlength="6" title="Tối thiểu 6 ký tự">
+                    <label class="form-label fw-bold">Password <span class="text-muted fw-normal">(để trống nếu không đổi)</span></label>
+                    <input type="password" name="matKhau" class="form-control" value="" minlength="6" title="Nhập ít nhất 6 ký tự nếu muốn đổi">
                 </div>
 
                 <div class="col-md-6">
@@ -96,5 +109,18 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/vn-address-34.js?v=1"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initVnAddress34({
+            contextPath: '${pageContext.request.contextPath}',
+            provinceSelectId: 'editProvince',
+            wardSelectId: 'editWard',
+            detailInputId: 'editAddressDetail',
+            hiddenInputId: 'editDiaChiHidden',
+            initialAddress: '${nv.diaChi}'
+        });
+    });
+</script>
 </body>
 </html>

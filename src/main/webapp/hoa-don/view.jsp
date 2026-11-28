@@ -508,6 +508,12 @@
                                                 <i class="fa-solid fa-xmark"></i> Hủy
                                             </button>
                                         </c:if>
+                                        <c:if test="${hd.trangThai != 'Đã hủy' && hd.trangThai != 'Chờ thanh toán'}">
+                                            <button type="button" class="btn btn-sm" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:600;"
+                                                    onclick="openExchangeModal(${hd.maDatVe})" title="Đổi sang suất chiếu khác (bảo lưu vé)">
+                                                <i class="fa-solid fa-repeat"></i> Đổi suất
+                                            </button>
+                                        </c:if>
                                         <button type="button" class="btn btn-outline btn-sm" style="padding:4px 8px; border-radius:6px; font-size:12px;"
                                                 onclick="viewInvoiceDetail(${hd.maDatVe})" title="Xem chi tiết & In phiếu">
                                             <i class="fa-solid fa-receipt" style="margin-right:4px;"></i> Chi tiết
@@ -893,6 +899,154 @@
         document.getElementById('pageNumberInput').value = 1;
         document.getElementById('invoiceFilterForm').submit();
     }
+
+    // ==================== ĐỔI SUẤT CHIẾU (PHƯƠNG ÁN B) ====================
+    let EXCHANGE_STATE = { maDatVe: null, requiredSeats: 0, selectedSeatIds: [] };
+
+    function openExchangeModal(maDatVe) {
+        EXCHANGE_STATE = { maDatVe: maDatVe, requiredSeats: 0, selectedSeatIds: [] };
+        document.getElementById('exHdTitle').textContent = '#HD' + maDatVe;
+        document.getElementById('exMovieTitle').textContent = 'Đang tải...';
+        document.getElementById('exTicketCount').textContent = '0';
+        document.getElementById('exShowtimeSelect').innerHTML = '<option value="">-- Đang tải suất chiếu --</option>';
+        document.getElementById('exSeatContainer').innerHTML = '<div style="color:#64748b; font-size:12.5px;">Vui lòng chọn suất chiếu mới ở trên.</div>';
+        document.getElementById('exchangeModal').classList.add('open');
+
+        fetch('${pageContext.request.contextPath}/hoa-don?action=exchangeInfo&id=' + maDatVe)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || data.ticketCount <= 0) {
+                    alert('Hóa đơn này không có vé hợp lệ để đổi suất!');
+                    closeExchangeModal();
+                    return;
+                }
+                EXCHANGE_STATE.requiredSeats = data.ticketCount;
+                document.getElementById('exMovieTitle').textContent = data.tenPhim || 'Phim';
+                document.getElementById('exTicketCount').textContent = data.ticketCount;
+                const sel = document.getElementById('exShowtimeSelect');
+                if (!data.showtimes || data.showtimes.length === 0) {
+                    sel.innerHTML = '<option value="">-- Không còn suất chiếu thay thế cùng phim --</option>';
+                } else {
+                    sel.innerHTML = '<option value="">-- Chọn suất chiếu thay thế --</option>';
+                    data.showtimes.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.maSuat;
+                        opt.textContent = s.ngayChieu + ' ' + s.gioBatDau + ' • ' + s.tenPhong + ' (' + s.dinhDang + ')';
+                        sel.appendChild(opt);
+                    });
+                }
+            })
+            .catch(() => {
+                alert('Lỗi tải thông tin đổi suất!');
+                closeExchangeModal();
+            });
+    }
+
+    function onExchangeShowtimeChange(maSuat) {
+        EXCHANGE_STATE.selectedSeatIds = [];
+        const container = document.getElementById('exSeatContainer');
+        if (!maSuat) {
+            container.innerHTML = '<div style="color:#64748b; font-size:12.5px;">Vui lòng chọn suất chiếu mới ở trên.</div>';
+            return;
+        }
+        container.innerHTML = '<div style="color:#64748b; font-size:12.5px;">Đang tải ghế trống...</div>';
+        fetch('${pageContext.request.contextPath}/hoa-don?action=exchangeSeats&maSuat=' + encodeURIComponent(maSuat))
+            .then(r => r.json())
+            .then(data => {
+                const seats = data.seats || [];
+                if (seats.length < EXCHANGE_STATE.requiredSeats) {
+                    container.innerHTML = '<div style="color:#dc2626; font-size:12.5px; font-weight:600;">Suất này chỉ còn ' + seats.length + ' ghế trống, không đủ ' + EXCHANGE_STATE.requiredSeats + ' ghế để đổi!</div>';
+                    return;
+                }
+                let html = '<div style="display:flex; flex-wrap:wrap; gap:6px; max-height:180px; overflow-y:auto; padding:4px;">';
+                seats.forEach(s => {
+                    html += '<button type="button" class="ex-seat-btn" data-id="' + s.maGhe + '" onclick="toggleExchangeSeat(this, ' + s.maGhe + ')" ' +
+                        'style="padding:5px 10px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; font-size:12px; font-weight:700; cursor:pointer;">' +
+                        s.tenGhe + '</button>';
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            });
+    }
+
+    function toggleExchangeSeat(btn, maGhe) {
+        const idx = EXCHANGE_STATE.selectedSeatIds.indexOf(maGhe);
+        if (idx >= 0) {
+            EXCHANGE_STATE.selectedSeatIds.splice(idx, 1);
+            btn.style.background = '#fff';
+            btn.style.color = '#0f172a';
+            btn.style.borderColor = '#cbd5e1';
+        } else {
+            if (EXCHANGE_STATE.selectedSeatIds.length >= EXCHANGE_STATE.requiredSeats) {
+                alert('Chỉ được chọn đúng ' + EXCHANGE_STATE.requiredSeats + ' ghế tương ứng với số vé đã mua!');
+                return;
+            }
+            EXCHANGE_STATE.selectedSeatIds.push(maGhe);
+            btn.style.background = '#e11d48';
+            btn.style.color = '#fff';
+            btn.style.borderColor = '#e11d48';
+        }
+    }
+
+    function confirmExchangeShowtime() {
+        const maSuat = document.getElementById('exShowtimeSelect').value;
+        if (!maSuat) {
+            alert('Vui lòng chọn suất chiếu mới!');
+            return;
+        }
+        if (EXCHANGE_STATE.selectedSeatIds.length !== EXCHANGE_STATE.requiredSeats) {
+            alert('Vui lòng chọn đủ ' + EXCHANGE_STATE.requiredSeats + ' ghế mới!');
+            return;
+        }
+        const url = '${pageContext.request.contextPath}/hoa-don?action=confirmExchange'
+            + '&id=' + EXCHANGE_STATE.maDatVe
+            + '&maSuat=' + encodeURIComponent(maSuat)
+            + '&seatIds=' + encodeURIComponent(EXCHANGE_STATE.selectedSeatIds.join(','));
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Đổi suất thất bại!');
+                }
+            })
+            .catch(() => alert('Lỗi kết nối khi đổi suất chiếu!'));
+    }
+
+    function closeExchangeModal() {
+        document.getElementById('exchangeModal').classList.remove('open');
+    }
 </script>
+
+<!-- MODAL ĐỔI SUẤT CHIẾU (PHƯƠNG ÁN B) -->
+<div class="modal-overlay" id="exchangeModal">
+    <div style="background:#fff; width:520px; max-width:95vw; border-radius:14px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+        <div style="padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:15px; color:#0f172a;">🔄 Đổi Suất Chiếu &amp; Bảo Lưu Vé (<span id="exHdTitle"></span>)</strong>
+            <button type="button" onclick="closeExchangeModal()" style="border:none; background:none; font-size:20px; cursor:pointer; color:#64748b;">&times;</button>
+        </div>
+        <div style="padding:18px 20px;">
+            <div style="background:#f8fafc; padding:10px 12px; border-radius:8px; margin-bottom:14px; font-size:13px;">
+                <div>Phim: <strong id="exMovieTitle" style="color:#e11d48;"></strong></div>
+                <div>Số lượng vé cần đổi: <strong id="exTicketCount">0</strong> vé (Giữ nguyên tiền &amp; điểm tích lũy)</div>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:6px;">CHỌN SUẤT CHIẾU THAY THẾ *</label>
+                <select id="exShowtimeSelect" onchange="onExchangeShowtimeChange(this.value)"
+                        style="width:100%; height:38px; padding:0 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;"></select>
+            </div>
+            <div>
+                <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:6px;">CHỌN GHẾ TRỐNG TẠI SUẤT MỚI *</label>
+                <div id="exSeatContainer" style="border:1px solid #e2e8f0; border-radius:8px; padding:10px; background:#f8fafc;"></div>
+            </div>
+        </div>
+        <div style="padding:12px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-outline" onclick="closeExchangeModal()">Hủy</button>
+            <button type="button" class="btn btn-pink" onclick="confirmExchangeShowtime()">Xác nhận đổi suất</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

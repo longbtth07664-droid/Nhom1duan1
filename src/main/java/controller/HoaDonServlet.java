@@ -150,6 +150,83 @@ public class HoaDonServlet extends HttpServlet {
             return;
         }
 
+        // 3.5 API Đổi suất chiếu (Phương án B: Bảo lưu vé khi suất cũ bị hủy hoặc khách xin đổi)
+        if ("exchangeInfo".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            try {
+                int id = Integer.parseInt(req.getParameter("id").trim());
+                Map<String, Object> info = hoaDonRepo.getExchangeInfo(id);
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> showtimes = (List<Map<String, Object>>) info.get("showtimes");
+                StringBuilder sb = new StringBuilder();
+                sb.append("{\"success\":true,");
+                sb.append("\"ticketCount\":").append(info.get("ticketCount")).append(",");
+                sb.append("\"tenPhim\":\"").append(escapeJson((String) info.get("tenPhim"))).append("\",");
+                sb.append("\"showtimes\":[");
+                for (int i = 0; i < showtimes.size(); i++) {
+                    Map<String, Object> st = showtimes.get(i);
+                    if (i > 0) sb.append(",");
+                    sb.append("{")
+                      .append("\"maSuat\":").append(st.get("maSuat")).append(",")
+                      .append("\"ngayChieu\":\"").append(escapeJson((String) st.get("ngayChieu"))).append("\",")
+                      .append("\"gioBatDau\":\"").append(escapeJson((String) st.get("gioBatDau"))).append("\",")
+                      .append("\"tenPhong\":\"").append(escapeJson((String) st.get("tenPhong"))).append("\",")
+                      .append("\"dinhDang\":\"").append(escapeJson((String) st.get("dinhDang"))).append("\"")
+                      .append("}");
+                }
+                sb.append("]}");
+                resp.getWriter().write(sb.toString());
+            } catch (Exception e) {
+                resp.getWriter().write("{\"success\":false,\"message\":\"Không tải được danh sách suất thay thế!\"}");
+            }
+            return;
+        }
+
+        if ("exchangeSeats".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            try {
+                int maSuat = Integer.parseInt(req.getParameter("maSuat").trim());
+                List<Map<String, Object>> seats = hoaDonRepo.getFreeSeatsForShowtime(maSuat);
+                StringBuilder sb = new StringBuilder("{\"success\":true,\"seats\":[");
+                for (int i = 0; i < seats.size(); i++) {
+                    Map<String, Object> s = seats.get(i);
+                    if (i > 0) sb.append(",");
+                    sb.append("{\"maGhe\":").append(s.get("maGhe"))
+                      .append(",\"tenGhe\":\"").append(escapeJson((String) s.get("tenGhe"))).append("\"")
+                      .append(",\"loaiGhe\":\"").append(escapeJson((String) s.get("loaiGhe"))).append("\"}");
+                }
+                sb.append("]}");
+                resp.getWriter().write(sb.toString());
+            } catch (Exception e) {
+                resp.getWriter().write("{\"success\":false,\"seats\":[]}");
+            }
+            return;
+        }
+
+        if ("confirmExchange".equalsIgnoreCase(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            try {
+                int id = Integer.parseInt(req.getParameter("id").trim());
+                int newMaSuat = Integer.parseInt(req.getParameter("maSuat").trim());
+                String seatIdsStr = req.getParameter("seatIds");
+                List<Integer> newSeatIds = new java.util.ArrayList<>();
+                if (seatIdsStr != null && !seatIdsStr.trim().isEmpty()) {
+                    for (String p : seatIdsStr.split(",")) {
+                        if (!p.trim().isEmpty()) newSeatIds.add(Integer.parseInt(p.trim()));
+                    }
+                }
+                boolean ok = hoaDonRepo.doiSuatChieu(id, newMaSuat, newSeatIds);
+                if (ok) {
+                    resp.getWriter().write("{\"success\":true,\"message\":\"Đổi suất chiếu & cấp mã QR mới cho hóa đơn #" + id + " thành công!\"}");
+                } else {
+                    resp.getWriter().write("{\"success\":false,\"message\":\"Đổi suất thất bại! Vui lòng kiểm tra lại số ghế chọn hoặc ghế đã bị đặt.\"}");
+                }
+            } catch (Exception e) {
+                resp.getWriter().write("{\"success\":false,\"message\":\"Dữ liệu đổi suất không hợp lệ!\"}");
+            }
+            return;
+        }
+
         // 4. Mặc định: Hiển thị trang Quản lý hóa đơn & Thống kê
         String keyword = req.getParameter("keyword");
         String fromDate = req.getParameter("fromDate");
